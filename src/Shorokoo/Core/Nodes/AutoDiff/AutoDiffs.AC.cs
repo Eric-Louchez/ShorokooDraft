@@ -167,26 +167,45 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var methodParams = gradientOp.GetParameters();
             var paramValues = new object?[methodParams.Length];
             
+            // The leading graph-input parameters are everything before the output-grad params and
+            // the trailing attribute (non-IVariable) params. The forward op may have omitted trailing
+            // optional inputs (e.g. Trilu's diagonal), so derive the expected input-parameter count
+            // from the method signature and pad the provided inputs with nulls to keep the
+            // input/output-grad/attribute slots aligned.
+            int attrParamCount = 0;
+            for (int p = methodParams.Length - 1; p >= 0; p--)
+            {
+                var pt = Nullable.GetUnderlyingType(methodParams[p].ParameterType) ?? methodParams[p].ParameterType;
+                if (typeof(IVariable).IsAssignableFrom(pt))
+                    break;
+                attrParamCount++;
+            }
+            int expectedInputCount = Math.Max(inputs.Length, methodParams.Length - outputs.Length - attrParamCount);
+
             // Validate parameter counts match expectations
             // Internal contract: every registered gradient method has a parameter count
             // between (inputs+outputs) and (inputs+outputs+attributes). Violations indicate
             // a misregistered AutoDiff entry, not a runtime/user error.
-            int minExpectedParamCount = inputs.Length + outputs.Length;
+            int minExpectedParamCount = expectedInputCount + outputs.Length;
             int maxExpectedParamCount = minExpectedParamCount + attributes.AttributeDefs.Count;
             Debug.Assert(methodParams.Length >= minExpectedParamCount,
                 $"Method {gradientOp.Name} expects at least {minExpectedParamCount} parameters " +
-                $"(inputs: {inputs.Length}, outputs: {outputs.Length}) but only has {methodParams.Length} parameters");
+                $"(inputs: {expectedInputCount}, outputs: {outputs.Length}) but only has {methodParams.Length} parameters");
             Debug.Assert(methodParams.Length <= maxExpectedParamCount,
                 $"Method {gradientOp.Name} expects {methodParams.Length} parameters but only {maxExpectedParamCount} can be provided " +
-                $"(inputs: {inputs.Length}, outputs: {outputs.Length}, attributes: {attributes.AttributeDefs.Count})");
-            
+                $"(inputs: {expectedInputCount}, outputs: {outputs.Length}, attributes: {attributes.AttributeDefs.Count})");
+
             int paramIndex = 0;
 
             // Add inputs (wrapping graph values into value-struct parameter types — reflective
-            // Invoke does not apply the immutable→struct implicit conversion).
-            foreach (var input in inputs)
+            // Invoke does not apply the immutable→struct implicit conversion), padding absent
+            // trailing optional inputs with null.
+            for (int j = 0; j < expectedInputCount; j++)
             {
-                paramValues[paramIndex] = Shorokoo.Core.VariableHandle.WrapForParam(input, methodParams[paramIndex].ParameterType);
+                var inputVal = j < inputs.Length ? inputs[j] : null;
+                paramValues[paramIndex] = inputVal is null
+                    ? null
+                    : Shorokoo.Core.VariableHandle.WrapForParam(inputVal, methodParams[paramIndex].ParameterType);
                 paramIndex++;
             }
 

@@ -545,7 +545,9 @@ namespace Shorokoo.Core.Nodes.Processors.AutoGrad
         {
             if (methodParams is null || slotIdx >= methodParams.Length) return (DType.Float32, null);
 
-            var paramType = methodParams[slotIdx].ParameterType;
+            // A value-struct handle parameter may be declared nullable (`Tensor<T>?` == Nullable<Tensor<T>>);
+            // unwrap it to recover the underlying handle type.
+            var paramType = Nullable.GetUnderlyingType(methodParams[slotIdx].ParameterType) ?? methodParams[slotIdx].ParameterType;
             if (paramType.ContainsGenericParameters) return (DType.Float32, null);
 
             if (paramType.IsGenericType)
@@ -554,8 +556,8 @@ namespace Shorokoo.Core.Nodes.Processors.AutoGrad
                 if (args.Length >= 1 && dtypeByIVarType.TryGetValue(args[0], out var dt))
                 {
                     var def = paramType.GetGenericTypeDefinition();
-                    int? rank = def == typeof(ImmutableScalar<>) ? 0
-                              : def == typeof(ImmutableVector<>) ? 1
+                    int? rank = def == typeof(ImmutableScalar<>) || def == typeof(Scalar<>) ? 0
+                              : def == typeof(ImmutableVector<>) || def == typeof(Vector<>) ? 1
                               : (int?)null;
                     return (dt, rank);
                 }
