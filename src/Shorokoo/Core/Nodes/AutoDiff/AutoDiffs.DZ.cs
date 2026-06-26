@@ -27,14 +27,14 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         /// and axes=null (all-axes reduction, scalar grad).
         /// </summary>
         private static Tensor<T1> ExpandGradToOriginalShape<T1, T2>(
-            Tensor<T1> grad, Tensor<T1> data, Tensor<T2> axes, bool? keepdims)
+            Tensor<T1> grad, Tensor<T1> data, Tensor<T2>? axes, bool? keepdims)
             where T1 : IVarType
             where T2 : IVarType
         {
             var originalShape = data.DShape;
             var effectiveKeepdims = keepdims ?? true;
 
-            if (axes is null)
+            if (!axes.HasValue)
                 return (ImmutableTensor<T1>)OnnxOp.Expand(grad, originalShape);
 
             if (effectiveKeepdims)
@@ -143,7 +143,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Reduction Operations =====
 
         [AutoDiff(REDUCE_SUM)]
-        public static IVariable?[] ReduceSum<T1, T2>(Tensor<T1> data, Tensor<T2> axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static IVariable?[] ReduceSum<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -153,7 +153,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         }
 
         [AutoDiff(REDUCE_MEAN)]
-        public static IVariable?[] ReduceMean<T1, T2>(Tensor<T1> data, Tensor<T2> axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static IVariable?[] ReduceMean<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -162,7 +162,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             // Count the number of elements that were reduced
             Tensor<T1> reducedCountTyped;
-            if (axes is null)
+            if (!axes.HasValue)
             {
                 // All axes reduced — N is the total number of elements = product of all dims
                 Tensor<int64> fullShape = (ImmutableTensor<int64>)OnnxOp.Shape(data);
@@ -296,7 +296,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ReduceProd =====
 
         [AutoDiff(REDUCE_PROD)]
-        public static IVariable?[] ReduceProd<T1, T2>(Tensor<T1> data, Tensor<T2> axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static IVariable?[] ReduceProd<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -329,7 +329,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ReduceSumSquare =====
 
         [AutoDiff(REDUCE_SUM_SQUARE)]
-        public static IVariable?[] ReduceSumSquare<T1, T2>(Tensor<T1> data, Tensor<T2> axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static IVariable?[] ReduceSumSquare<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -342,7 +342,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ReduceLogSumExp =====
 
         [AutoDiff(REDUCE_LOG_SUM_EXP)]
-        public static IVariable?[] ReduceLogSumExp<T1, T2>(Tensor<T1> data, Tensor<T2> axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static IVariable?[] ReduceLogSumExp<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -362,7 +362,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ReduceL1 =====
 
         [AutoDiff(REDUCE_L1)]
-        public static IVariable?[] ReduceL1<T1, T2>(Tensor<T1> data, Tensor<T2> axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static IVariable?[] ReduceL1<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -374,7 +374,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ReduceL2 =====
 
         [AutoDiff(REDUCE_L2)]
-        public static IVariable?[] ReduceL2<T1, T2>(Tensor<T1> data, Tensor<T2> axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static IVariable?[] ReduceL2<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -392,7 +392,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ReduceLogSum =====
 
         [AutoDiff(REDUCE_LOG_SUM)]
-        public static IVariable?[] ReduceLogSum<T1, T2>(Tensor<T1> data, Tensor<T2> axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static IVariable?[] ReduceLogSum<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -410,7 +410,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ReduceMax =====
 
         [AutoDiff(REDUCE_MAX)]
-        public static IVariable?[] ReduceMax<T1, T2>(Tensor<T1> data, Tensor<T2> axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static IVariable?[] ReduceMax<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -434,7 +434,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ReduceMin =====
 
         [AutoDiff(REDUCE_MIN)]
-        public static IVariable?[] ReduceMin<T1, T2>(Tensor<T1> data, Tensor<T2> axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static IVariable?[] ReduceMin<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {

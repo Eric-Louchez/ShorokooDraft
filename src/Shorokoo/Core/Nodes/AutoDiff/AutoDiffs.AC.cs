@@ -31,7 +31,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             var paddedInputShape = originalShape.Pad(PadMode.Constant, pads: [padding, Scalar(0L)], val: Scalar(1L));
             var indices = VectorRange(Scalar(0L), broadcastedRank, Scalar(1L));
-            var axesToReduce = indices.Compress((paddedInputShape == 1) & (broadcastedShape != 1));
+            var axesToReduce = ((Tensor<int64>)indices).Compress((paddedInputShape == 1) & (broadcastedShape != 1));
 
             // Use noopWithEmptyAxes=true so that when no axes need reducing (e.g., same-shape
             // operands), the tensor passes through unchanged instead of reducing all axes.
@@ -570,8 +570,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             {
                 if (masks[i] is null) continue;
                 var normalizedMask = OnnxOp.Div(masks[i]!, totalMask!);
-                result[i] = ReverseBroadcast(
-                    (ImmutableTensor<float32>)(OnnxOp.Mul(normalizedMask, grad)),
+                result[i] = ReverseBroadcast((Tensor<float32>)(ImmutableTensor<float32>)(OnnxOp.Mul(normalizedMask, grad)),
                     ((ImmutableTensor<float32>)inputs[i]!).DShape);
             }
 
@@ -611,8 +610,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             {
                 if (masks[i] is null) continue;
                 var normalizedMask = OnnxOp.Div(masks[i]!, totalMask!);
-                result[i] = ReverseBroadcast(
-                    (ImmutableTensor<float32>)(OnnxOp.Mul(normalizedMask, grad)),
+                result[i] = ReverseBroadcast((Tensor<float32>)(ImmutableTensor<float32>)(OnnxOp.Mul(normalizedMask, grad)),
                     ((ImmutableTensor<float32>)inputs[i]!).DShape);
             }
 

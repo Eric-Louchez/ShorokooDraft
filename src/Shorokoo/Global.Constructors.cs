@@ -401,13 +401,13 @@ namespace Shorokoo
             where T : IVarType
             => tensors.Length == 0 ?
                     (ImmutableTensorSequence<T>)OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>()) :
-                    (ImmutableTensorSequence<T>)OnnxOp.SequenceConstruct(tensors);
+                    (ImmutableTensorSequence<T>)OnnxOp.SequenceConstruct([.. tensors.Cast<IVariable>()]);
 
         /// <summary>Creates a tensor sequence from the given tensors; an empty sequence when none are supplied.</summary>
         public static ITensorSequence TensorSequence(DType dtype, params ITensor[] tensors)
             => tensors.Length == 0 ?
                     (ITensorSequence)OnnxOp.SequenceEmpty(dtype) :
-                    (ITensorSequence)OnnxOp.SequenceConstruct(tensors);
+                    (ITensorSequence)OnnxOp.SequenceConstruct([.. tensors.Cast<IVariable>()]);
         #endregion
 
         #region Optional Tensor constructors

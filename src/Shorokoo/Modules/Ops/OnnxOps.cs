@@ -49,7 +49,7 @@ namespace Shorokoo
 
         /// <summary>Concatenates the tensors along the given axis (ONNX Concat).</summary>
         public static Tensor<T> Concat<T>(Tensor<T>[] inputs, long axis) where T : IVarType
-            => (ImmutableTensor<T>)OnnxOp.Concat(inputs, axis);
+            => (ImmutableTensor<T>)OnnxOp.Concat([.. inputs.Cast<IVariable>()], axis);
 
         /// <summary>N-dimensional convolution (ONNX Conv) with geometry supplied as static attributes.</summary>
         public static Tensor<T> Conv<T>(Tensor<T> x, Tensor<T> w, Vector<T> b, AutoPad autoPad,
@@ -200,7 +200,7 @@ namespace Shorokoo
         /// <summary>Element-wise maximum of the given tensors, with broadcasting (ONNX Max).</summary>
         public static Tensor<T> Max<T>(params Tensor<T>[] toMax)
             where T : NumLike
-            => (ImmutableTensor<T>)OnnxOp.Max(toMax);
+            => (ImmutableTensor<T>)OnnxOp.Max([.. toMax.Cast<IVariable>()]);
 
         /// <summary>Max pooling over spatial windows (ONNX MaxPool).</summary>
         public static Tensor<T> MaxPool<T>(Tensor<T> x, bool ceilMode, long[]? dilations, long[]? kernelShape, long[]? pads, long storageOrder, long[]? strides, AutoPad autoPad = AutoPad.NotSet)
@@ -219,7 +219,7 @@ namespace Shorokoo
         /// <summary>Element-wise minimum of the given tensors, with broadcasting (ONNX Min).</summary>
         public static Tensor<T> Min<T>(params Tensor<T>[] toMax)
             where T : NumLike
-            => (ImmutableTensor<T>)OnnxOp.Min(toMax);
+            => (ImmutableTensor<T>)OnnxOp.Min([.. toMax.Cast<IVariable>()]);
 
         /// <summary>Element-wise integer remainder of a / b; fmod=true selects C-style fmod sign semantics (ONNX Mod).</summary>
         public static Tensor<T> Mod<T>(Tensor<T> a, Tensor<T> b, bool fmod = false)

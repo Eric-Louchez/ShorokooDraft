@@ -36,7 +36,7 @@ namespace Shorokoo.Modules
 
         internal ModelSequence(Scalar<IModelVarType>[] models, Function targetFunction)
         {
-            this.modelSequenceVariable = TensorSequence<IModelVarType>.Create(models, targetFunction);
+            this.modelSequenceVariable = TensorSequence<IModelVarType>.Create([.. models.Select(m => (Tensor<IModelVarType>)m)], targetFunction);
             this.targetFunction = targetFunction;
         }
 

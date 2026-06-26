@@ -37,8 +37,7 @@ namespace Shorokoo.Core
 
         internal VectorExpressionHelper(Vector<T> vector)
         {
-            if (vector is ImmutableScalar<T> scalar)
-                this.scalar = scalar;
+            if (vector.Imm is ImmutableScalar<T> s) {                this.scalar = s; }
             else
                 this.vector = vector;
         }
@@ -79,8 +78,8 @@ namespace Shorokoo.Core
                 throw new InvalidTensorOperationException(ErrorCodes.FW008, "CreateVector", "null elements in collection", 
                     "Cannot make vectors that contain null elements");
 
-            var toConcat = elements.ToArray().Select(x => x.scalar is not null ? x.scalar.Unsqueeze() : x.vector).AssertNotNulls().ToArray();
-            return toConcat[0].Concat(toConcat.Skip(1).ToArray());
+            var toConcat = elements.ToArray().Select(x => x.scalar is not null ? (Tensor<T>)x.scalar.Value.Unsqueeze() : (Tensor<T>)x.vector!.Value).ToArray();
+            return toConcat[0].Concat(0L, toConcat.Skip(1).ToArray()).Vec();
         }
 
         public static Tensor<T> CreateTensor<T>(ReadOnlySpan<VectorExpressionHelper<T>> elements)

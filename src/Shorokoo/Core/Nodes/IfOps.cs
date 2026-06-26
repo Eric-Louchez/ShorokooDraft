@@ -131,20 +131,20 @@ namespace Shorokoo.Core.Nodes
         public static ITensor[] IfElse(Scalar<bit> condition, ITensor[] whenTrue, ITensor[] whenFalse)
         {
             var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
-            return (ITensor[])OnnxOp.IfClose(whenTrue, whenFalse, ifOpen);
+            return (ITensor[])OnnxOp.IfClose([.. whenTrue.Cast<IVariable>()], [.. whenFalse.Cast<IVariable>()], ifOpen);
         }
 
         public static IVariable[] IfElse(Scalar<bit> condition, IVariable[] whenTrue, IVariable[] whenFalse)
         {
             var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
-            return (IVariable[])OnnxOp.IfClose(whenTrue, whenFalse, ifOpen);
+            return (IVariable[])OnnxOp.IfClose([.. whenTrue.Cast<IVariable>()], [.. whenFalse.Cast<IVariable>()], ifOpen);
         }
 
         public static Tensor<T> IfElse<T>(Scalar<bit> condition, Tensor<T>[] whenTrue, Tensor<T>[] whenFalse)
             where T : IVarType
         {
             var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
-            var results = OnnxOp.IfClose(whenTrue, whenFalse, ifOpen);
+            var results = OnnxOp.IfClose([.. whenTrue.Cast<IVariable>()], [.. whenFalse.Cast<IVariable>()], ifOpen);
 
             return (ImmutableTensor<T>)results[0];
         }
@@ -153,7 +153,7 @@ namespace Shorokoo.Core.Nodes
             where T : IVarType
         {
             var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
-            var results = OnnxOp.IfClose(whenTrue, whenFalse, ifOpen);
+            var results = OnnxOp.IfClose([.. whenTrue.Cast<IVariable>()], [.. whenFalse.Cast<IVariable>()], ifOpen);
 
             return (IVariable<T>)results[0];
         }

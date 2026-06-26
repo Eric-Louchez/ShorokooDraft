@@ -86,7 +86,7 @@ namespace Shorokoo
         private VectorIndexerParam slice;
 
         /// <summary>The sliced/gathered vector (shorthand for the implicit conversion).</summary>
-        public Vector<TT> T => (ImmutableVector<TT>)this;
+        public Vector<TT> T => (Vector<TT>)this;
 
         internal VectorIndexerResult(Vector<TT> gatherFrom, VectorIndexerParam slice)
         {
@@ -106,7 +106,7 @@ namespace Shorokoo
 
 
             if (slice.Indices is not null)
-                return tensor.GatherND(slice.Indices, batchDims: 0);
+                return tensor.GatherND(slice.Indices.Value, batchDims: 0);
 
             Debug.Assert(slice.ScalarStart is not null);
             Debug.Assert(slice.ScalarEnd is not null);
@@ -114,7 +114,7 @@ namespace Shorokoo
                 throw new InvalidTensorOperationException(ErrorCodes.CR006, "Vector Index", "step operation", 
                     "Step operations in vector indexing are not yet supported");
 
-            return tensor.Slice(slice.ScalarStart, slice.ScalarEnd, slice.ScalarStep);
+            return tensor.Slice(slice.ScalarStart!.Value, slice.ScalarEnd!.Value, slice.ScalarStep);
         }
 
         /// <summary>Returns a copy of the source vector with the indexed positions replaced by <paramref name="values"/>.</summary>
@@ -126,21 +126,21 @@ namespace Shorokoo
 
 
             if (slice.Indices is not null)
-                return gatherFrom.ScatterND(slice.Indices, values);
+                return gatherFrom.ScatterND(slice.Indices.Value, values);
 
             Debug.Assert(slice.ScalarStart is not null);
             Debug.Assert(slice.ScalarEnd is not null);
 
             if (slice.ScalarStep is null)
             {
-                var toUpdateTensor = values.Pad(PadMode.Constant, slice.ScalarStart, slice.ScalarEnd, Scalar<TT>(values.Type.DefaultVal));
-                var updateMask = VectorFill(values.TShape, true).Pad(PadMode.Constant, slice.ScalarStart.Unsqueeze(), slice.ScalarEnd.Unsqueeze());
+                var toUpdateTensor = values.Pad(PadMode.Constant, slice.ScalarStart!.Value, slice.ScalarEnd!.Value, Scalar<TT>(values.Type.DefaultVal));
+                var updateMask = VectorFill(values.TShape, true).Pad(PadMode.Constant, slice.ScalarStart!.Value.Unsqueeze(), slice.ScalarEnd!.Value.Unsqueeze());
                 return updateMask.Where(toUpdateTensor, gatherFrom);
             }
 
             var targetShape = gatherFrom.TShape;
 
-            var stepPattern = VectorFill(slice.ScalarStep, false);
+            var stepPattern = VectorFill(slice.ScalarStep!.Value, false);
             stepPattern = stepPattern[0].Set(true);
 
             var stepMask = stepPattern.Tile(values.TShape);
@@ -163,7 +163,7 @@ namespace Shorokoo
         private Scalar<int64> index;
 
         /// <summary>The indexed element (shorthand for the implicit conversion).</summary>
-        public Scalar<TT> T => (ImmutableScalar<TT>)this;
+        public Scalar<TT> T => (Scalar<TT>)this;
 
         internal ScalarIndexerResult(Vector<TT> gatherFrom, long index)
         {

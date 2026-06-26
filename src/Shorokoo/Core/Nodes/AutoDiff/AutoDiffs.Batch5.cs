@@ -85,7 +85,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             if (c is not null)
             {
                 var betaConst = TypedConst(effectiveBeta, (Tensor<T>)grad);
-                gradC = ReverseBroadcast(betaConst * grad, c.DShape);
+                gradC = ReverseBroadcast(betaConst * grad, c.Value.DShape);
             }
 
             return [gradA, gradB, gradC];

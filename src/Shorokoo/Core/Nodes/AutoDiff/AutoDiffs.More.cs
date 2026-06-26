@@ -141,7 +141,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Squeeze =====
 
         [AutoDiff(SQUEEZE)]
-        public static IVariable?[] Squeeze<T1, T2>(Tensor<T1> data, Tensor<T2> axes, Tensor<T1> grad)
+        public static IVariable?[] Squeeze<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad)
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -153,7 +153,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Unsqueeze =====
 
         [AutoDiff(UNSQUEEZE)]
-        public static IVariable?[] Unsqueeze<T1, T2>(Tensor<T1> data, Tensor<T2> axes, Tensor<T1> grad)
+        public static IVariable?[] Unsqueeze<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad)
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -171,23 +171,23 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         {
             // Gradient of Expand: reverse broadcast back to original shape
             var originalShape = input.DShape;
-            return [ReverseBroadcast(grad, originalShape), null];
+            return [ReverseBroadcast<T1>(grad, originalShape), null];
         }
 
         // ===== Clip =====
 
         [AutoDiff(CLIP)]
-        public static IVariable?[] Clip<T>(Tensor<T> input, Tensor<T> min, Tensor<T> max, Tensor<T> grad) where T : IVarType
+        public static IVariable?[] Clip<T>(Tensor<T> input, Tensor<T>? min, Tensor<T>? max, Tensor<T> grad) where T : IVarType
         {
             // d(clip(x, min, max))/dx = 1 where min <= x <= max, 0 otherwise
             // Apply mask in two steps: zero out where x < min, then zero out where x > max
             // Note: min and max are non-optional in this framework's Clip API
             var zero = TypedConst(0.0f, input);
             var result = grad;
-            if (min is not null)
-                result = (ImmutableTensor<T>)OnnxOp.Where(input < min, zero, result);
-            if (max is not null)
-                result = (ImmutableTensor<T>)OnnxOp.Where(input > max, zero, result);
+            if (min.HasValue)
+                result = (ImmutableTensor<T>)OnnxOp.Where(input < min.Value, zero, result);
+            if (max.HasValue)
+                result = (ImmutableTensor<T>)OnnxOp.Where(input > max.Value, zero, result);
             return [result, null, null];
         }
 
@@ -198,8 +198,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         {
             // Gradient flows to x where condition is true, to y where condition is false
             var zero = TypedConst(0.0f, x);
-            var xGrad = ReverseBroadcast((ImmutableTensor<T>)OnnxOp.Where(condition, grad, zero), x.DShape);
-            var yGrad = ReverseBroadcast((ImmutableTensor<T>)OnnxOp.Where(condition, zero, grad), y.DShape);
+            var xGrad = ReverseBroadcast<T>((ImmutableTensor<T>)OnnxOp.Where(condition, grad, zero), x.DShape);
+            var yGrad = ReverseBroadcast<T>((ImmutableTensor<T>)OnnxOp.Where(condition, zero, grad), y.DShape);
             return [null, xGrad, yGrad];
         }
 
@@ -248,7 +248,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
         [AutoDiff(PAD)]
         public static IVariable?[] Pad<T1, T2, T3>(
-            Tensor<T1> data, Tensor<T2> pads, Tensor<T1> constantValue, Tensor<T3> axes,
+            Tensor<T1> data, Tensor<T2> pads, Tensor<T1> constantValue, Tensor<T3>? axes,
             Tensor<T1> grad, PadMode? mode)
             where T1 : IVarType
             where T2 : IVarType
@@ -268,7 +268,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var inputShape = data.DShape;
             Tensor<int64> padsCast = (ImmutableTensor<int64>)OnnxOp.Cast(pads, saturate: null, to: DType.Int64);
 
-            if (axes is null)
+            if (!axes.HasValue)
             {
                 // pads = [begin_0, ..., begin_N, end_0, ..., end_N]
                 var numDimsShape = inputShape.DShape; // Vector<int64> of shape [1], value = number of dims
@@ -292,7 +292,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
         [AutoDiff(SLICE)]
         public static IVariable?[] Slice<T1, T2>(
-            Tensor<T1> data, Tensor<T2> starts, Tensor<T2> ends, Tensor<T2> axes, Tensor<T2> steps,
+            Tensor<T1> data, Tensor<T2> starts, Tensor<T2> ends, Tensor<T2>? axes, Tensor<T2>? steps,
             Tensor<T1> grad)
             where T1 : IVarType
             where T2 : IVarType
@@ -303,7 +303,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             Tensor<int64> startsCast = (ImmutableTensor<int64>)OnnxOp.Cast(starts, saturate: null, to: DType.Int64);
             Tensor<int64> endsCast = (ImmutableTensor<int64>)OnnxOp.Cast(ends, saturate: null, to: DType.Int64);
 
-            if (steps is not null)
+            if (steps.HasValue)
             {
                 // steps is a runtime input whose values aren't known at gradient-build time,
                 // so whenever it's wired build the gradient with the exact general adjoint:
@@ -312,7 +312,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 // including strided, negative-step, negative-start/end and clamped configs —
                 // then scatter the gradient onto those flat offsets and reshape back.
                 Tensor<int64> stepsCast = (ImmutableTensor<int64>)OnnxOp.Cast(steps, saturate: null, to: DType.Int64);
-                var axesCastOpt = axes is null
+                var axesCastOpt = !axes.HasValue
                     ? null
                     : (ImmutableTensor<int64>)OnnxOp.Cast(axes, saturate: null, to: DType.Int64);
 
@@ -335,7 +335,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 return [(Tensor<T1>)gradData, null, null, null, null];
             }
 
-            if (axes is null)
+            if (!axes.HasValue)
             {
                 // All axes sliced: pads = [start_0, ..., start_N, (dim_0 - end_0), ..., (dim_N - end_N)]
                 Tensor<int64> clampedStarts = (ImmutableTensor<int64>)OnnxOp.Max(startsCast, (ImmutableTensor<int64>)OnnxOp.Expand(Scalar(0L), startsCast.DShape));

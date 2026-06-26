@@ -117,7 +117,7 @@ namespace Shorokoo
                 }
 
                 Debug.Assert(Vector<T>.unit is not null);
-                return Vector<T>.unit;
+                return Vector<T>.unit!.Value;
             }
         }
 
@@ -157,7 +157,7 @@ namespace Shorokoo
                 }
 
                 Debug.Assert(Vector<T>.empty is not null);
-                return Vector<T>.empty;
+                return Vector<T>.empty!.Value;
             }
         }
 

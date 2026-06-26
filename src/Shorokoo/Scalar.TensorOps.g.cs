@@ -86,7 +86,7 @@ namespace Shorokoo
 
         /// <summary>The size of dimension <paramref name="axis"/> as a symbolic scalar.</summary>
         public Scalar<int64> DimTensor(long axis)
-            => this.ShapeTensor()[axis].T.Scalar();
+            => this.ShapeTensor()[axis].T;
 
         /// <summary>Gathers entries along <paramref name="axis"/> using the given indices (ONNX Gather).</summary>
         public Tensor<T> Gather(Tensor<int64> indices, long? axis)
@@ -98,7 +98,7 @@ namespace Shorokoo
 
         /// <summary>Reduction (e.g. sum, mean, max) over <paramref name="axes"/> - all axes when null - keeping reduced dimensions by default.</summary>
         public Tensor<T> Reduce(ReduceKind reduceKind, Vector<int64>? axes = null, bool keepDims = true)
-            => NN.Reduce(reduceKind, this, axes, keepDims, false);
+            => NN.Reduce<T>(reduceKind, this, axes, keepDims, false);
 
         /// <summary>Tiles the tensor by repeating it <paramref name="repeats"/> times along each axis.</summary>
         public Tensor<T> Tile(Tensor<int64> repeats)

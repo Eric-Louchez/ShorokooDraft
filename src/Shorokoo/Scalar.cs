@@ -101,7 +101,7 @@ namespace Shorokoo
                 }
 
                 Debug.Assert(Shorokoo.Scalar<T>.unit is not null);
-                return Shorokoo.Scalar<T>.unit;
+                return Shorokoo.Scalar<T>.unit!.Value;
             }
         }
 
@@ -226,11 +226,11 @@ namespace Shorokoo
 
         /// <summary>Minimum of this scalar and <paramref name="others"/>.</summary>
         public Scalar<T> Min(params Scalar<T>[] others)
-            => ((Tensor<T>)this).Min(others).Scalar();
+            => ((Tensor<T>)this).Min([.. others.Select(o => (Tensor<T>)o)]).Scalar();
 
         /// <summary>Maximum of this scalar and <paramref name="others"/>.</summary>
         public Scalar<T> Max(params Scalar<T>[] others)
-            => ((Tensor<T>)this).Max(others).Scalar();
+            => ((Tensor<T>)this).Max([.. others.Select(o => (Tensor<T>)o)]).Scalar();
 
         /// <summary>Scalar floor.</summary>
         public Scalar<T> Floor()
@@ -306,7 +306,7 @@ namespace Shorokoo
 
         /// <summary>Scalar power.</summary>
         public Scalar<T> Pow<T1>(Scalar<T1> power) where T1 : IVarType
-            => ((Tensor<T>)this).Pow(power).Scalar();
+            => ((Tensor<T>)this).Pow<T1>(power).Scalar();
 
         /// <summary>Scalar natural logarithm.</summary>
         public Scalar<T> Ln()

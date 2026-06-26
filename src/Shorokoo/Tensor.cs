@@ -248,7 +248,7 @@ namespace Shorokoo
         /// <summary>Element-wise addition.</summary>
         public static Tensor<T> operator +(Tensor<T> left, Tensor<T> right)
         {
-            left.ThrowIsNumLike();
+            left.Imm.ThrowIsNumLike();
 
             return (ImmutableTensor<T>)OnnxOp.Add(left, right);
         }
@@ -503,7 +503,7 @@ namespace Shorokoo
 
         /// <summary>The size of dimension <paramref name="axis"/> as a symbolic scalar.</summary>
         public Scalar<int64> DimTensor(long axis)
-            => this.ShapeTensor()[axis].T.Scalar();
+            => this.ShapeTensor()[axis].T;
 
         /// <summary>Gathers entries along <paramref name="axis"/> using the given indices (ONNX Gather).</summary>
         public Tensor<T> Gather(Tensor<int64> indices, long? axis)

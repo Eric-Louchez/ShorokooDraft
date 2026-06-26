@@ -936,7 +936,7 @@ public static class " + modelName + @"
         private (NodeGenerationInfo nodeGenerator, Dictionary<IVariable, string> newVariables) MakeCreateModuleNode(Node node, ImmutableDictionary<Node, NodeGenerationInfo> nodeCodeGenerators, ImmutableDictionary<IVariable, string> currentNames, ImmutableDictionary<Function, string> functionNames)
         {
             Debug.Assert(node.OpName == InternalOpCodes.CREATE_MODULE);
-            var moduleVariable = (node.Outputs[0] as Scalar<IModuleVarType>).AssertNotNull();
+            var moduleVariable = (node.Outputs[0] as Scalar<IModuleVarType>?).AssertNotNull();
 
             var targetFunction = moduleVariable.ModuleFn.AssertNotNull();
 
@@ -1042,7 +1042,7 @@ public static class " + modelName + @"
         private string MakeSetHyperparamsNodeCodeTemplate(Node node, ImmutableDictionary<Node, NodeGenerationInfo> nodeCodeGenerators, ImmutableDictionary<IVariable, string> currentNames, ImmutableDictionary<Function, string> functionNames)
         {
             Debug.Assert(node.OpName == InternalOpCodes.MODULE_SET_HYPERPARAMS);
-            var moduleVariable = (node.Inputs[0] as Scalar<IModuleVarType>).AssertNotNull();
+            var moduleVariable = (node.Inputs[0] as Scalar<IModuleVarType>?).AssertNotNull();
             var targetFunction = moduleVariable.ModuleFn.AssertNotNull();
             var hyperparamInputs = targetFunction.HyperparamInputs;
 
@@ -1078,7 +1078,7 @@ public static class " + modelName + @"
         private string MakeModelInvokeNodeCodeTemplate(Node node, ImmutableDictionary<Node, NodeGenerationInfo> nodeCodeGenerators, ImmutableDictionary<IVariable, string> currentNames, ImmutableDictionary<Function, string> functionNames)
         {
             Debug.Assert(node.OpName == InternalOpCodes.MODEL_INVOKE);
-            var modelVariable = (node.Inputs[0] as Scalar<IModelVarType>).AssertNotNull();
+            var modelVariable = (node.Inputs[0] as Scalar<IModelVarType>?).AssertNotNull();
             var targetFunction = modelVariable.ModuleFn.AssertNotNull();
             var modelInputs = targetFunction.NonHyperparamInputs;
             var paramsList = string.Join("", modelInputs.Select((x, i) => $"{{{i + 2}:param}}"));

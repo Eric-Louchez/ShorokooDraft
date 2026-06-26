@@ -62,7 +62,7 @@ namespace Shorokoo.Core
     {
         Scalar<IModelVarType> IModel.ModelVariable => this.ModelVariable;
 
-        private Scalar<IModelVarType> ModelVariable { get; set; } = null!;
+        private Scalar<IModelVarType> ModelVariable { get; set; } = default!;
         internal DType[]? GenericTypeArgs { get; set; }
 
         public BaseModel(InputType inputType)
@@ -128,7 +128,7 @@ namespace Shorokoo.Core
 
     public class CallbackModule<THyperparams, TOutputs> : IModule
     {
-        public Scalar<IModuleVarType> ModuleVariable { get; private set; } = null!;
+        public Scalar<IModuleVarType> ModuleVariable { get; private set; } = default!;
 
         public CallbackModule(InputType inputType)
         {
@@ -169,7 +169,7 @@ namespace Shorokoo.Core
 
     public class Module<TInputs, TOutputs> : IModule
     {
-        public Scalar<IModuleVarType> ModuleVariable { get; private set; } = null!;
+        public Scalar<IModuleVarType> ModuleVariable { get; private set; } = default!;
 
         public Module(InputType inputType)
         {
@@ -209,7 +209,7 @@ namespace Shorokoo.Core
 
     public class Module<THyperparams, TInputs, TOutputs> : IModule
     {
-        public Scalar<IModuleVarType> ModuleVariable { get; private set; } = null!;
+        public Scalar<IModuleVarType> ModuleVariable { get; private set; } = default!;
 
         public Module(InputType inputType)
         {

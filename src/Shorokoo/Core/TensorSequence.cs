@@ -74,11 +74,11 @@ namespace Shorokoo.Core
 
         internal static ImmutableTensorSequence<T> Create(Tensor<T>[] tensors)
             => tensors.Length == 0 ? CreateEmpty() :
-                    (ImmutableTensorSequence<T>)OnnxOp.SequenceConstruct(tensors);
+                    (ImmutableTensorSequence<T>)OnnxOp.SequenceConstruct([.. tensors.Cast<IVariable>()]);
 
         internal static ImmutableTensorSequence<T> Create(Tensor<T>[] tensors, Function targetFunction)
             => tensors.Length == 0 ? CreateEmpty(targetFunction) :
-                    (ImmutableTensorSequence<T>)OnnxOp.SequenceConstruct(targetFunction, tensors);
+                    (ImmutableTensorSequence<T>)OnnxOp.SequenceConstruct(targetFunction, [.. tensors.Cast<IVariable>()]);
     }
 
     /// <summary>

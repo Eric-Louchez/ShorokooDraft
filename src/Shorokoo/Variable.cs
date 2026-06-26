@@ -195,7 +195,7 @@ namespace Shorokoo
 
         public override string ToString()
         {
-            return (this.uniqueName ?? "") + ": " + this.GetType().Name + "[" + (this.Tensor()?.Rank ?? -1) + "]";
+            return (this.uniqueName ?? "") + ": " + this.GetType().Name + "[" + (this.Tensor().Rank ?? -1) + "]";
         }
     }
 }

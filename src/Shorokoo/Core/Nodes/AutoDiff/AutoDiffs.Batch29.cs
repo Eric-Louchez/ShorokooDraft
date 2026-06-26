@@ -121,7 +121,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var lambdConst = TypedConst(effLambd, x);
             var zero = TypedConst(0.0f, x);
             var one = TypedConst(1.0f, x);
-            Tensor<T> outside = (ImmutableTensor<T>)OnnxOp.Abs(x) > lambdConst;
+            Tensor<bit> outside = (ImmutableTensor<T>)OnnxOp.Abs(x) > lambdConst;
             Tensor<T> slope = (ImmutableTensor<T>)OnnxOp.Where(outside, one, zero);
             return [grad * slope];
         }
