@@ -35,11 +35,46 @@ namespace Shorokoo
     /// also be built from C# collection expressions.
     /// </summary>
     [CollectionBuilder(typeof(Shorokoo.Core.TensorCollectionBuilder), nameof(Shorokoo.Core.TensorCollectionBuilder.CreateVector))]
-    public partial class Vector<T> : Tensor<T>, IVector, IEnumerable<VectorExpressionHelper<T>>
-        where T : IVarType
+    public partial class ImmutableVector<T> : ImmutableTensor<T>, IVector where T : IVarType
     {
-        /// <summary>Shape inferred at graph-build time, as a constant <c>int64</c> vector (null when unknown).</summary>
         public override Vector<int64>? InfShape => base.InfShape;
+        internal ImmutableVector(Func<Vector<int64>>? shapeFn, DType dtype, Node owningNode, Function? moduleFn, string? name = null) : base(shapeFn, dtype, owningNode, moduleFn, name, rank: 1) {}
+    }
+
+    public partial struct Vector<T> : IVector, System.Collections.Generic.IEnumerable<VectorExpressionHelper<T>> where T : IVarType
+    {
+        private ImmutableVector<T>? inner;
+        internal ImmutableVector<T> Imm => inner ?? throw new InvalidOperationException("default(Vector<T>) is not materialised; build one via a graph op.");
+
+        public static implicit operator Vector<T>(ImmutableVector<T> imm) => new Vector<T> { inner = imm };
+        public static implicit operator ImmutableVector<T>(Vector<T> h) => h.Imm;
+        public static implicit operator Tensor<T>(Vector<T> h) => h.Imm;
+
+        // ITensor contract — forward to the wrapped immutable.
+        public int? Rank => Imm.Rank;
+        public ImmutableVector<int64>? InfShape => Imm.InfShape;
+        public Vector<int64> DShape => Imm.DShape;
+        public Vector<int64> TShape => Imm.TShape;
+        public Scalar<int64> TRank => Imm.TRank;
+        public Vector<T> Vec() => Imm.Vec();
+        public Scalar<T> Scalar() => Imm.Scalar();
+        IVector ITensor.Vec() => Imm.Vec();
+        Vector<V> ITensor.Vec<V>() => Imm.Cast<V>().Vec();
+        IScalar ITensor.Scalar() => Imm.Scalar();
+        Scalar<V> ITensor.Scalar<V>() => Imm.Cast<V>().Scalar();        Tensor<V> ITensor.Cast<V>(bool saturate) => Imm.Cast<V>(saturate);
+
+        public Node OwningNode => Imm.OwningNode;
+        public DType Type => Imm.Type;
+        public Function? ModuleFn => Imm.ModuleFn;
+        public TensorKey Key => Imm.Key;
+        public string UniqueName => Imm.UniqueName;
+        public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
+        public ImmutableVariable<V> As<V>() where V : IVarType => ((IVariable)Imm).As<V>();
+#pragma warning disable CS0618
+        string? IVariable.FriendlyName => ((IVariable)Imm).FriendlyName;
+#pragma warning restore CS0618
+        public override bool Equals(object? obj) => obj is Vector<T> t && Equals(Imm, t.Imm);
+        public override int GetHashCode() => Imm.GetHashCode();
 
         #region Unit and Empty vectors
 
@@ -55,30 +90,30 @@ namespace Shorokoo
                 if (Vector<T>.unit is null)
                 {
                     var type = OnnxUtils.GetDType<T>();
-                    if (type == DType.BFloat16) unit = (ImmutableVector<T>)(object)Vector(BFloat16.One);
-                    else if (type == DType.Float16) unit = (ImmutableVector<T>)(object)Vector(Float16.One);
-                    else if (type == DType.Float32) unit = (ImmutableVector<T>)(object)Vector(1f);
-                    else if (type == DType.Float64) unit = (ImmutableVector<T>)(object)Vector(1d);
+                    if (type == DType.BFloat16) unit = (Vector<T>)(object)Vector(BFloat16.One);
+                    else if (type == DType.Float16) unit = (Vector<T>)(object)Vector(Float16.One);
+                    else if (type == DType.Float32) unit = (Vector<T>)(object)Vector(1f);
+                    else if (type == DType.Float64) unit = (Vector<T>)(object)Vector(1d);
                     else if (type == DType.Int4) 
                         throw new UnsupportedDTypeException(ErrorCodes.VT001, type.ToString(), "Unit Vector", "Int4 precision is not supported for unit vector creation");
-                    else if (type == DType.Int8) unit = (ImmutableVector<T>)(object)Vector((sbyte)1);
-                    else if (type == DType.Int16) unit = (ImmutableVector<T>)(object)Vector((Int16)1);
-                    else if (type == DType.Int32) unit = (ImmutableVector<T>)(object)Vector((int)1);
-                    else if (type == DType.Int64) unit = (ImmutableVector<T>)(object)Vector(1L);
+                    else if (type == DType.Int8) unit = (Vector<T>)(object)Vector((sbyte)1);
+                    else if (type == DType.Int16) unit = (Vector<T>)(object)Vector((Int16)1);
+                    else if (type == DType.Int32) unit = (Vector<T>)(object)Vector((int)1);
+                    else if (type == DType.Int64) unit = (Vector<T>)(object)Vector(1L);
                     else if (type == DType.UInt4) 
                         throw new UnsupportedDTypeException(ErrorCodes.VT002, type.ToString(), "Unit Vector", "UInt4 precision is not supported for unit vector creation");
-                    else if (type == DType.UInt8) unit = (ImmutableVector<T>)(object)Vector((byte)1);
-                    else if (type == DType.UInt16) unit = (ImmutableVector<T>)(object)Vector((ushort)1);
-                    else if (type == DType.UInt32) unit = (ImmutableVector<T>)(object)Vector((uint)1);
-                    else if (type == DType.UInt64) unit = (ImmutableVector<T>)(object)Vector((ulong)1);
+                    else if (type == DType.UInt8) unit = (Vector<T>)(object)Vector((byte)1);
+                    else if (type == DType.UInt16) unit = (Vector<T>)(object)Vector((ushort)1);
+                    else if (type == DType.UInt32) unit = (Vector<T>)(object)Vector((uint)1);
+                    else if (type == DType.UInt64) unit = (Vector<T>)(object)Vector((ulong)1);
                     else if (type == DType.String)
                         throw new UnsupportedDTypeException(ErrorCodes.VT003, type.ToString(), "Unit Vector", "String type is not supported for unit vector creation");
-                    else if (type == DType.Bool) unit = (ImmutableVector<T>)(object)Vector(true);
+                    else if (type == DType.Bool) unit = (Vector<T>)(object)Vector(true);
                     else if (type == DType.Complex64) 
                         throw new UnsupportedDTypeException(ErrorCodes.VT004, type.ToString(), "Unit Vector", "Complex64 numbers are not supported for unit vector creation");
                     else if (type == DType.Complex128) 
                         throw new UnsupportedDTypeException(ErrorCodes.VT005, type.ToString(), "Unit Vector", "Complex128 numbers are not supported for unit vector creation");
-                    else if (type == DType.Invalid) unit = (ImmutableVector<T>)(object)Vector(1);
+                    else if (type == DType.Invalid) unit = (Vector<T>)(object)Vector(1);
                 }
 
                 Debug.Assert(Vector<T>.unit is not null);
@@ -95,30 +130,30 @@ namespace Shorokoo
                 if (Vector<T>.empty is null)
                 {
                     var type = OnnxUtils.GetDType<T>();
-                    if (type == DType.BFloat16) empty = (ImmutableVector<T>)(object)Vector(new BFloat16[] { });
-                    else if (type == DType.Float16) empty = (ImmutableVector<T>)(object)Vector(new Float16[] {});
-                    else if (type == DType.Float32) empty = (ImmutableVector<T>)(object)Vector(new float[] {});
-                    else if (type == DType.Float64) empty = (ImmutableVector<T>)(object)Vector(new double[] {});
+                    if (type == DType.BFloat16) empty = (Vector<T>)(object)Vector(new BFloat16[] { });
+                    else if (type == DType.Float16) empty = (Vector<T>)(object)Vector(new Float16[] {});
+                    else if (type == DType.Float32) empty = (Vector<T>)(object)Vector(new float[] {});
+                    else if (type == DType.Float64) empty = (Vector<T>)(object)Vector(new double[] {});
                     else if (type == DType.Int4) 
                         throw new UnsupportedDTypeException(ErrorCodes.VT006, type.ToString(), "Empty Vector", "Int4 precision is not supported for empty vector creation");
-                    else if (type == DType.Int8) empty = (ImmutableVector<T>)(object)Vector(new sbyte[] {});
-                    else if (type == DType.Int16) empty = (ImmutableVector<T>)(object)Vector(new short[] {});
-                    else if (type == DType.Int32) empty = (ImmutableVector<T>)(object)Vector(new int[] {});
-                    else if (type == DType.Int64) empty = (ImmutableVector<T>)(object)Vector(new long[] {});
+                    else if (type == DType.Int8) empty = (Vector<T>)(object)Vector(new sbyte[] {});
+                    else if (type == DType.Int16) empty = (Vector<T>)(object)Vector(new short[] {});
+                    else if (type == DType.Int32) empty = (Vector<T>)(object)Vector(new int[] {});
+                    else if (type == DType.Int64) empty = (Vector<T>)(object)Vector(new long[] {});
                     else if (type == DType.UInt4) 
                         throw new UnsupportedDTypeException(ErrorCodes.VT007, type.ToString(), "Empty Vector", "UInt4 precision is not supported for empty vector creation");
-                    else if (type == DType.UInt8) empty = (ImmutableVector<T>)(object)Vector(new byte[] {});
-                    else if (type == DType.UInt16) empty = (ImmutableVector<T>)(object)Vector(new ushort[] {});
-                    else if (type == DType.UInt32) empty = (ImmutableVector<T>)(object)Vector(new uint[] {});
-                    else if (type == DType.UInt64) empty = (ImmutableVector<T>)(object)Vector(new ulong[] {});
+                    else if (type == DType.UInt8) empty = (Vector<T>)(object)Vector(new byte[] {});
+                    else if (type == DType.UInt16) empty = (Vector<T>)(object)Vector(new ushort[] {});
+                    else if (type == DType.UInt32) empty = (Vector<T>)(object)Vector(new uint[] {});
+                    else if (type == DType.UInt64) empty = (Vector<T>)(object)Vector(new ulong[] {});
                     else if (type == DType.String)
                         throw new UnsupportedDTypeException(ErrorCodes.VT008, type.ToString(), "Empty Vector", "String type is not supported for empty vector creation");
-                    else if (type == DType.Bool) empty = (ImmutableVector<T>)(object)Vector(new bool[] {});
+                    else if (type == DType.Bool) empty = (Vector<T>)(object)Vector(new bool[] {});
                     else if (type == DType.Complex64) 
                         throw new UnsupportedDTypeException(ErrorCodes.VT009, type.ToString(), "Empty Vector", "Complex64 numbers are not supported for empty vector creation");
                     else if (type == DType.Complex128) 
                         throw new UnsupportedDTypeException(ErrorCodes.VT010, type.ToString(), "Empty Vector", "Complex128 numbers are not supported for empty vector creation");
-                    else if (type == DType.Invalid) empty = (ImmutableVector<T>)(object)Vector(new int[] {});
+                    else if (type == DType.Invalid) empty = (Vector<T>)(object)Vector(new int[] {});
                 }
 
                 Debug.Assert(Vector<T>.empty is not null);
@@ -127,147 +162,136 @@ namespace Shorokoo
         }
 
         #endregion
-
-        #region Constructors
-
-        internal Vector(Func<Vector<int64>>? shapeFn, DType dtype, Node owningNode, Function? moduleFn, string? name = null) : base(shapeFn, dtype, owningNode, moduleFn, name, rank: 1)
-        {
-        }
-
-        #endregion
-
         #region Collection Expression Helpers
 
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
         /// <summary>Supports C# collection-expression composition by yielding a single helper that wraps this vector.</summary>
-        public new IEnumerator<VectorExpressionHelper<T>> GetEnumerator()
+        public IEnumerator<VectorExpressionHelper<T>> GetEnumerator()
         {
             var asList = new List<VectorExpressionHelper<T>> { new VectorExpressionHelper<T>(this) };
             return ((IEnumerable<VectorExpressionHelper<T>>)asList).GetEnumerator();
         }
 
         #endregion
-
         #region Operator Overloads
 
         /// <summary>Element-wise addition.</summary>
-        public static Vector<T> operator +(Vector<T> left, Vector<T> right) => ((ImmutableTensor<T>)left + (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator +(Vector<T> left, Vector<T> right) => ((Tensor<T>)left + (Tensor<T>)right).Vec();
         /// <summary>Element-wise addition with a scalar constant.</summary>
-        public static Vector<T> operator +(Scalar<T> left, Vector<T> right) => ((ImmutableTensor<T>)left + (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator +(Scalar<T> left, Vector<T> right) => ((Tensor<T>)left + (Tensor<T>)right).Vec();
         /// <summary>Element-wise addition with a scalar constant.</summary>
-        public static Vector<T> operator +(Vector<T> left, Scalar<T> right) => ((ImmutableTensor<T>)left + (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator +(Vector<T> left, Scalar<T> right) => ((Tensor<T>)left + (Tensor<T>)right).Vec();
 
         /// <summary>Element-wise subtraction.</summary>
-        public static Vector<T> operator -(Vector<T> left, Vector<T> right) => ((ImmutableTensor<T>)left - (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator -(Vector<T> left, Vector<T> right) => ((Tensor<T>)left - (Tensor<T>)right).Vec();
         /// <summary>Element-wise subtraction with a scalar constant.</summary>
-        public static Vector<T> operator -(Scalar<T> left, Vector<T> right) => ((ImmutableTensor<T>)left - (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator -(Scalar<T> left, Vector<T> right) => ((Tensor<T>)left - (Tensor<T>)right).Vec();
         /// <summary>Element-wise subtraction with a scalar constant.</summary>
-        public static Vector<T> operator -(Vector<T> left, Scalar<T> right) => ((ImmutableTensor<T>)left - (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator -(Vector<T> left, Scalar<T> right) => ((Tensor<T>)left - (Tensor<T>)right).Vec();
 
         /// <summary>Element-wise multiplication.</summary>
-        public static Vector<T> operator *(Vector<T> left, Vector<T> right) => ((ImmutableTensor<T>)left * (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator *(Vector<T> left, Vector<T> right) => ((Tensor<T>)left * (Tensor<T>)right).Vec();
         /// <summary>Element-wise multiplication with a scalar constant.</summary>
-        public static Vector<T> operator *(Scalar<T> left, Vector<T> right) => ((ImmutableTensor<T>)left * (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator *(Scalar<T> left, Vector<T> right) => ((Tensor<T>)left * (Tensor<T>)right).Vec();
         /// <summary>Element-wise multiplication with a scalar constant.</summary>
-        public static Vector<T> operator *(Vector<T> left, Scalar<T> right) => ((ImmutableTensor<T>)left * (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator *(Vector<T> left, Scalar<T> right) => ((Tensor<T>)left * (Tensor<T>)right).Vec();
 
         /// <summary>Element-wise division.</summary>
-        public static Vector<T> operator /(Vector<T> left, Vector<T> right) => ((ImmutableTensor<T>)left / (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator /(Vector<T> left, Vector<T> right) => ((Tensor<T>)left / (Tensor<T>)right).Vec();
         /// <summary>Element-wise division with a scalar constant.</summary>
-        public static Vector<T> operator /(Scalar<T> left, Vector<T> right) => ((ImmutableTensor<T>)left / (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator /(Scalar<T> left, Vector<T> right) => ((Tensor<T>)left / (Tensor<T>)right).Vec();
         /// <summary>Element-wise division with a scalar constant.</summary>
-        public static Vector<T> operator /(Vector<T> left, Scalar<T> right) => ((ImmutableTensor<T>)left / (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator /(Vector<T> left, Scalar<T> right) => ((Tensor<T>)left / (Tensor<T>)right).Vec();
 
         /// <summary>Element-wise modulo.</summary>
-        public static Vector<T> operator %(Vector<T> left, Vector<T> right) => ((ImmutableTensor<T>)left % (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator %(Vector<T> left, Vector<T> right) => ((Tensor<T>)left % (Tensor<T>)right).Vec();
         /// <summary>Element-wise modulo with a scalar constant.</summary>
-        public static Vector<T> operator %(Scalar<T> left, Vector<T> right) => ((ImmutableTensor<T>)left % (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator %(Scalar<T> left, Vector<T> right) => ((Tensor<T>)left % (Tensor<T>)right).Vec();
         /// <summary>Element-wise modulo with a scalar constant.</summary>
-        public static Vector<T> operator %(Vector<T> left, Scalar<T> right) => ((ImmutableTensor<T>)left % (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator %(Vector<T> left, Scalar<T> right) => ((Tensor<T>)left % (Tensor<T>)right).Vec();
 
         /// <summary>Element-wise XOR: logical for bit vectors, bitwise otherwise.</summary>
-        public static Vector<T> operator ^(Vector<T> left, Vector<T> right) => ((ImmutableTensor<T>)left ^ (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator ^(Vector<T> left, Vector<T> right) => ((Tensor<T>)left ^ (Tensor<T>)right).Vec();
         /// <summary>Element-wise XOR with a scalar constant.</summary>
-        public static Vector<T> operator ^(Scalar<T> left, Vector<T> right) => ((ImmutableTensor<T>)left ^ (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator ^(Scalar<T> left, Vector<T> right) => ((Tensor<T>)left ^ (Tensor<T>)right).Vec();
         /// <summary>Element-wise XOR with a scalar constant.</summary>
-        public static Vector<T> operator ^(Vector<T> left, Scalar<T> right) => ((ImmutableTensor<T>)left ^ (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator ^(Vector<T> left, Scalar<T> right) => ((Tensor<T>)left ^ (Tensor<T>)right).Vec();
 
         /// <summary>Element-wise AND: logical for bit vectors, bitwise otherwise.</summary>
-        public static Vector<T> operator &(Vector<T> left, Vector<T> right) => ((ImmutableTensor<T>)left & (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator &(Vector<T> left, Vector<T> right) => ((Tensor<T>)left & (Tensor<T>)right).Vec();
         /// <summary>Element-wise AND with a scalar constant.</summary>
-        public static Vector<T> operator &(Scalar<T> left, Vector<T> right) => ((ImmutableTensor<T>)left & (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator &(Scalar<T> left, Vector<T> right) => ((Tensor<T>)left & (Tensor<T>)right).Vec();
         /// <summary>Element-wise AND with a scalar constant.</summary>
-        public static Vector<T> operator &(Vector<T> left, Scalar<T> right) => ((ImmutableTensor<T>)left & (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator &(Vector<T> left, Scalar<T> right) => ((Tensor<T>)left & (Tensor<T>)right).Vec();
 
         /// <summary>Element-wise OR: logical for bit vectors, bitwise otherwise.</summary>
-        public static Vector<T> operator |(Vector<T> left, Vector<T> right) => ((ImmutableTensor<T>)left | (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator |(Vector<T> left, Vector<T> right) => ((Tensor<T>)left | (Tensor<T>)right).Vec();
         /// <summary>Element-wise OR with a scalar constant.</summary>
-        public static Vector<T> operator |(Scalar<T> left, Vector<T> right) => ((ImmutableTensor<T>)left | (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator |(Scalar<T> left, Vector<T> right) => ((Tensor<T>)left | (Tensor<T>)right).Vec();
         /// <summary>Element-wise OR with a scalar constant.</summary>
-        public static Vector<T> operator |(Vector<T> left, Scalar<T> right) => ((ImmutableTensor<T>)left | (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator |(Vector<T> left, Scalar<T> right) => ((Tensor<T>)left | (Tensor<T>)right).Vec();
 
         /// <summary>Element-wise left bit-shift.</summary>
-        public static Vector<T> operator <<(Vector<T> left, Vector<T> right) => ((ImmutableTensor<T>)left << (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator <<(Vector<T> left, Vector<T> right) => ((Tensor<T>)left << (Tensor<T>)right).Vec();
         /// <summary>Element-wise left bit-shift by a scalar constant.</summary>
-        public static Vector<T> operator <<(Vector<T> left, Scalar<T> right) => ((ImmutableTensor<T>)left << (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator <<(Vector<T> left, Scalar<T> right) => ((Tensor<T>)left << (Tensor<T>)right).Vec();
 
         /// <summary>Element-wise right bit-shift.</summary>
-        public static Vector<T> operator >>(Vector<T> left, Vector<T> right) => ((ImmutableTensor<T>)left >> (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator >>(Vector<T> left, Vector<T> right) => ((Tensor<T>)left >> (Tensor<T>)right).Vec();
         /// <summary>Element-wise right bit-shift by a scalar constant.</summary>
-        public static Vector<T> operator >>(Vector<T> left, Scalar<T> right) => ((ImmutableTensor<T>)left >> (ImmutableTensor<T>)right).Vec();
+        public static Vector<T> operator >>(Vector<T> left, Scalar<T> right) => ((Tensor<T>)left >> (Tensor<T>)right).Vec();
 
         /// <summary>Element-wise negation.</summary>
-        public static Vector<T> operator -(Vector<T> input) => (-((ImmutableTensor<T>)input)).Vec();
+        public static Vector<T> operator -(Vector<T> input) => (-((Tensor<T>)input)).Vec();
 
         /// <summary>Element-wise NOT: logical for bit vectors, bitwise otherwise.</summary>
-        public static Vector<T> operator !(Vector<T> input) => (!((ImmutableTensor<T>)input)).Vec();
+        public static Vector<T> operator !(Vector<T> input) => (!((Tensor<T>)input)).Vec();
 
         /// <summary>Element-wise greater-than, yielding a bit vector.</summary>
-        public static Vector<bit> operator >(Vector<T> left, Vector<T> right) => ((ImmutableTensor<T>)left > (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator >(Vector<T> left, Vector<T> right) => ((Tensor<T>)left > (Tensor<T>)right).Vec();
         /// <summary>Element-wise greater-than with a scalar constant, yielding a bit vector.</summary>
-        public static Vector<bit> operator >(Scalar<T> left, Vector<T> right) => ((ImmutableTensor<T>)left > (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator >(Scalar<T> left, Vector<T> right) => ((Tensor<T>)left > (Tensor<T>)right).Vec();
         /// <summary>Element-wise greater-than with a scalar constant, yielding a bit vector.</summary>
-        public static Vector<bit> operator >(Vector<T> left, Scalar<T> right) => ((ImmutableTensor<T>)left > (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator >(Vector<T> left, Scalar<T> right) => ((Tensor<T>)left > (Tensor<T>)right).Vec();
 
         /// <summary>Element-wise greater-or-equal, yielding a bit vector.</summary>
-        public static Vector<bit> operator >=(Vector<T> left, Vector<T> right) => ((ImmutableTensor<T>)left >= (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator >=(Vector<T> left, Vector<T> right) => ((Tensor<T>)left >= (Tensor<T>)right).Vec();
         /// <summary>Element-wise greater-or-equal with a scalar constant, yielding a bit vector.</summary>
-        public static Vector<bit> operator >=(Scalar<T> left, Vector<T> right) => ((ImmutableTensor<T>)left >= (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator >=(Scalar<T> left, Vector<T> right) => ((Tensor<T>)left >= (Tensor<T>)right).Vec();
         /// <summary>Element-wise greater-or-equal with a scalar constant, yielding a bit vector.</summary>
-        public static Vector<bit> operator >=(Vector<T> left, Scalar<T> right) => ((ImmutableTensor<T>)left >= (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator >=(Vector<T> left, Scalar<T> right) => ((Tensor<T>)left >= (Tensor<T>)right).Vec();
 
         /// <summary>Element-wise less-than, yielding a bit vector.</summary>
-        public static Vector<bit> operator <(Vector<T> left, Vector<T> right) => ((ImmutableTensor<T>)left < (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator <(Vector<T> left, Vector<T> right) => ((Tensor<T>)left < (Tensor<T>)right).Vec();
         /// <summary>Element-wise less-than with a scalar constant, yielding a bit vector.</summary>
-        public static Vector<bit> operator <(Scalar<T> left, Vector<T> right) => ((ImmutableTensor<T>)left < (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator <(Scalar<T> left, Vector<T> right) => ((Tensor<T>)left < (Tensor<T>)right).Vec();
         /// <summary>Element-wise less-than with a scalar constant, yielding a bit vector.</summary>
-        public static Vector<bit> operator <(Vector<T> left, Scalar<T> right) => ((ImmutableTensor<T>)left < (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator <(Vector<T> left, Scalar<T> right) => ((Tensor<T>)left < (Tensor<T>)right).Vec();
 
         /// <summary>Element-wise less-or-equal, yielding a bit vector.</summary>
-        public static Vector<bit> operator <=(Vector<T> left, Vector<T> right) => ((ImmutableTensor<T>)left <= (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator <=(Vector<T> left, Vector<T> right) => ((Tensor<T>)left <= (Tensor<T>)right).Vec();
         /// <summary>Element-wise less-or-equal with a scalar constant, yielding a bit vector.</summary>
-        public static Vector<bit> operator <=(Scalar<T> left, Vector<T> right) => ((ImmutableTensor<T>)left <= (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator <=(Scalar<T> left, Vector<T> right) => ((Tensor<T>)left <= (Tensor<T>)right).Vec();
         /// <summary>Element-wise less-or-equal with a scalar constant, yielding a bit vector.</summary>
-        public static Vector<bit> operator <=(Vector<T> left, Scalar<T> right) => ((ImmutableTensor<T>)left <= (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator <=(Vector<T> left, Scalar<T> right) => ((Tensor<T>)left <= (Tensor<T>)right).Vec();
 
         /// <summary>Element-wise equality, yielding a bit vector (not reference equality).</summary>
-        public static Vector<bit> operator ==(Vector<T> left, Vector<T> right) => ((ImmutableTensor<T>)left == (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator ==(Vector<T> left, Vector<T> right) => ((Tensor<T>)left == (Tensor<T>)right).Vec();
         /// <summary>Element-wise equality with a scalar constant, yielding a bit vector.</summary>
-        public static Vector<bit> operator ==(Scalar<T> left, Vector<T> right) => ((ImmutableTensor<T>)left == (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator ==(Scalar<T> left, Vector<T> right) => ((Tensor<T>)left == (Tensor<T>)right).Vec();
         /// <summary>Element-wise equality with a scalar constant, yielding a bit vector.</summary>
-        public static Vector<bit> operator ==(Vector<T> left, Scalar<T> right) => ((ImmutableTensor<T>)left == (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator ==(Vector<T> left, Scalar<T> right) => ((Tensor<T>)left == (Tensor<T>)right).Vec();
 
         /// <summary>Element-wise inequality, yielding a bit vector.</summary>
-        public static Vector<bit> operator !=(Vector<T> left, Vector<T> right) => ((ImmutableTensor<T>)left != (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator !=(Vector<T> left, Vector<T> right) => ((Tensor<T>)left != (Tensor<T>)right).Vec();
         /// <summary>Element-wise inequality with a scalar constant, yielding a bit vector.</summary>
-        public static Vector<bit> operator !=(Scalar<T> left, Vector<T> right) => ((ImmutableTensor<T>)left != (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator !=(Scalar<T> left, Vector<T> right) => ((Tensor<T>)left != (Tensor<T>)right).Vec();
         /// <summary>Element-wise inequality with a scalar constant, yielding a bit vector.</summary>
-        public static Vector<bit> operator !=(Vector<T> left, Scalar<T> right) => ((ImmutableTensor<T>)left != (ImmutableTensor<T>)right).Vec();
+        public static Vector<bit> operator !=(Vector<T> left, Scalar<T> right) => ((Tensor<T>)left != (Tensor<T>)right).Vec();
 
 
         #endregion
-
         #region Onnx Operators
 
         /// <summary>Splits into <paramref name="numOutputs"/> equal parts.</summary>
@@ -283,7 +307,7 @@ namespace Shorokoo
             => base.Split(split, axis: 0L, numOutputs: numOutputs).Select(x => x.Vec()).ToArray();
 
         /// <summary>Resizes to the target <paramref name="sizes"/> (ONNX Resize).</summary>
-        public new Vector<T> Resize(Vector<int64> sizes,
+        public Vector<T> Resize(Vector<int64> sizes,
             KeepAspectRatioPolicy? aspectRatio = null,
             bool? antiaAlias = null,
             long[]? axes = null,
@@ -295,7 +319,7 @@ namespace Shorokoo
             => base.Resize(sizes, aspectRatio, antiaAlias, axes, transformMode, mode, nearestMode, cubicCoefficient, excludeOutside).Vec();
 
         /// <summary>Resizes by the given per-axis scale factors (ONNX Resize).</summary>
-        public new Vector<T> Rescale(Vector<float32> scales,
+        public Vector<T> Rescale(Vector<float32> scales,
             bool? antiaAlias = null,
             long[]? axes = null,
             CoordinateTransformationMode? transformMode = null,
@@ -318,55 +342,55 @@ namespace Shorokoo
             => base.Softmax().Vec();
 
         /// <summary>One-hot encoding of the maximum along <paramref name="axis"/> (ONNX Hardmax).</summary>
-        public new Vector<T> Hardmax(long? axis = null)
+        public Vector<T> Hardmax(long? axis = null)
             => base.Hardmax(axis).Vec();
 
         /// <summary>Element-wise hard sigmoid.</summary>
-        public new Vector<T> HardSigmoid(float? alpha = null, float? beta = null)
+        public Vector<T> HardSigmoid(float? alpha = null, float? beta = null)
             => base.HardSigmoid(alpha, beta).Vec();
 
         /// <summary>Element-wise hard swish.</summary>
-        public new Vector<T> HardSwish()
+        public Vector<T> HardSwish()
             => base.HardSwish().Vec();
 
         /// <summary>Element-wise infinity test, yielding a bit vector.</summary>
-        public new Vector<bit> IsInf(bool detectNegative = true, bool detectPositive = true)
+        public Vector<bit> IsInf(bool detectNegative = true, bool detectPositive = true)
             => base.IsInf(detectNegative, detectPositive).Vec();
 
         /// <summary>Element-wise NaN test, yielding a bit vector.</summary>
-        public new Vector<bit> IsNaN()
+        public Vector<bit> IsNaN()
             => base.IsNaN().Vec();
 
         /// <summary>Log-softmax along <paramref name="axis"/>.</summary>
-        public new Vector<T> LogSoftmax(long? axis = null)
+        public Vector<T> LogSoftmax(long? axis = null)
             => base.LogSoftmax(axis).Vec();
 
         /// <summary>Normalizes to zero mean and unit variance over <paramref name="axes"/>.</summary>
-        public new Vector<T> MeanVarianceNormalization(long[]? axes = null)
+        public Vector<T> MeanVarianceNormalization(long[]? axes = null)
             => base.MeanVarianceNormalization(axes).Vec();
 
         /// <summary>Element-wise Mish activation.</summary>
-        public new Vector<T> Mish()
+        public Vector<T> Mish()
             => base.Mish().Vec();
 
         /// <summary>Element-wise rounding to the nearest integer (half to even).</summary>
-        public new Vector<T> Round()
+        public Vector<T> Round()
             => base.Round().Vec();
 
         /// <summary>Element-wise shrink thresholding (ONNX Shrink).</summary>
-        public new Vector<T> Shrink(float? bias = null, float? lambd = null)
+        public Vector<T> Shrink(float? bias = null, float? lambd = null)
             => base.Shrink(bias, lambd).Vec();
 
         /// <summary>Element-wise softplus.</summary>
-        public new Vector<T> Softplus()
+        public Vector<T> Softplus()
             => base.Softplus().Vec();
 
         /// <summary>Element-wise softsign.</summary>
-        public new Vector<T> Softsign()
+        public Vector<T> Softsign()
             => base.Softsign().Vec();
 
         /// <summary>Element-wise thresholded ReLU.</summary>
-        public new Vector<T> ThresholdedRelu(float? alpha = null)
+        public Vector<T> ThresholdedRelu(float? alpha = null)
             => base.ThresholdedRelu(alpha).Vec();
 
         /// <summary>Slices using scalar start/end indices with an optional step.</summary>
@@ -378,7 +402,7 @@ namespace Shorokoo
             => base.GatherND(indices,batchDims).Vec();
 
         /// <summary>Casts the element type to <typeparamref name="V"/>, preserving rank 1.</summary>
-        public new ImmutableVector<V> Cast<V>(bool saturate = true) where V : IVarType
+        public ImmutableVector<V> Cast<V>(bool saturate = true) where V : IVarType
             => base.Cast<V>(saturate).Vec();
 
         /// <summary>Reduces the whole vector to a scalar (e.g. sum, mean, max).</summary>
@@ -394,51 +418,51 @@ namespace Shorokoo
             => base.Tile(repeats).Vec();
 
         /// <summary>Element-wise minimum of this vector and <paramref name="others"/>.</summary>
-        public new Vector<T> Min(params Tensor<T>[] others)
+        public Vector<T> Min(params Tensor<T>[] others)
             => base.Min(others).Vec();
 
         /// <summary>Element-wise maximum of this vector and <paramref name="others"/>.</summary>
-        public new Vector<T> Max(params Tensor<T>[] others)
+        public Vector<T> Max(params Tensor<T>[] others)
             => base.Max(others).Vec();
 
         /// <summary>Element-wise floor.</summary>
-        public new Vector<T> Floor()
+        public Vector<T> Floor()
             => base.Floor().Vec();
 
         /// <summary>Element-wise absolute value.</summary>
-        public new Vector<T> Abs()
+        public Vector<T> Abs()
             => base.Abs().Vec();
 
         /// <summary>Element-wise reciprocal.</summary>
-        public new Vector<T> Reciprocal()
+        public Vector<T> Reciprocal()
             => base.Reciprocal().Vec();
 
         /// <summary>Element-wise error function.</summary>
-        public new Vector<T> Erf()
+        public Vector<T> Erf()
             => base.Erf().Vec();
 
         /// <summary>Element-wise arccosine.</summary>
-        public new Vector<T> Acos()
+        public Vector<T> Acos()
             => base.Acos().Vec();
 
         /// <summary>Element-wise inverse hyperbolic cosine.</summary>
-        public new Vector<T> Acosh()
+        public Vector<T> Acosh()
             => base.Acosh().Vec();
 
         /// <summary>Element-wise arcsine.</summary>
-        public new Vector<T> Asin()
+        public Vector<T> Asin()
             => base.Asin().Vec();
 
         /// <summary>Element-wise inverse hyperbolic sine.</summary>
-        public new Vector<T> Asinh()
+        public Vector<T> Asinh()
             => base.Asinh().Vec();
 
         /// <summary>Element-wise arctangent.</summary>
-        public new Vector<T> Atan()
+        public Vector<T> Atan()
             => base.Atan().Vec();
 
         /// <summary>Element-wise inverse hyperbolic tangent.</summary>
-        public new Vector<T> Atanh()
+        public Vector<T> Atanh()
             => base.Atanh().Vec();
 
         /// <summary>Index of the maximum element, as a scalar.</summary>
@@ -458,68 +482,68 @@ namespace Shorokoo
             => base.ArgMin(0, true, selectLastIndex).Vec();
 
         /// <summary>Average pooling with the given kernel shape (ONNX AveragePool).</summary>
-        public new Vector<T> AveragePool(long[] kernelShape, RoundMode roundMode = RoundMode.Floor, bool countIncludePad = false, long[]? dilations = null, long[]? pads = null, long[]? strides = null)
+        public Vector<T> AveragePool(long[] kernelShape, RoundMode roundMode = RoundMode.Floor, bool countIncludePad = false, long[]? dilations = null, long[]? pads = null, long[]? strides = null)
             => base.AveragePool(kernelShape, roundMode, countIncludePad, dilations, pads, strides).Vec();
 
         /// <summary>Batch normalization using the given scale, bias, mean, and variance (ONNX BatchNormalization).</summary>
-        public new ImmutableVector<T> BatchNormalization<T1, T2>(Vector<T1> scale, Vector<T1> bias, Vector<T2> mean, Vector<T2> variance, float epsilon = 1e-05f, float momentum = 0.9f, bool trainingMode = false)
+        public ImmutableVector<T> BatchNormalization<T1, T2>(Vector<T1> scale, Vector<T1> bias, Vector<T2> mean, Vector<T2> variance, float epsilon = 1e-05f, float momentum = 0.9f, bool trainingMode = false)
                 where T1 : FloatLike where T2 : FloatLike
             => base.BatchNormalization(scale, bias, mean, variance, epsilon, momentum, trainingMode).Vec();
 
         /// <summary>Element-wise Bernoulli sampling, treating each element as a probability.</summary>
-        public new Vector<T> Bernoulli(float? seed = null)
+        public Vector<T> Bernoulli(float? seed = null)
             => base.Bernoulli(seed).Vec();
 
         /// <summary>Element-wise Bernoulli sampling, treating each element as a probability, with result element type <typeparamref name="V"/>.</summary>
-        public new ImmutableVector<V> Bernoulli<V>(float? seed = null) where V : CommonLike
+        public ImmutableVector<V> Bernoulli<V>(float? seed = null) where V : CommonLike
             => base.Bernoulli<V>(seed).Vec();
 
         /// <summary>Element-wise CELU activation.</summary>
-        public new Vector<T> Celu(float alpha = 1.0f)
+        public Vector<T> Celu(float alpha = 1.0f)
             => base.Celu(alpha).Vec();
 
         /// <summary>Element-wise ceiling.</summary>
-        public new Vector<T> Ceiling()
+        public Vector<T> Ceiling()
             => base.Ceiling().Vec();
 
         /// <summary>Element-wise cosine.</summary>
-        public new Vector<T> Cos()
+        public Vector<T> Cos()
             => base.Cos().Vec();
 
         /// <summary>Element-wise hyperbolic cosine.</summary>
-        public new Vector<T> Cosh()
+        public Vector<T> Cosh()
             => base.Cosh().Vec();
 
         /// <summary>Element-wise sine.</summary>
-        public new Vector<T> Sin()
+        public Vector<T> Sin()
             => base.Sin().Vec();
 
         /// <summary>Element-wise hyperbolic sine.</summary>
-        public new Vector<T> Sinh()
+        public Vector<T> Sinh()
             => base.Sinh().Vec();
 
         /// <summary>Element-wise tangent.</summary>
-        public new Vector<T> Tan()
+        public Vector<T> Tan()
             => base.Tan().Vec();
 
         /// <summary>Element-wise hyperbolic tangent.</summary>
-        public new Vector<T> Tanh()
+        public Vector<T> Tanh()
             => base.Tanh().Vec();
 
         /// <summary>Element-wise power.</summary>
-        public new ImmutableVector<T> Pow<T1>(Tensor<T1> power) where T1 : IVarType
+        public ImmutableVector<T> Pow<T1>(Tensor<T1> power) where T1 : IVarType
             => base.Pow(power).Vec();
 
         /// <summary>Element-wise natural logarithm.</summary>
-        public new Vector<T> Ln()
+        public Vector<T> Ln()
             => base.Ln().Vec();
 
         /// <summary>Element-wise square root.</summary>
-        public new Vector<T> Sqrt()
+        public Vector<T> Sqrt()
             => base.Sqrt().Vec();
 
         /// <summary>Element-wise sign.</summary>
-        public new Vector<T> Sign()
+        public Vector<T> Sign()
             => base.Sign().Vec();
 
         /// <summary>Concatenates this vector with <paramref name="others"/>.</summary>
@@ -535,72 +559,62 @@ namespace Shorokoo
             => base.Pad(mode, outerPads, innerPads, val, axes: null).Vec();
 
         /// <summary>Pads using begin (<paramref name="outerPads"/>) and end (<paramref name="innerPads"/>) pad counts.</summary>
-        public new Vector<T> Pad(PadMode mode, Vector<int64> outerPads, Vector<int64> innerPads, Scalar<T>? val = null, Vector<int64>? axes = null)
+        public Vector<T> Pad(PadMode mode, Vector<int64> outerPads, Vector<int64> innerPads, Scalar<T>? val = null, Vector<int64>? axes = null)
             => base.Pad(mode, outerPads, innerPads, val, axes).Vec();
 
         /// <summary>Pads using an ONNX-style pads vector (begin counts, then end counts).</summary>
         public Vector<T> Pad(PadMode mode, Vector<int64> pads, Scalar<T> val)
             => base.Pad(mode, pads, val, axes: null).Vec();
         /// <summary>Pads using an ONNX-style pads vector (begin counts, then end counts).</summary>
-        public new Vector<T> Pad(PadMode mode, Vector<int64> pads, Scalar<T>? val = null, Vector<int64>? axes = null)
+        public Vector<T> Pad(PadMode mode, Vector<int64> pads, Scalar<T>? val = null, Vector<int64>? axes = null)
             => base.Pad(mode, pads, val, axes).Vec();
 
         /// <summary>Element-wise ELU activation.</summary>
-        public new Vector<T> Elu(float alpha = 1.0f)
+        public Vector<T> Elu(float alpha = 1.0f)
             => base.Elu(alpha).Vec();
 
         /// <summary>Element-wise GELU activation.</summary>
-        public new Vector<T> Gelu(GeluApproximate approximate = GeluApproximate.None)
+        public Vector<T> Gelu(GeluApproximate approximate = GeluApproximate.None)
             => base.Gelu(approximate).Vec();
 
         /// <summary>Element-wise leaky ReLU activation.</summary>
-        public new Vector<T> LeakyRelu(float alpha = 0.01f)
+        public Vector<T> LeakyRelu(float alpha = 0.01f)
             => base.LeakyRelu(alpha).Vec();
 
         /// <summary>Element-wise ReLU activation.</summary>
-        public new Vector<T> Relu()
+        public Vector<T> Relu()
             => base.Relu().Vec();
 
         /// <summary>Element-wise SELU activation.</summary>
-        public new Vector<T> Selu(float alpha = 1.67326319217681884765625f, float gamma = 1.0507010221481323242187f)
+        public Vector<T> Selu(float alpha = 1.67326319217681884765625f, float gamma = 1.0507010221481323242187f)
             => base.Selu(alpha, gamma).Vec();
 
         /// <summary>Element-wise sigmoid.</summary>
-        public new Vector<T> Sigmoid()
+        public Vector<T> Sigmoid()
             => base.Sigmoid().Vec();
 
         /// <summary>Top <paramref name="k"/> values and their indices.</summary>
-        public new (Vector<T> topK, Vector<int64> indices) TopK(long k, long axis = -1, bool largest = true, bool sorted = true)
+        public (Vector<T> topK, Vector<int64> indices) TopK(long k, long axis = -1, bool largest = true, bool sorted = true)
         {
             var results = base.TopK(k, axis, largest, sorted);
             return (results.topK.Vec(), results.indices.Vec());
         }
 
         /// <summary>Writes <paramref name="values"/> at <paramref name="indices"/> into a copy of this vector (ONNX ScatterND).</summary>
-        public new Vector<T> ScatterND(Tensor<int64> indices, Tensor<T> values, ScatterNDReduction? reduceMode = ScatterNDReduction.None)
+        public Vector<T> ScatterND(Tensor<int64> indices, Tensor<T> values, ScatterNDReduction? reduceMode = ScatterNDReduction.None)
             => base.ScatterND(indices, values, reduceMode).Vec();
 
         /// <summary>Element-wise clamping to [min, max].</summary>
-        public new Vector<T> Clip(Scalar<T> min, Scalar<T> max)
+        public Vector<T> Clip(Scalar<T> min, Scalar<T> max)
             => base.Clip(min, max).Vec();
 
         /// <summary>Selects elements where <paramref name="condition"/> is true.</summary>
-        public new Vector<T> Compress(Vector<bit> condition, long axis)
+        public Vector<T> Compress(Vector<bit> condition, long axis)
             => (ImmutableVector<T>)OnnxOp.Compress(this, condition, axis);
 
         /// <summary>Element-wise exponential.</summary>
-        public new Vector<T> Exp()
+        public Vector<T> Exp()
             => base.Exp().Vec();
-
-        #endregion
-
-        #region Equal and HashCode
-
-        /// <summary>Reference equality; element-wise comparison is provided by the equality operators.</summary>
-        public override bool Equals(object? obj) => base.Equals(obj);
-
-        /// <summary>Identity-based hash code, consistent with reference equality.</summary>
-        public override int GetHashCode() => base.GetHashCode();
 
         #endregion
     }

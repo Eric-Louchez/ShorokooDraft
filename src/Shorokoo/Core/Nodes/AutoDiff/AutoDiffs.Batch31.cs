@@ -28,7 +28,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         {
             var a = TypedConst(alpha ?? 1.0f, x);
             var one = TypedConst(1.0f, x);
-            var s = (ImmutableTensor<T>)OnnxOp.Sigmoid(a * x);
+            Tensor<T> s = (ImmutableTensor<T>)OnnxOp.Sigmoid(a * x);
             var deriv = s + a * x * s * (one - s);
             return [grad * deriv];
         }
@@ -60,8 +60,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         {
             var effectiveExclusive = exclusive ?? false;
             var effectiveReverse = reverse ?? false;
-            var y = (ImmutableTensor<T1>)OnnxOp.CumProd(x, axis, exclusive: effectiveExclusive, reverse: effectiveReverse);
-            var summed = (ImmutableTensor<T1>)OnnxOp.CumSum(grad * y, axis,
+            Tensor<T1> y = (ImmutableTensor<T1>)OnnxOp.CumProd(x, axis, exclusive: effectiveExclusive, reverse: effectiveReverse);
+            Tensor<T1> summed = (ImmutableTensor<T1>)OnnxOp.CumSum(grad * y, axis,
                 exclusive: effectiveExclusive, reverse: !effectiveReverse);
             return [summed / x, null];
         }
@@ -95,12 +95,12 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 : OnnxOp.Add(xRankScalar, Scalar(axisAttr));
             var reduceAxes = OnnxOp.Range(effectiveAxisScalar, xRankScalar, Scalar(1L));
 
-            var meanSq = (ImmutableTensor<T>)OnnxOp.ReduceMean(x * x, reduceAxes, keepdims: true);
-            var invRms = (ImmutableTensor<T>)OnnxOp.Reciprocal((ImmutableTensor<T>)OnnxOp.Sqrt(meanSq + epsConst));
+            Tensor<T> meanSq = (ImmutableTensor<T>)OnnxOp.ReduceMean(x * x, reduceAxes, keepdims: true);
+            Tensor<T> invRms = (ImmutableTensor<T>)OnnxOp.Reciprocal((ImmutableTensor<T>)OnnxOp.Sqrt(meanSq + epsConst));
             var xHat = x * invRms;
 
             var gradScaled = grad * scale;
-            var meanGradX = (ImmutableTensor<T>)OnnxOp.ReduceMean(gradScaled * x, reduceAxes, keepdims: true);
+            Tensor<T> meanGradX = (ImmutableTensor<T>)OnnxOp.ReduceMean(gradScaled * x, reduceAxes, keepdims: true);
             var dx = invRms * (gradScaled - x * invRms * invRms * meanGradX);
 
             var dScale = ReverseBroadcast(grad * xHat, scale.DShape);

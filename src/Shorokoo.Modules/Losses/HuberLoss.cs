@@ -73,7 +73,7 @@ public partial class HuberLoss
         var absErr = err.Abs();
         var quadratic = Scalar(0.5f) * err * err;
         var linear = delta * absErr - 0.5f * delta * delta;
-        var cond = (ImmutableTensor<bit>)OnnxOp.LessOrEqual(absErr, delta);
+        Tensor<bit> cond = (ImmutableTensor<bit>)OnnxOp.LessOrEqual(absErr, delta);
         return cond.Where(quadratic, linear);
     }
 }

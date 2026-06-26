@@ -30,9 +30,46 @@ namespace Shorokoo
     /// A rank-0 symbolic tensor holding a single element of type <typeparamref name="T"/>.
     /// Operations mirror <see cref="Tensor{T}"/> but statically preserve the scalar rank in their return types.
     /// </summary>
-    public class Scalar<T> : Tensor<T>, IScalar
-        where T : IVarType
+    public class ImmutableScalar<T> : ImmutableTensor<T>, IScalar where T : IVarType
     {
+        public override Vector<int64>? InfShape => Vector<int64>.Empty;
+        internal ImmutableScalar(Node owningNode, DType dtype, Function? moduleFn, string? name = null) : base(() => Vector<int64>.Empty, dtype, owningNode, moduleFn, name, rank: 0) {}
+    }
+
+    public partial struct Scalar<T> : IScalar where T : IVarType
+    {
+        private ImmutableScalar<T>? inner;
+        internal ImmutableScalar<T> Imm => inner ?? throw new InvalidOperationException("default(Scalar<T>) is not materialised; build one via a graph op.");
+
+        public static implicit operator Scalar<T>(ImmutableScalar<T> imm) => new Scalar<T> { inner = imm };
+        public static implicit operator ImmutableScalar<T>(Scalar<T> h) => h.Imm;
+        public static implicit operator Tensor<T>(Scalar<T> h) => h.Imm;
+
+        // ITensor contract — forward to the wrapped immutable.
+        public int? Rank => Imm.Rank;
+        public ImmutableVector<int64>? InfShape => Imm.InfShape;
+        public Vector<int64> DShape => Imm.DShape;
+        public Vector<int64> TShape => Imm.TShape;
+        public Scalar<int64> TRank => Imm.TRank;
+        public Vector<T> Vec() => Imm.Vec();
+        IVector ITensor.Vec() => Imm.Vec();
+        Vector<V> ITensor.Vec<V>() => Imm.Cast<V>().Vec();
+        IScalar ITensor.Scalar() => Imm.Scalar();
+        Scalar<V> ITensor.Scalar<V>() => Imm.Cast<V>().Scalar();        Tensor<V> ITensor.Cast<V>(bool saturate) => Imm.Cast<V>(saturate);
+
+        public Node OwningNode => Imm.OwningNode;
+        public DType Type => Imm.Type;
+        public Function? ModuleFn => Imm.ModuleFn;
+        public TensorKey Key => Imm.Key;
+        public string UniqueName => Imm.UniqueName;
+        public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
+        public ImmutableVariable<V> As<V>() where V : IVarType => ((IVariable)Imm).As<V>();
+#pragma warning disable CS0618
+        string? IVariable.FriendlyName => ((IVariable)Imm).FriendlyName;
+#pragma warning restore CS0618
+        public override bool Equals(object? obj) => obj is Scalar<T> t && Equals(Imm, t.Imm);
+        public override int GetHashCode() => Imm.GetHashCode();
+
         private static Scalar<T>? unit; 
         /// <summary>A cached constant scalar of value 1 (true for bit).</summary>
         public static Scalar<T> Unit
@@ -42,25 +79,25 @@ namespace Shorokoo
                 if (Shorokoo.Scalar<T>.unit is null)
                 {
                     var type = OnnxUtils.GetDType<T>();
-                    if (type == DType.BFloat16) unit = (ImmutableScalar<T>)(object)Shorokoo.Globals.Scalar(BFloat16.One);
-                    else if (type == DType.Float16) unit = (ImmutableScalar<T>)(object)Shorokoo.Globals.Scalar(Float16.One);
-                    else if (type == DType.Float32) unit = (ImmutableScalar<T>)(object)Shorokoo.Globals.Scalar(1f);
-                    else if (type == DType.Float64) unit = (ImmutableScalar<T>)(object)Shorokoo.Globals.Scalar(1d);
+                    if (type == DType.BFloat16) unit = (Scalar<T>)(object)Shorokoo.Globals.Scalar(BFloat16.One);
+                    else if (type == DType.Float16) unit = (Scalar<T>)(object)Shorokoo.Globals.Scalar(Float16.One);
+                    else if (type == DType.Float32) unit = (Scalar<T>)(object)Shorokoo.Globals.Scalar(1f);
+                    else if (type == DType.Float64) unit = (Scalar<T>)(object)Shorokoo.Globals.Scalar(1d);
                     else if (type == DType.Int4) throw new UnsupportedDTypeException(ErrorCodes.CR005, type.ToString(), "Unit Scalar", "Int4 precision is not supported for unit scalar creation");
-                    else if (type == DType.Int8) unit = (ImmutableScalar<T>)(object)Shorokoo.Globals.Scalar((sbyte)1);
-                    else if (type == DType.Int16) unit = (ImmutableScalar<T>)(object)Shorokoo.Globals.Scalar((short)1);
-                    else if (type == DType.Int32) unit = (ImmutableScalar<T>)(object)Shorokoo.Globals.Scalar(1);
-                    else if (type == DType.Int64) unit = (ImmutableScalar<T>)(object)Shorokoo.Globals.Scalar(1L);
+                    else if (type == DType.Int8) unit = (Scalar<T>)(object)Shorokoo.Globals.Scalar((sbyte)1);
+                    else if (type == DType.Int16) unit = (Scalar<T>)(object)Shorokoo.Globals.Scalar((short)1);
+                    else if (type == DType.Int32) unit = (Scalar<T>)(object)Shorokoo.Globals.Scalar(1);
+                    else if (type == DType.Int64) unit = (Scalar<T>)(object)Shorokoo.Globals.Scalar(1L);
                     else if (type == DType.UInt4) throw new UnsupportedDTypeException(ErrorCodes.CR005, type.ToString(), "Unit Scalar", "UInt4 precision is not supported for unit scalar creation");
-                    else if (type == DType.UInt8) unit = (ImmutableScalar<T>)(object)Shorokoo.Globals.Scalar((byte)1);
-                    else if (type == DType.UInt16) unit = (ImmutableScalar<T>)(object)Shorokoo.Globals.Scalar((ushort)1);
-                    else if (type == DType.UInt32) unit = (ImmutableScalar<T>)(object)Shorokoo.Globals.Scalar(1u);
-                    else if (type == DType.UInt64) unit = (ImmutableScalar<T>)(object)Shorokoo.Globals.Scalar(1ul);
+                    else if (type == DType.UInt8) unit = (Scalar<T>)(object)Shorokoo.Globals.Scalar((byte)1);
+                    else if (type == DType.UInt16) unit = (Scalar<T>)(object)Shorokoo.Globals.Scalar((ushort)1);
+                    else if (type == DType.UInt32) unit = (Scalar<T>)(object)Shorokoo.Globals.Scalar(1u);
+                    else if (type == DType.UInt64) unit = (Scalar<T>)(object)Shorokoo.Globals.Scalar(1ul);
                     else if (type == DType.String) throw new UnsupportedDTypeException(ErrorCodes.CR005, type.ToString(), "Unit Scalar", "String type is not supported for unit scalar creation");
-                    else if (type == DType.Bool) unit = (ImmutableScalar<T>)(object)Shorokoo.Globals.Scalar(true);
+                    else if (type == DType.Bool) unit = (Scalar<T>)(object)Shorokoo.Globals.Scalar(true);
                     else if (type == DType.Complex64) throw new UnsupportedDTypeException(ErrorCodes.CR005, type.ToString(), "Unit Scalar", "Complex64 numbers are not supported for unit scalar creation");
                     else if (type == DType.Complex128) throw new UnsupportedDTypeException(ErrorCodes.CR005, type.ToString(), "Unit Scalar", "Complex128 numbers are not supported for unit scalar creation");
-                    else if (type == DType.Invalid) unit = (ImmutableScalar<T>)(object)Shorokoo.Globals.Scalar(1);
+                    else if (type == DType.Invalid) unit = (Scalar<T>)(object)Shorokoo.Globals.Scalar(1);
                 }
 
                 Debug.Assert(Shorokoo.Scalar<T>.unit is not null);
@@ -68,17 +105,8 @@ namespace Shorokoo
             }
         }
 
-        /// <summary>The inferred shape of a scalar: the empty shape vector.</summary>
-        public override Vector<int64> InfShape => Vector<int64>.Empty;
-
-        internal Scalar(Node owningNode, DType dtype, Function? moduleFn, string? name = null) : base(() => Vector<int64>.Empty, dtype, owningNode, moduleFn, name, rank: 0)
-        {
-        }
-
-        /// <summary>Wraps a primitive constant value as a scalar.</summary>
         public static implicit operator Scalar<T>(PrimitiveParam param)
             => Globals.Scalar<T>(param.ParamVal);
-
         #region Primitive value conversions
 
         // A bare primitive cannot reach Scalar<T> through the PrimitiveParam conversion above:
@@ -118,361 +146,350 @@ namespace Shorokoo
         public static implicit operator Scalar<T>(BFloat16 value) => Globals.Scalar<T>(value);
 
         #endregion
-
-        /// <summary>Reference equality; element-wise comparison is provided by the equality operators.</summary>
-        public override bool Equals(object? obj)
-             => base.Equals(obj);
-
-        /// <summary>Identity-based hash code, consistent with reference equality.</summary>
-        public override int GetHashCode()
-            => base.GetHashCode();
-
         #region ONNX Operators
 
         /// <summary>Scalar addition.</summary>
         public static Scalar<T> operator +(Scalar<T> left, Scalar<T> right)
-            => ((ImmutableTensor<T>)left + (ImmutableTensor<T>)right).Scalar();
+            => ((Tensor<T>)left + (Tensor<T>)right).Scalar();
 
         /// <summary>Scalar subtraction.</summary>
         public static Scalar<T> operator -(Scalar<T> left, Scalar<T> right)
-            => ((ImmutableTensor<T>)left - (ImmutableTensor<T>)right).Scalar();
+            => ((Tensor<T>)left - (Tensor<T>)right).Scalar();
 
         /// <summary>Scalar multiplication.</summary>
         public static Scalar<T> operator *(Scalar<T> left, Scalar<T> right)
-            => ((ImmutableTensor<T>)left * (ImmutableTensor<T>)right).Scalar();
+            => ((Tensor<T>)left * (Tensor<T>)right).Scalar();
 
         /// <summary>Scalar division.</summary>
         public static Scalar<T> operator /(Scalar<T> left, Scalar<T> right)
-            => ((ImmutableTensor<T>)left / (ImmutableTensor<T>)right).Scalar();
+            => ((Tensor<T>)left / (Tensor<T>)right).Scalar();
 
         /// <summary>Scalar modulo.</summary>
         public static Scalar<T> operator %(Scalar<T> left, Scalar<T> right)
-            => ((ImmutableTensor<T>)left % (ImmutableTensor<T>)right).Scalar();
+            => ((Tensor<T>)left % (Tensor<T>)right).Scalar();
 
         /// <summary>Scalar XOR: logical for bit, bitwise otherwise.</summary>
         public static Scalar<T> operator ^(Scalar<T> left, Scalar<T> right)
-            => ((ImmutableTensor<T>)left ^ (ImmutableTensor<T>)right).Scalar();
+            => ((Tensor<T>)left ^ (Tensor<T>)right).Scalar();
 
         /// <summary>Scalar AND: logical for bit, bitwise otherwise.</summary>
         public static Scalar<T> operator &(Scalar<T> left, Scalar<T> right)
-            => ((ImmutableTensor<T>)left & (ImmutableTensor<T>)right).Scalar();
+            => ((Tensor<T>)left & (Tensor<T>)right).Scalar();
 
         /// <summary>Scalar OR: logical for bit, bitwise otherwise.</summary>
         public static Scalar<T> operator |(Scalar<T> left, Scalar<T> right)
-            => ((ImmutableTensor<T>)left | (ImmutableTensor<T>)right).Scalar();
+            => ((Tensor<T>)left | (Tensor<T>)right).Scalar();
 
         /// <summary>Scalar left bit-shift.</summary>
         public static Scalar<T> operator <<(Scalar<T> left, Scalar<T> right)
-            => ((ImmutableTensor<T>)left << (ImmutableTensor<T>)right).Scalar();
+            => ((Tensor<T>)left << (Tensor<T>)right).Scalar();
 
         /// <summary>Scalar right bit-shift.</summary>
         public static Scalar<T> operator >>(Scalar<T> left, Scalar<T> right)
-            => ((ImmutableTensor<T>)left >> (ImmutableTensor<T>)right).Scalar();
+            => ((Tensor<T>)left >> (Tensor<T>)right).Scalar();
 
         /// <summary>Scalar negation.</summary>
         public static Scalar<T> operator -(Scalar<T> input)
-            => (-((ImmutableTensor<T>)input)).Scalar();
+            => (-((Tensor<T>)input)).Scalar();
 
         /// <summary>Scalar NOT: logical for bit, bitwise otherwise.</summary>
         public static Scalar<T> operator !(Scalar<T> input)
-            => (!((ImmutableTensor<T>)input)).Scalar();
+            => (!((Tensor<T>)input)).Scalar();
 
         /// <summary>Scalar greater-than, yielding a bit scalar.</summary>
         public static Scalar<bit> operator >(Scalar<T> left, Scalar<T> right)
-            => ((ImmutableTensor<T>)left > (ImmutableTensor<T>)right).Scalar();
+            => ((Tensor<T>)left > (Tensor<T>)right).Scalar();
 
         /// <summary>Scalar greater-or-equal, yielding a bit scalar.</summary>
         public static Scalar<bit> operator >=(Scalar<T> left, Scalar<T> right)
-            => ((ImmutableTensor<T>)left >= (ImmutableTensor<T>)right).Scalar();
+            => ((Tensor<T>)left >= (Tensor<T>)right).Scalar();
 
         /// <summary>Scalar less-than, yielding a bit scalar.</summary>
         public static Scalar<bit> operator <(Scalar<T> left, Scalar<T> right)
-            => ((ImmutableTensor<T>)left < (ImmutableTensor<T>)right).Scalar();
+            => ((Tensor<T>)left < (Tensor<T>)right).Scalar();
 
         /// <summary>Scalar less-or-equal, yielding a bit scalar.</summary>
         public static Scalar<bit> operator <=(Scalar<T> left, Scalar<T> right)
-            => ((ImmutableTensor<T>)left <= (ImmutableTensor<T>)right).Scalar();
+            => ((Tensor<T>)left <= (Tensor<T>)right).Scalar();
 
         /// <summary>Scalar equality, yielding a bit scalar (not reference equality).</summary>
         public static Scalar<bit> operator ==(Scalar<T> left, Scalar<T> right)
-            => ((ImmutableTensor<T>)left == (ImmutableTensor<T>)right).Scalar();
+            => ((Tensor<T>)left == (Tensor<T>)right).Scalar();
 
         /// <summary>Scalar inequality, yielding a bit scalar.</summary>
         public static Scalar<bit> operator !=(Scalar<T> left, Scalar<T> right)
-            => ((ImmutableTensor<T>)left != (ImmutableTensor<T>)right).Scalar();
+            => ((Tensor<T>)left != (Tensor<T>)right).Scalar();
 
         /// <summary>Casts the element type to <typeparamref name="V"/>, preserving rank 0.</summary>
-        public new ImmutableScalar<V> Cast<V>(bool saturate = true) where V : IVarType
-            => base.Cast<V>(saturate).Scalar();
+        public ImmutableScalar<V> Cast<V>(bool saturate = true) where V : IVarType
+            => ((Tensor<T>)this).Cast<V>(saturate).Scalar();
 
         /// <summary>Minimum of this scalar and <paramref name="others"/>.</summary>
         public Scalar<T> Min(params Scalar<T>[] others)
-            => base.Min(others).Scalar();
+            => ((Tensor<T>)this).Min(others).Scalar();
 
         /// <summary>Maximum of this scalar and <paramref name="others"/>.</summary>
         public Scalar<T> Max(params Scalar<T>[] others)
-            => base.Max(others).Scalar();
+            => ((Tensor<T>)this).Max(others).Scalar();
 
         /// <summary>Scalar floor.</summary>
-        public new Scalar<T> Floor()
-            => base.Floor().Scalar();
+        public Scalar<T> Floor()
+            => ((Tensor<T>)this).Floor().Scalar();
 
         /// <summary>Scalar absolute value.</summary>
-        public new Scalar<T> Abs()
-            => base.Abs().Scalar();
+        public Scalar<T> Abs()
+            => ((Tensor<T>)this).Abs().Scalar();
 
         /// <summary>Scalar arccosine.</summary>
-        public new Scalar<T> Acos()
-            => base.Acos().Scalar();
+        public Scalar<T> Acos()
+            => ((Tensor<T>)this).Acos().Scalar();
 
         /// <summary>Scalar inverse hyperbolic cosine.</summary>
-        public new Scalar<T> Acosh()
-            => base.Acosh().Scalar();
+        public Scalar<T> Acosh()
+            => ((Tensor<T>)this).Acosh().Scalar();
 
         /// <summary>Scalar arcsine.</summary>
-        public new Scalar<T> Asin()
-            => base.Asin().Scalar();
+        public Scalar<T> Asin()
+            => ((Tensor<T>)this).Asin().Scalar();
 
         /// <summary>Scalar inverse hyperbolic sine.</summary>
-        public new Scalar<T> Asinh()
-            => base.Asinh().Scalar();
+        public Scalar<T> Asinh()
+            => ((Tensor<T>)this).Asinh().Scalar();
 
         /// <summary>Scalar arctangent.</summary>
-        public new Scalar<T> Atan()
-            => base.Atan().Scalar();
+        public Scalar<T> Atan()
+            => ((Tensor<T>)this).Atan().Scalar();
 
         /// <summary>Scalar inverse hyperbolic tangent.</summary>
-        public new Scalar<T> Atanh()
-            => base.Atanh().Scalar();
+        public Scalar<T> Atanh()
+            => ((Tensor<T>)this).Atanh().Scalar();
 
         /// <summary>Bernoulli sample, treating this scalar as a probability.</summary>
-        public new Scalar<T> Bernoulli(float? seed = null)
-            => base.Bernoulli(seed).Scalar();
+        public Scalar<T> Bernoulli(float? seed = null)
+            => ((Tensor<T>)this).Bernoulli(seed).Scalar();
 
         /// <summary>Bernoulli sample, treating this scalar as a probability, with result element type <typeparamref name="V"/>.</summary>
-        public new ImmutableScalar<V> Bernoulli<V>(float? seed = null) where V : CommonLike
-            => base.Bernoulli<V>(seed).Scalar();
+        public ImmutableScalar<V> Bernoulli<V>(float? seed = null) where V : CommonLike
+            => ((Tensor<T>)this).Bernoulli<V>(seed).Scalar();
 
         /// <summary>Scalar CELU activation.</summary>
-        public new Scalar<T> Celu(float alpha = 1.0f)
-            => base.Celu(alpha).Scalar();
+        public Scalar<T> Celu(float alpha = 1.0f)
+            => ((Tensor<T>)this).Celu(alpha).Scalar();
 
         /// <summary>Scalar ceiling.</summary>
-        public new Scalar<T> Ceiling()
-            => base.Ceiling().Scalar();
+        public Scalar<T> Ceiling()
+            => ((Tensor<T>)this).Ceiling().Scalar();
 
         /// <summary>Scalar cosine.</summary>
-        public new Scalar<T> Cos()
-            => base.Cos().Scalar();
+        public Scalar<T> Cos()
+            => ((Tensor<T>)this).Cos().Scalar();
 
         /// <summary>Scalar hyperbolic cosine.</summary>
-        public new Scalar<T> Cosh()
-            => base.Cosh().Scalar();
+        public Scalar<T> Cosh()
+            => ((Tensor<T>)this).Cosh().Scalar();
 
         /// <summary>Scalar sine.</summary>
-        public new Scalar<T> Sin()
-            => base.Sin().Scalar();
+        public Scalar<T> Sin()
+            => ((Tensor<T>)this).Sin().Scalar();
 
         /// <summary>Scalar hyperbolic sine.</summary>
-        public new Scalar<T> Sinh()
-            => base.Sinh().Scalar();
+        public Scalar<T> Sinh()
+            => ((Tensor<T>)this).Sinh().Scalar();
 
         /// <summary>Scalar tangent.</summary>
-        public new Scalar<T> Tan()
-            => base.Tan().Scalar();
+        public Scalar<T> Tan()
+            => ((Tensor<T>)this).Tan().Scalar();
 
         /// <summary>Scalar hyperbolic tangent.</summary>
-        public new Scalar<T> Tanh()
-            => base.Tanh().Scalar();
+        public Scalar<T> Tanh()
+            => ((Tensor<T>)this).Tanh().Scalar();
 
         /// <summary>Scalar power.</summary>
         public Scalar<T> Pow<T1>(Scalar<T1> power) where T1 : IVarType
-            => base.Pow(power).Scalar();
+            => ((Tensor<T>)this).Pow(power).Scalar();
 
         /// <summary>Scalar natural logarithm.</summary>
-        public new Scalar<T> Ln()
-            => base.Ln().Scalar();
+        public Scalar<T> Ln()
+            => ((Tensor<T>)this).Ln().Scalar();
 
         /// <summary>Scalar square root.</summary>
-        public new Scalar<T> Sqrt()
-            => base.Sqrt().Scalar();
+        public Scalar<T> Sqrt()
+            => ((Tensor<T>)this).Sqrt().Scalar();
 
         /// <summary>Scalar reciprocal.</summary>
-        public new Scalar<T> Reciprocal()
-            => base.Reciprocal().Scalar();
+        public Scalar<T> Reciprocal()
+            => ((Tensor<T>)this).Reciprocal().Scalar();
 
         /// <summary>Scalar error function.</summary>
-        public new Scalar<T> Erf()
-            => base.Erf().Scalar();
+        public Scalar<T> Erf()
+            => ((Tensor<T>)this).Erf().Scalar();
 
         /// <summary>Scalar sign.</summary>
-        public new Scalar<T> Sign()
-            => base.Sign().Scalar();
+        public Scalar<T> Sign()
+            => ((Tensor<T>)this).Sign().Scalar();
 
         /// <summary>Scalar ELU activation.</summary>
-        public new Scalar<T> Elu(float alpha = 1.0f)
-            => base.Elu(alpha).Scalar();
+        public Scalar<T> Elu(float alpha = 1.0f)
+            => ((Tensor<T>)this).Elu(alpha).Scalar();
 
         /// <summary>Scalar GELU activation.</summary>
-        public new Scalar<T> Gelu(GeluApproximate approximate = GeluApproximate.None)
-            => base.Gelu(approximate).Scalar();
+        public Scalar<T> Gelu(GeluApproximate approximate = GeluApproximate.None)
+            => ((Tensor<T>)this).Gelu(approximate).Scalar();
 
         /// <summary>Scalar leaky ReLU activation.</summary>
-        public new Scalar<T> LeakyRelu(float alpha = 0.01f)
-            => base.LeakyRelu(alpha).Scalar();
+        public Scalar<T> LeakyRelu(float alpha = 0.01f)
+            => ((Tensor<T>)this).LeakyRelu(alpha).Scalar();
 
         /// <summary>Scalar ReLU activation.</summary>
-        public new Scalar<T> Relu()
-            => base.Relu().Scalar();
+        public Scalar<T> Relu()
+            => ((Tensor<T>)this).Relu().Scalar();
 
         /// <summary>Scalar SELU activation.</summary>
-        public new Scalar<T> Selu(float alpha = 1.67326319217681884765625f, float gamma = 1.0507010221481323242187f)
-            => base.Selu(alpha, gamma).Scalar();
+        public Scalar<T> Selu(float alpha = 1.67326319217681884765625f, float gamma = 1.0507010221481323242187f)
+            => ((Tensor<T>)this).Selu(alpha, gamma).Scalar();
 
         /// <summary>Scalar sigmoid.</summary>
-        public new Scalar<T> Sigmoid()
-            => base.Sigmoid().Scalar();
+        public Scalar<T> Sigmoid()
+            => ((Tensor<T>)this).Sigmoid().Scalar();
 
         /// <summary>Scalar hard sigmoid.</summary>
-        public new Scalar<T> HardSigmoid(float? alpha = null, float? beta = null)
-            => base.HardSigmoid(alpha, beta).Scalar();
+        public Scalar<T> HardSigmoid(float? alpha = null, float? beta = null)
+            => ((Tensor<T>)this).HardSigmoid(alpha, beta).Scalar();
 
         /// <summary>Scalar hard swish.</summary>
-        public new Scalar<T> HardSwish()
-            => base.HardSwish().Scalar();
+        public Scalar<T> HardSwish()
+            => ((Tensor<T>)this).HardSwish().Scalar();
 
         /// <summary>Tests whether the value is infinite, yielding a bit scalar.</summary>
-        public new Scalar<bit> IsInf(bool detectNegative = true, bool detectPositive = true)
-            => base.IsInf(detectNegative, detectPositive).Scalar();
+        public Scalar<bit> IsInf(bool detectNegative = true, bool detectPositive = true)
+            => ((Tensor<T>)this).IsInf(detectNegative, detectPositive).Scalar();
 
         /// <summary>Tests whether the value is NaN, yielding a bit scalar.</summary>
-        public new Scalar<bit> IsNaN()
-            => base.IsNaN().Scalar();
+        public Scalar<bit> IsNaN()
+            => ((Tensor<T>)this).IsNaN().Scalar();
 
         /// <summary>Scalar Mish activation.</summary>
-        public new Scalar<T> Mish()
-            => base.Mish().Scalar();
+        public Scalar<T> Mish()
+            => ((Tensor<T>)this).Mish().Scalar();
 
         /// <summary>Rounds to the nearest integer (half to even).</summary>
-        public new Scalar<T> Round()
-            => base.Round().Scalar();
+        public Scalar<T> Round()
+            => ((Tensor<T>)this).Round().Scalar();
 
         /// <summary>Scalar shrink thresholding (ONNX Shrink).</summary>
-        public new Scalar<T> Shrink(float? bias = null, float? lambd = null)
-            => base.Shrink(bias, lambd).Scalar();
+        public Scalar<T> Shrink(float? bias = null, float? lambd = null)
+            => ((Tensor<T>)this).Shrink(bias, lambd).Scalar();
 
         /// <summary>Scalar softplus.</summary>
-        public new Scalar<T> Softplus()
-            => base.Softplus().Scalar();
+        public Scalar<T> Softplus()
+            => ((Tensor<T>)this).Softplus().Scalar();
 
         /// <summary>Scalar softsign.</summary>
-        public new Scalar<T> Softsign()
-            => base.Softsign().Scalar();
+        public Scalar<T> Softsign()
+            => ((Tensor<T>)this).Softsign().Scalar();
 
         /// <summary>Scalar thresholded ReLU.</summary>
-        public new Scalar<T> ThresholdedRelu(float? alpha = null)
-            => base.ThresholdedRelu(alpha).Scalar();
+        public Scalar<T> ThresholdedRelu(float? alpha = null)
+            => ((Tensor<T>)this).ThresholdedRelu(alpha).Scalar();
 
         /// <summary>Clamps the value to [min, max].</summary>
-        public new Scalar<T> Clip(Scalar<T> min, Scalar<T> max)
-            => base.Clip(min, max).Scalar();
+        public Scalar<T> Clip(Scalar<T> min, Scalar<T> max)
+            => ((Tensor<T>)this).Clip(min, max).Scalar();
 
         /// <summary>Scalar exponential.</summary>
-        public new Scalar<T> Exp()
-            => base.Exp().Scalar();
+        public Scalar<T> Exp()
+            => ((Tensor<T>)this).Exp().Scalar();
 
         /// <summary>Promotes this scalar to a rank-1 vector of length 1.</summary>
-        public new Vector<T> Unsqueeze()
-            => base.Unsqueeze().Vec();
+        public Vector<T> Unsqueeze()
+            => ((Tensor<T>)this).Unsqueeze().Vec();
 
         /// <summary>Promotes this scalar to a rank-1 vector of length 1; <paramref name="axis"/> must be 0 or -1.</summary>
         // Unsqueezing a rank-0 scalar at its single axis (0 / -1) is always rank-1, so narrow the
         // return to Vector<T> (mirrors the parameterless Unsqueeze() above). Lets the result bind
         // directly to APIs that require a Vector<int64> — e.g. a Reduce/Reshape axes argument —
         // without a manual .Vec().
-        public new Vector<T> Unsqueeze(long axis)
-            => base.Unsqueeze(axis).Vec();
+        public Vector<T> Unsqueeze(long axis)
+            => ((Tensor<T>)this).Unsqueeze(axis).Vec();
 
         #region primitive param support
 
         /// <summary>Scalar addition with a primitive constant.</summary>
-        public static Scalar<T> operator +(Scalar<T> left, PrimitiveParam right) => left + (ImmutableScalar<T>)right;
+        public static Scalar<T> operator +(Scalar<T> left, PrimitiveParam right) => left + (Scalar<T>)right;
         /// <summary>Scalar addition with a primitive constant.</summary>
-        public static Scalar<T> operator +(PrimitiveParam left, Scalar<T> right) => (ImmutableScalar<T>)left + right;
+        public static Scalar<T> operator +(PrimitiveParam left, Scalar<T> right) => (Scalar<T>)left + right;
 
         /// <summary>Scalar subtraction with a primitive constant.</summary>
-        public static Scalar<T> operator -(Scalar<T> left, PrimitiveParam right) => left - (ImmutableScalar<T>)right;
+        public static Scalar<T> operator -(Scalar<T> left, PrimitiveParam right) => left - (Scalar<T>)right;
         /// <summary>Scalar subtraction with a primitive constant.</summary>
-        public static Scalar<T> operator -(PrimitiveParam left, Scalar<T> right) => (ImmutableScalar<T>)left - right;
+        public static Scalar<T> operator -(PrimitiveParam left, Scalar<T> right) => (Scalar<T>)left - right;
 
         /// <summary>Scalar multiplication with a primitive constant.</summary>
-        public static Scalar<T> operator *(Scalar<T> left, PrimitiveParam right) => left * (ImmutableScalar<T>)right;
+        public static Scalar<T> operator *(Scalar<T> left, PrimitiveParam right) => left * (Scalar<T>)right;
         /// <summary>Scalar multiplication with a primitive constant.</summary>
-        public static Scalar<T> operator *(PrimitiveParam left, Scalar<T> right) => (ImmutableScalar<T>)left * right;
+        public static Scalar<T> operator *(PrimitiveParam left, Scalar<T> right) => (Scalar<T>)left * right;
 
         /// <summary>Scalar division with a primitive constant.</summary>
-        public static Scalar<T> operator /(Scalar<T> left, PrimitiveParam right) => left / (ImmutableScalar<T>)right;
+        public static Scalar<T> operator /(Scalar<T> left, PrimitiveParam right) => left / (Scalar<T>)right;
         /// <summary>Scalar division with a primitive constant.</summary>
-        public static Scalar<T> operator /(PrimitiveParam left, Scalar<T> right) => (ImmutableScalar<T>)left / right;
+        public static Scalar<T> operator /(PrimitiveParam left, Scalar<T> right) => (Scalar<T>)left / right;
 
         /// <summary>Scalar modulo with a primitive constant.</summary>
-        public static Scalar<T> operator %(Scalar<T> left, PrimitiveParam right) => left % (ImmutableScalar<T>)right;
+        public static Scalar<T> operator %(Scalar<T> left, PrimitiveParam right) => left % (Scalar<T>)right;
         /// <summary>Scalar modulo with a primitive constant.</summary>
-        public static Scalar<T> operator %(PrimitiveParam left, Scalar<T> right) => (ImmutableScalar<T>)left % right;
+        public static Scalar<T> operator %(PrimitiveParam left, Scalar<T> right) => (Scalar<T>)left % right;
 
         /// <summary>Scalar XOR with a primitive constant.</summary>
-        public static Scalar<T> operator ^(Scalar<T> left, PrimitiveParam right) => left ^ (ImmutableScalar<T>)right;
+        public static Scalar<T> operator ^(Scalar<T> left, PrimitiveParam right) => left ^ (Scalar<T>)right;
         /// <summary>Scalar XOR with a primitive constant.</summary>
-        public static Scalar<T> operator ^(PrimitiveParam left, Scalar<T> right) => (ImmutableScalar<T>)left ^ right;
+        public static Scalar<T> operator ^(PrimitiveParam left, Scalar<T> right) => (Scalar<T>)left ^ right;
 
         /// <summary>Scalar AND with a primitive constant.</summary>
-        public static Scalar<T> operator &(Scalar<T> left, PrimitiveParam right) => left & (ImmutableScalar<T>)right;
+        public static Scalar<T> operator &(Scalar<T> left, PrimitiveParam right) => left & (Scalar<T>)right;
         /// <summary>Scalar AND with a primitive constant.</summary>
-        public static Scalar<T> operator &(PrimitiveParam left, Scalar<T> right) => (ImmutableScalar<T>)left & right;
+        public static Scalar<T> operator &(PrimitiveParam left, Scalar<T> right) => (Scalar<T>)left & right;
 
         /// <summary>Scalar OR with a primitive constant.</summary>
-        public static Scalar<T> operator |(Scalar<T> left, PrimitiveParam right) => left | (ImmutableScalar<T>)right;
+        public static Scalar<T> operator |(Scalar<T> left, PrimitiveParam right) => left | (Scalar<T>)right;
         /// <summary>Scalar OR with a primitive constant.</summary>
-        public static Scalar<T> operator |(PrimitiveParam left, Scalar<T> right) => (ImmutableScalar<T>)left | right;
+        public static Scalar<T> operator |(PrimitiveParam left, Scalar<T> right) => (Scalar<T>)left | right;
 
         /// <summary>Scalar left bit-shift by a primitive constant.</summary>
-        public static Scalar<T> operator <<(Scalar<T> left, PrimitiveParam right) => left << (ImmutableScalar<T>)right;
-        // public static Scalar<T> operator <<(PrimitiveParam left, Scalar<T> right) => (ImmutableScalar<T>)left + right;
+        public static Scalar<T> operator <<(Scalar<T> left, PrimitiveParam right) => left << (Scalar<T>)right;
+        // public static Scalar<T> operator <<(PrimitiveParam left, Scalar<T> right) => (Scalar<T>)left + right;
 
         /// <summary>Scalar right bit-shift by a primitive constant.</summary>
-        public static Scalar<T> operator >>(Scalar<T> left, PrimitiveParam right) => left >> (ImmutableScalar<T>)right;
-        // public static Scalar<T> operator >>(PrimitiveParam left, Scalar<T> right) => (ImmutableScalar<T>)left + right;
+        public static Scalar<T> operator >>(Scalar<T> left, PrimitiveParam right) => left >> (Scalar<T>)right;
+        // public static Scalar<T> operator >>(PrimitiveParam left, Scalar<T> right) => (Scalar<T>)left + right;
 
         /// <summary>Scalar greater-than with a primitive constant, yielding a bit scalar.</summary>
-        public static Scalar<bit> operator >(Scalar<T> left, PrimitiveParam right) => left > (ImmutableScalar<T>)right;
+        public static Scalar<bit> operator >(Scalar<T> left, PrimitiveParam right) => left > (Scalar<T>)right;
         /// <summary>Scalar greater-than with a primitive constant, yielding a bit scalar.</summary>
-        public static Scalar<bit> operator >(PrimitiveParam left, Scalar<T> right) => (ImmutableScalar<T>)left > right;
+        public static Scalar<bit> operator >(PrimitiveParam left, Scalar<T> right) => (Scalar<T>)left > right;
         /// <summary>Scalar greater-or-equal with a primitive constant, yielding a bit scalar.</summary>
-        public static Scalar<bit> operator >=(Scalar<T> left, PrimitiveParam right) => left >= (ImmutableScalar<T>)right;
+        public static Scalar<bit> operator >=(Scalar<T> left, PrimitiveParam right) => left >= (Scalar<T>)right;
         /// <summary>Scalar greater-or-equal with a primitive constant, yielding a bit scalar.</summary>
-        public static Scalar<bit> operator >=(PrimitiveParam left, Scalar<T> right) => (ImmutableScalar<T>)left >= right;
+        public static Scalar<bit> operator >=(PrimitiveParam left, Scalar<T> right) => (Scalar<T>)left >= right;
         /// <summary>Scalar less-than with a primitive constant, yielding a bit scalar.</summary>
-        public static Scalar<bit> operator <(Scalar<T> left, PrimitiveParam right) => left < (ImmutableScalar<T>)right;
+        public static Scalar<bit> operator <(Scalar<T> left, PrimitiveParam right) => left < (Scalar<T>)right;
         /// <summary>Scalar less-than with a primitive constant, yielding a bit scalar.</summary>
-        public static Scalar<bit> operator <(PrimitiveParam left, Scalar<T> right) => (ImmutableScalar<T>)left < right;
+        public static Scalar<bit> operator <(PrimitiveParam left, Scalar<T> right) => (Scalar<T>)left < right;
         /// <summary>Scalar less-or-equal with a primitive constant, yielding a bit scalar.</summary>
-        public static Scalar<bit> operator <=(Scalar<T> left, PrimitiveParam right) => left <= (ImmutableScalar<T>)right;
+        public static Scalar<bit> operator <=(Scalar<T> left, PrimitiveParam right) => left <= (Scalar<T>)right;
         /// <summary>Scalar less-or-equal with a primitive constant, yielding a bit scalar.</summary>
-        public static Scalar<bit> operator <=(PrimitiveParam left, Scalar<T> right) => (ImmutableScalar<T>)left <= right;
+        public static Scalar<bit> operator <=(PrimitiveParam left, Scalar<T> right) => (Scalar<T>)left <= right;
         /// <summary>Scalar equality with a primitive constant, yielding a bit scalar.</summary>
-        public static Scalar<bit> operator ==(Scalar<T> left, PrimitiveParam right) => left == (ImmutableScalar<T>)right;
+        public static Scalar<bit> operator ==(Scalar<T> left, PrimitiveParam right) => left == (Scalar<T>)right;
         /// <summary>Scalar equality with a primitive constant, yielding a bit scalar.</summary>
-        public static Scalar<bit> operator ==(PrimitiveParam left, Scalar<T> right) => (ImmutableScalar<T>)left == right;
+        public static Scalar<bit> operator ==(PrimitiveParam left, Scalar<T> right) => (Scalar<T>)left == right;
         /// <summary>Scalar inequality with a primitive constant, yielding a bit scalar.</summary>
-        public static Scalar<bit> operator !=(Scalar<T> left, PrimitiveParam right) => left != (ImmutableScalar<T>)right;
+        public static Scalar<bit> operator !=(Scalar<T> left, PrimitiveParam right) => left != (Scalar<T>)right;
         /// <summary>Scalar inequality with a primitive constant, yielding a bit scalar.</summary>
-        public static Scalar<bit> operator !=(PrimitiveParam left, Scalar<T> right) => (ImmutableScalar<T>)left != right;
+        public static Scalar<bit> operator !=(PrimitiveParam left, Scalar<T> right) => (Scalar<T>)left != right;
 
         #endregion
 
         #endregion
-
-
         #region Onxx Cast Operators
 
         //public static explicit operator Scalar<int>(Scalar<T> tensor) => tensor.Cast<int>();
@@ -486,6 +503,6 @@ namespace Shorokoo
         //public static explicit operator Scalar<double>(Scalar<T> tensor) => tensor.Cast<double>();
         //public static explicit operator Scalar<bit>(Scalar<T> tensor) => tensor.Cast<bool>();
 
-        #endregion    
+        #endregion
     }
 }

@@ -191,7 +191,7 @@ namespace Shorokoo
             => this.gatherFrom.ScatterND(index.Unsqueeze().Unsqueeze(), value.Unsqueeze());
     }
 
-    public partial class Vector<T>
+    public partial struct Vector<T>
     {
         /// <summary>Slices or gathers the vector (range, stepped range, or index list).</summary>
         public VectorIndexerResult<T> this[VectorIndexerParam index]

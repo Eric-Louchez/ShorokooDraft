@@ -96,7 +96,7 @@ public partial class LocalResponseNorm
         const long rightHalf = size - 1 - leftHalf;
 
         // Channel count C (axis 1 of the shape) for the per-window slice bounds.
-        var cDim = (ImmutableTensor<int64>)OnnxOp.Slice(OnnxOp.Shape(x), Vector(1L), Vector(2L));
+        Tensor<int64> cDim = (ImmutableTensor<int64>)OnnxOp.Slice(OnnxOp.Shape(x), Vector(1L), Vector(2L));
 
         // ChannelWindowSum: zero-pad along the channel axis, then accumulate the
         // `size` shifted channel windows (Pad + unrolled Slice-and-Add — the same
@@ -105,13 +105,13 @@ public partial class LocalResponseNorm
         Tensor<float32> ChannelWindowSum(Tensor<float32> t)
         {
             var pads = Vector(leftHalf, rightHalf);
-            var padded = (ImmutableTensor<float32>)OnnxOp.Pad(t, pads, null, axes: Vector(1L), mode: PadMode.Constant);
+            Tensor<float32> padded = (ImmutableTensor<float32>)OnnxOp.Pad(t, pads, null, axes: Vector(1L), mode: PadMode.Constant);
 
-            var result = (ImmutableTensor<float32>)OnnxOp.Slice(padded, Vector(0L), cDim, Vector(1L));
+            Tensor<float32> result = (ImmutableTensor<float32>)OnnxOp.Slice(padded, Vector(0L), cDim, Vector(1L));
             for (long i = 1; i < size; i++)
             {
                 var start = Vector(i);
-                var end = (ImmutableTensor<int64>)OnnxOp.Add(cDim, Vector(i));
+                Tensor<int64> end = (ImmutableTensor<int64>)OnnxOp.Add(cDim, Vector(i));
                 result = result + (ImmutableTensor<float32>)OnnxOp.Slice(padded, start, end, Vector(1L));
             }
             return result;

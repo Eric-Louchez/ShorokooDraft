@@ -62,7 +62,7 @@ namespace Shorokoo
     /// IVariable). Holds shape state and the minimal ITensor contract; the full user-facing op
     /// surface lives on the value-type handle <see cref="Tensor{T}"/>.
     /// </summary>
-    public class ImmutableTensor<T> : ImmutableVariable<T>, ITensor
+    public partial class ImmutableTensor<T> : ImmutableVariable<T>, ITensor
          where T : IVarType
     {
         #region Data Member
@@ -147,10 +147,10 @@ namespace Shorokoo
     /// carries the full op/operator surface. This pass only makes mutation possible — behaviour is
     /// unchanged (de-facto immutable). A defaulted handle materialises an empty rank-1 vector.
     /// </summary>
-    public partial struct Tensor<T> : ITensor where T : IVarType
+    public partial struct Tensor<T> : ITensor, System.Collections.Generic.IEnumerable<Shorokoo.Core.TensorExpressionHelper<T>> where T : IVarType
     {
         private ImmutableTensor<T>? inner;
-        internal ImmutableTensor<T> Imm => inner ??= ImmutableVector<T>.Empty;
+        internal ImmutableTensor<T> Imm => inner ?? throw new InvalidOperationException("default(Tensor<T>) is not materialised; build one via a graph op.");
 
         public static implicit operator Tensor<T>(ImmutableTensor<T> imm) => new Tensor<T> { inner = imm };
         public static implicit operator ImmutableTensor<T>(Tensor<T> h) => h.Imm;
@@ -335,77 +335,77 @@ namespace Shorokoo
         #region primitive param support
 
         /// <summary>Element-wise addition with a primitive constant.</summary>
-        public static Tensor<T> operator +(Tensor<T> left, PrimitiveParam right) => left + (ImmutableScalar<T>)right;
+        public static Tensor<T> operator +(Tensor<T> left, PrimitiveParam right) => left + (Scalar<T>)right;
         /// <summary>Element-wise addition with a primitive constant.</summary>
-        public static Tensor<T> operator +(PrimitiveParam left, Tensor<T> right) => (ImmutableScalar<T>)left + right;
+        public static Tensor<T> operator +(PrimitiveParam left, Tensor<T> right) => (Scalar<T>)left + right;
 
         /// <summary>Element-wise subtraction with a primitive constant.</summary>
-        public static Tensor<T> operator -(Tensor<T> left, PrimitiveParam right) => left - (ImmutableScalar<T>)right;
+        public static Tensor<T> operator -(Tensor<T> left, PrimitiveParam right) => left - (Scalar<T>)right;
         /// <summary>Element-wise subtraction with a primitive constant.</summary>
-        public static Tensor<T> operator -(PrimitiveParam left, Tensor<T> right) => (ImmutableScalar<T>)left - right;
+        public static Tensor<T> operator -(PrimitiveParam left, Tensor<T> right) => (Scalar<T>)left - right;
 
         /// <summary>Element-wise multiplication with a primitive constant.</summary>
-        public static Tensor<T> operator *(Tensor<T> left, PrimitiveParam right) => left * (ImmutableScalar<T>)right;
+        public static Tensor<T> operator *(Tensor<T> left, PrimitiveParam right) => left * (Scalar<T>)right;
         /// <summary>Element-wise multiplication with a primitive constant.</summary>
-        public static Tensor<T> operator *(PrimitiveParam left, Tensor<T> right) => (ImmutableScalar<T>)left * right;
+        public static Tensor<T> operator *(PrimitiveParam left, Tensor<T> right) => (Scalar<T>)left * right;
 
         /// <summary>Element-wise division with a primitive constant.</summary>
-        public static Tensor<T> operator /(Tensor<T> left, PrimitiveParam right) => left / (ImmutableScalar<T>)right;
+        public static Tensor<T> operator /(Tensor<T> left, PrimitiveParam right) => left / (Scalar<T>)right;
         /// <summary>Element-wise division with a primitive constant.</summary>
-        public static Tensor<T> operator /(PrimitiveParam left, Tensor<T> right) => (ImmutableScalar<T>)left / right;
+        public static Tensor<T> operator /(PrimitiveParam left, Tensor<T> right) => (Scalar<T>)left / right;
 
         /// <summary>Element-wise modulo with a primitive constant.</summary>
-        public static Tensor<T> operator %(Tensor<T> left, PrimitiveParam right) => left % (ImmutableScalar<T>)right;
+        public static Tensor<T> operator %(Tensor<T> left, PrimitiveParam right) => left % (Scalar<T>)right;
         /// <summary>Element-wise modulo with a primitive constant.</summary>
-        public static Tensor<T> operator %(PrimitiveParam left, Tensor<T> right) => (ImmutableScalar<T>)left % right;
+        public static Tensor<T> operator %(PrimitiveParam left, Tensor<T> right) => (Scalar<T>)left % right;
 
         /// <summary>Element-wise XOR with a primitive constant.</summary>
-        public static Tensor<T> operator ^(Tensor<T> left, PrimitiveParam right) => left ^ (ImmutableScalar<T>)right;
+        public static Tensor<T> operator ^(Tensor<T> left, PrimitiveParam right) => left ^ (Scalar<T>)right;
         /// <summary>Element-wise XOR with a primitive constant.</summary>
-        public static Tensor<T> operator ^(PrimitiveParam left, Tensor<T> right) => (ImmutableScalar<T>)left ^ right;
+        public static Tensor<T> operator ^(PrimitiveParam left, Tensor<T> right) => (Scalar<T>)left ^ right;
 
         /// <summary>Element-wise AND with a primitive constant.</summary>
-        public static Tensor<T> operator &(Tensor<T> left, PrimitiveParam right) => left & (ImmutableScalar<T>)right;
+        public static Tensor<T> operator &(Tensor<T> left, PrimitiveParam right) => left & (Scalar<T>)right;
         /// <summary>Element-wise AND with a primitive constant.</summary>
-        public static Tensor<T> operator &(PrimitiveParam left, Tensor<T> right) => (ImmutableScalar<T>)left & right;
+        public static Tensor<T> operator &(PrimitiveParam left, Tensor<T> right) => (Scalar<T>)left & right;
 
         /// <summary>Element-wise OR with a primitive constant.</summary>
-        public static Tensor<T> operator |(Tensor<T> left, PrimitiveParam right) => left | (ImmutableScalar<T>)right;
+        public static Tensor<T> operator |(Tensor<T> left, PrimitiveParam right) => left | (Scalar<T>)right;
         /// <summary>Element-wise OR with a primitive constant.</summary>
-        public static Tensor<T> operator |(PrimitiveParam left, Tensor<T> right) => (ImmutableScalar<T>)left | right;
+        public static Tensor<T> operator |(PrimitiveParam left, Tensor<T> right) => (Scalar<T>)left | right;
 
         /// <summary>Element-wise left bit-shift by a primitive constant.</summary>
-        public static Tensor<T> operator <<(Tensor<T> left, PrimitiveParam right) => left << (ImmutableScalar<T>)right;
-        // public static Tensor<T> operator <<(PrimitiveParam left, Tensor<T> right) => (ImmutableScalar<T>)left + right;
+        public static Tensor<T> operator <<(Tensor<T> left, PrimitiveParam right) => left << (Scalar<T>)right;
+        // public static Tensor<T> operator <<(PrimitiveParam left, Tensor<T> right) => (Scalar<T>)left + right;
 
         /// <summary>Element-wise right bit-shift by a primitive constant.</summary>
-        public static Tensor<T> operator >>(Tensor<T> left, PrimitiveParam right) => left >> (ImmutableScalar<T>)right;
-        // public static Tensor<T> operator >>(PrimitiveParam left, Tensor<T> right) => (ImmutableScalar<T>)left + right;
+        public static Tensor<T> operator >>(Tensor<T> left, PrimitiveParam right) => left >> (Scalar<T>)right;
+        // public static Tensor<T> operator >>(PrimitiveParam left, Tensor<T> right) => (Scalar<T>)left + right;
 
         /// <summary>Element-wise greater-than with a primitive constant, yielding a bit tensor.</summary>
-        public static Tensor<bit> operator >(Tensor<T> left, PrimitiveParam right) => left > (ImmutableScalar<T>)right;
+        public static Tensor<bit> operator >(Tensor<T> left, PrimitiveParam right) => left > (Scalar<T>)right;
         /// <summary>Element-wise greater-than with a primitive constant, yielding a bit tensor.</summary>
-        public static Tensor<bit> operator >(PrimitiveParam left, Tensor<T> right) => (ImmutableScalar<T>)left > right;
+        public static Tensor<bit> operator >(PrimitiveParam left, Tensor<T> right) => (Scalar<T>)left > right;
         /// <summary>Element-wise greater-or-equal with a primitive constant, yielding a bit tensor.</summary>
-        public static Tensor<bit> operator >=(Tensor<T> left, PrimitiveParam right) => left >= (ImmutableScalar<T>)right;
+        public static Tensor<bit> operator >=(Tensor<T> left, PrimitiveParam right) => left >= (Scalar<T>)right;
         /// <summary>Element-wise greater-or-equal with a primitive constant, yielding a bit tensor.</summary>
-        public static Tensor<bit> operator >=(PrimitiveParam left, Tensor<T> right) => (ImmutableScalar<T>)left >= right;
+        public static Tensor<bit> operator >=(PrimitiveParam left, Tensor<T> right) => (Scalar<T>)left >= right;
         /// <summary>Element-wise less-than with a primitive constant, yielding a bit tensor.</summary>
-        public static Tensor<bit> operator <(Tensor<T> left, PrimitiveParam right) => left < (ImmutableScalar<T>)right;
+        public static Tensor<bit> operator <(Tensor<T> left, PrimitiveParam right) => left < (Scalar<T>)right;
         /// <summary>Element-wise less-than with a primitive constant, yielding a bit tensor.</summary>
-        public static Tensor<bit> operator <(PrimitiveParam left, Tensor<T> right) => (ImmutableScalar<T>)left < right;
+        public static Tensor<bit> operator <(PrimitiveParam left, Tensor<T> right) => (Scalar<T>)left < right;
         /// <summary>Element-wise less-or-equal with a primitive constant, yielding a bit tensor.</summary>
-        public static Tensor<bit> operator <=(Tensor<T> left, PrimitiveParam right) => left <= (ImmutableScalar<T>)right;
+        public static Tensor<bit> operator <=(Tensor<T> left, PrimitiveParam right) => left <= (Scalar<T>)right;
         /// <summary>Element-wise less-or-equal with a primitive constant, yielding a bit tensor.</summary>
-        public static Tensor<bit> operator <=(PrimitiveParam left, Tensor<T> right) => (ImmutableScalar<T>)left <= right;
+        public static Tensor<bit> operator <=(PrimitiveParam left, Tensor<T> right) => (Scalar<T>)left <= right;
         /// <summary>Element-wise equality with a primitive constant, yielding a bit tensor.</summary>
-        public static Tensor<bit> operator ==(Tensor<T> left, PrimitiveParam right) => left == (ImmutableScalar<T>)right;
+        public static Tensor<bit> operator ==(Tensor<T> left, PrimitiveParam right) => left == (Scalar<T>)right;
         /// <summary>Element-wise equality with a primitive constant, yielding a bit tensor.</summary>
-        public static Tensor<bit> operator ==(PrimitiveParam left, Tensor<T> right) => (ImmutableScalar<T>)left == right;
+        public static Tensor<bit> operator ==(PrimitiveParam left, Tensor<T> right) => (Scalar<T>)left == right;
         /// <summary>Element-wise inequality with a primitive constant, yielding a bit tensor.</summary>
-        public static Tensor<bit> operator !=(Tensor<T> left, PrimitiveParam right) => left != (ImmutableScalar<T>)right;
+        public static Tensor<bit> operator !=(Tensor<T> left, PrimitiveParam right) => left != (Scalar<T>)right;
         /// <summary>Element-wise inequality with a primitive constant, yielding a bit tensor.</summary>
-        public static Tensor<bit> operator !=(PrimitiveParam left, Tensor<T> right) => (ImmutableScalar<T>)left != right;
+        public static Tensor<bit> operator !=(PrimitiveParam left, Tensor<T> right) => (Scalar<T>)left != right;
 
         #endregion
 
@@ -813,7 +813,7 @@ namespace Shorokoo
 
         /// <summary>Element-wise clamping to [min, max] given as primitive constants.</summary>
         public Tensor<T> Clip(PrimitiveParam min, PrimitiveParam max)
-            => (ImmutableTensor<T>)OnnxOp.Clip(this, (ImmutableScalar<T>)min, (ImmutableScalar<T>)max);
+            => (ImmutableTensor<T>)OnnxOp.Clip(this, (Scalar<T>)min, (Scalar<T>)max);
 
         /// <summary>Element-wise clamping to [min, max].</summary>
         public Tensor<T> Clip(Scalar<T> min, Scalar<T> max)

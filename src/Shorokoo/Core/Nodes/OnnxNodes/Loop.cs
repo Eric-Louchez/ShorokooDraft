@@ -104,7 +104,7 @@ namespace Shorokoo
 
         public Tensor<T> Scan<T>(Tensor<T> toScan) where T : IVarType
         {
-            var retVal = (ImmutableTensor<T>)OnnxOp.LoopScanZombie(toScan);
+            Tensor<T> retVal = (ImmutableTensor<T>)OnnxOp.LoopScanZombie(toScan);
 
             if (this.CurrentPass == 1)
             {
@@ -221,7 +221,7 @@ namespace Shorokoo
             if (dctLoopIndexVariables.ContainsKey(CurrentPass))
                 return dctLoopIndexVariables[CurrentPass];
 
-            var indexVariable = (ImmutableScalar<int64>)OnnxOp.LoopIndexVariable();
+            Scalar<int64> indexVariable = (ImmutableScalar<int64>)OnnxOp.LoopIndexVariable();
             dctLoopIndexVariables[CurrentPass] = indexVariable;
             return indexVariable;
         }
@@ -376,7 +376,7 @@ namespace Shorokoo
                         if ((nodeIndex, outputIndex) == (0, 0))
                         {
                             Debug.Assert(loopVariable.FirstPassOutput.OwningNode.NodeDef.FullNodeOpName == OpCodes.LOOP_INDEX_VARIABLE);
-                            var actualIterationIndexVariable = (ImmutableScalar<int64>)this.OpenLoopNode.AssertNotNull().Outputs[0].AssertNotNull();
+                            Scalar<int64> actualIterationIndexVariable = (ImmutableScalar<int64>)this.OpenLoopNode.AssertNotNull().Outputs[0].AssertNotNull();
                             loopVariable.SetThirdPassOutput(actualIterationIndexVariable);
                             outputMapping.Add((outputVariable, actualIterationIndexVariable));
                         }

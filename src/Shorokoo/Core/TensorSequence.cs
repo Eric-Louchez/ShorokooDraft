@@ -134,7 +134,7 @@ namespace Shorokoo.Core
         ITensor ITensorSequence.Concat(long axis, bool newAxis) => this.Concat(axis, newAxis);
         ITensor ITensorSequence.this[Scalar<int64> index] => this[index];
         ITensorSequence ITensorSequence.RemoveAt(Scalar<int64> index) => this.RemoveAt(index);
-        ITensorSequence ITensorSequence.InsertAt(ITensor tensor, Scalar<int64> index) => this.InsertAt((ImmutableTensor<T>)tensor, index);
+        ITensorSequence ITensorSequence.InsertAt(ITensor tensor, Scalar<int64> index) => this.InsertAt((Tensor<T>)tensor, index);
 
         // IVariable surface — forward to the wrapped immutable.
         public Node OwningNode => Imm.OwningNode;

@@ -196,8 +196,8 @@ public static class Recurrent
             var (yVar, yhVar) = OnnxOp.Rnn(curX, w, r, b, null, null,
                 null, null, activations, null, onnxDir, hiddenSize, false);
 
-            var yLayer = (ImmutableTensor<float32>)yVar;    // [L, D, N, H]
-            var yhLayer = (ImmutableTensor<float32>)yhVar;  // [D, N, H]
+            Tensor<float32> yLayer = (ImmutableTensor<float32>)yVar;    // [L, D, N, H]
+            Tensor<float32> yhLayer = (ImmutableTensor<float32>)yhVar;  // [D, N, H]
 
             // Reshape Y [L, D, N, H] -> [L, N, D*H] for the next layer's X / the return.
             // Transpose to [L, N, D, H] first so the D and H axes are adjacent, then fold.
@@ -359,9 +359,9 @@ public static class Recurrent
             var (yVar, yhVar, ycVar) = OnnxOp.Lstm(curX, w, r, b, null, null, null, null,
                 null, null, null, null, onnxDir, hiddenSize, false, false);
 
-            var yLayer = (ImmutableTensor<float32>)yVar;    // [L, D, N, H]
-            var yhLayer = (ImmutableTensor<float32>)yhVar;  // [D, N, H]
-            var ycLayer = (ImmutableTensor<float32>)ycVar;  // [D, N, H]
+            Tensor<float32> yLayer = (ImmutableTensor<float32>)yVar;    // [L, D, N, H]
+            Tensor<float32> yhLayer = (ImmutableTensor<float32>)yhVar;  // [D, N, H]
+            Tensor<float32> ycLayer = (ImmutableTensor<float32>)ycVar;  // [D, N, H]
 
             // Reshape Y [L, D, N, H] -> [L, N, D*H] for the next layer's X / the return.
             // Transpose to [L, N, D, H] first so the D and H axes are adjacent, then fold.
@@ -549,8 +549,8 @@ public static class Recurrent
             var (yVar, yhVar) = OnnxOp.Gru(curX, w, r, b, null, null,
                 null, null, null, null, onnxDir, hiddenSize, false, linearBeforeReset);
 
-            var yLayer = (ImmutableTensor<float32>)yVar;    // [L, D, N, H]
-            var yhLayer = (ImmutableTensor<float32>)yhVar;  // [D, N, H]
+            Tensor<float32> yLayer = (ImmutableTensor<float32>)yVar;    // [L, D, N, H]
+            Tensor<float32> yhLayer = (ImmutableTensor<float32>)yhVar;  // [D, N, H]
 
             // Reshape Y [L, D, N, H] -> [L, N, D*H] for the next layer's X / the return.
             // Transpose to [L, N, D, H] first so the D and H axes are adjacent, then fold.

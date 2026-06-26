@@ -213,7 +213,7 @@ namespace Shorokoo
         {
             (IVariable result, IVariable indices) = OnnxOp.MaxPoolWithIndices(x, autoPad, ceilMode,
                 kernelShape: kernelShape, pads: pads, strides: strides);
-            return ((ImmutableTensor<T>)result, (ImmutableTensor<int64>)indices);
+            return ((ImmutableTensor<T>)result, (Tensor<int64>)indices);
         }
 
         /// <summary>Element-wise minimum of the given tensors, with broadcasting (ONNX Min).</summary>

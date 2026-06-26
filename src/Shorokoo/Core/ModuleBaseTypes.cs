@@ -110,7 +110,7 @@ namespace Shorokoo.Core
         public T SetHyperparams<T>() where T : BaseModel<TOutputs>
         {
             Vector<int64> iterationIndices = [.. LoopAPI.IterationIndices];
-            var modelVariable = (ImmutableScalar<IModelVarType>)InternalOp.ModuleSetHyperparams(this.ModuleVariable, [], iterationIndices, localModelId: null, identifierTemplateString: null);
+            Scalar<IModelVarType> modelVariable = (ImmutableScalar<IModelVarType>)InternalOp.ModuleSetHyperparams(this.ModuleVariable, [], iterationIndices, localModelId: null, identifierTemplateString: null);
 
             var genericTypeArgs = ModuleHelper.ExtractGenericTypeArgsFromType(this.GetType());
 
@@ -151,7 +151,7 @@ namespace Shorokoo.Core
         {
             Vector<int64> iterationIndices = [.. LoopAPI.IterationIndices];
             var inputVariables = ModuleHelper.Format(hyperparams);
-            var modelVariable = (ImmutableScalar<IModelVarType>)InternalOp.ModuleSetHyperparams(this.ModuleVariable, inputVariables, iterationIndices, localModelId: null, identifierTemplateString: null);
+            Scalar<IModelVarType> modelVariable = (ImmutableScalar<IModelVarType>)InternalOp.ModuleSetHyperparams(this.ModuleVariable, inputVariables, iterationIndices, localModelId: null, identifierTemplateString: null);
 
             var genericTypeArgs = ModuleHelper.ExtractGenericTypeArgsFromType(this.GetType());
 
@@ -191,7 +191,7 @@ namespace Shorokoo.Core
         public T SetHyperparams<T>() where T : BaseModel<TInputs, TOutputs>
         {
             Vector<int64> iterationIndices = [.. LoopAPI.IterationIndices];
-            var modelVariable = (ImmutableScalar<IModelVarType>)InternalOp.ModuleSetHyperparams(this.ModuleVariable, [], iterationIndices, localModelId: null, identifierTemplateString: null);
+            Scalar<IModelVarType> modelVariable = (ImmutableScalar<IModelVarType>)InternalOp.ModuleSetHyperparams(this.ModuleVariable, [], iterationIndices, localModelId: null, identifierTemplateString: null);
 
             var genericTypeArgs = ModuleHelper.ExtractGenericTypeArgsFromType(this.GetType());
 
@@ -232,7 +232,7 @@ namespace Shorokoo.Core
         {
             Vector<int64> iterationIndices = [.. LoopAPI.IterationIndices];
             var inputVariables = ModuleHelper.Format(hyperparams);
-            var modelVariable = (ImmutableScalar<IModelVarType>)InternalOp.ModuleSetHyperparams(this.ModuleVariable, inputVariables, iterationIndices, localModelId: null, identifierTemplateString: null);
+            Scalar<IModelVarType> modelVariable = (ImmutableScalar<IModelVarType>)InternalOp.ModuleSetHyperparams(this.ModuleVariable, inputVariables, iterationIndices, localModelId: null, identifierTemplateString: null);
 
             var genericTypeArgs = ModuleHelper.ExtractGenericTypeArgsFromType(this.GetType());
 
