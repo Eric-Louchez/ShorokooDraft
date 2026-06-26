@@ -18,6 +18,23 @@ namespace Shorokoo
         public Tensor<T> Pow<T1>(Vector<T1> power) where T1 : IVarType => this.Pow<T1>((Tensor<T1>)power);
     }
 
+    public partial struct Vector<T> where T : IVarType
+    {
+        // Vector declares its own Reduce(ReduceKind) -> Scalar, which made the op-generator skip ALL
+        // Reduce overloads; restore Tensor's axis/keepDims overload (with inheritance both coexisted).
+        // The no-arg call still binds to Vector.Reduce(ReduceKind) (exact arity wins).
+        public Tensor<T> Reduce(ReduceKind reduceKind, Vector<int64>? axes = null, bool keepDims = true)
+            => ((Tensor<T>)this).Reduce(reduceKind, axes, keepDims);
+
+        public Tensor<T> Pow<T1>(Scalar<T1> power) where T1 : IVarType => ((Tensor<T>)this).Pow<T1>((Tensor<T1>)power);
+        public Tensor<T> Pow<T1>(Vector<T1> power) where T1 : IVarType => ((Tensor<T>)this).Pow<T1>((Tensor<T1>)power);
+
+        // Vector declares its own Concat(params Vector[]) -> Vector, which made the op-generator skip
+        // Tensor's axis/params overload; restore it (with inheritance both coexisted).
+        public Tensor<T> Concat(long axis, params Tensor<T>[] others)
+            => ((Tensor<T>)this).Concat(axis, others);
+    }
+
     public partial struct Scalar<T> where T : IVarType
     {
         /// <summary>Power with a tensor exponent — the base broadcasts (former <c>Scalar : Tensor</c> inheritance).</summary>
@@ -31,6 +48,12 @@ namespace Shorokoo
         /// <summary>Identity reinterpret of an already-rank-0 scalar (the inherited <c>Scalar()</c> on the
         /// former <c>Scalar : Tensor</c>; the struct cannot declare a same-named member).</summary>
         public static Scalar<T> Scalar<T>(this Scalar<T> self) where T : IVarType => self;
+
+        /// <summary>Reinterpret a handle as a <see cref="Tensor{T}"/> (the inherited <c>Variable.Tensor()</c>;
+        /// a struct named <c>Tensor</c> cannot declare a same-named member, so it is an extension).</summary>
+        public static Tensor<T> Tensor<T>(this Tensor<T> self) where T : IVarType => self;
+        public static Tensor<T> Tensor<T>(this Vector<T> self) where T : IVarType => self;
+        public static Tensor<T> Tensor<T>(this Scalar<T> self) where T : IVarType => self;
 
         /// <summary>Element-wise select driven by a scalar condition (the <c>Where</c> extension requires a
         /// <see cref="Tensor{bit}"/> receiver; a <see cref="Scalar{bit}"/> reaches it via this overload).</summary>

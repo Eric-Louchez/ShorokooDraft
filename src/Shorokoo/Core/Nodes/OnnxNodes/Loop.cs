@@ -102,6 +102,7 @@ namespace Shorokoo
             this.maxNumIterations = maxNumIterations;
         }
 
+        public Tensor<T> Scan<T>(Vector<T> v) where T : IVarType => Scan<T>((Tensor<T>)v);
         public Tensor<T> Scan<T>(Tensor<T> toScan) where T : IVarType
         {
             Tensor<T> retVal = (ImmutableTensor<T>)OnnxOp.LoopScanZombie(toScan);
@@ -851,6 +852,7 @@ namespace Shorokoo
         }
 
         public Tensor<T> Scan<T>(Tensor<T> tensor) where T : IVarType => looper.Scan(tensor);
+        public Tensor<T> Scan<T>(Vector<T> v) where T : IVarType => looper.Scan((Tensor<T>)v);
 
         public Vector<T> Scan<T>(Scalar<T> scalar) where T : IVarType => looper.Scan(scalar);
 
