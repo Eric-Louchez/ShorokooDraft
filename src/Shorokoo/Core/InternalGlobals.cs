@@ -126,14 +126,14 @@ namespace Shorokoo.Core
                 throw new InvalidOperationException($"TensorStruct DType {type} has no associated TensorStructDef");
 
             // Use DTypeStruct for dynamically typed TensorStruct
-            return new TensorStruct<DTypeStruct>(type, owningNode, moduleFn, name, structDef);
+            return new ImmutableTensorStruct<DTypeStruct>(type, owningNode, moduleFn, name, structDef);
         }
 
         /// <summary>
         /// Creates a TensorStruct with a specific IStruct type.
         /// </summary>
-        internal static TensorStruct<T> TensorStruct<T>(DType type, Node owningNode, Function? moduleFn, string? name, TensorStructDef definition) where T : IStruct
-            => new TensorStruct<T>(type, owningNode, moduleFn, name, definition);
+        internal static ImmutableTensorStruct<T> TensorStruct<T>(DType type, Node owningNode, Function? moduleFn, string? name, TensorStructDef definition) where T : IStruct
+            => new ImmutableTensorStruct<T>(type, owningNode, moduleFn, name, definition);
 
         internal static OnnxTensorData<bit> OnnxTensorData(Shape shape, params bool[] data) => new OnnxTensorData<bit>(shape, OnnxUtils.CreateTensorValue<bool>(shape, data));
         internal static OnnxTensorData<int8> OnnxTensorData(Shape shape, params sbyte[] data) => new OnnxTensorData<int8>(shape, OnnxUtils.CreateTensorValue<sbyte>(shape, data));
