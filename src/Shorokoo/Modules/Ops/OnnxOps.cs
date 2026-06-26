@@ -254,6 +254,19 @@ namespace Shorokoo
             where T : IVarType
             => Reduce(reduceKind, tensor, (Tensor<int64>?)axes, keepDims, null);
 
+        // Vector/Scalar input overloads: the value-struct handles no longer inherit from Tensor<T>,
+        // so generic inference does not flow a Vector<T>/Scalar<T> argument into the Tensor<T>
+        // parameter. These let emitted code (and callers) reduce a rank-1/rank-0 handle directly.
+        /// <summary>Reduce a rank-1 <see cref="Vector{T}"/> (forwards to the tensor overload).</summary>
+        public static Tensor<T> Reduce<T>(ReduceKind reduceKind, Vector<T> tensor, Tensor<int64>? axes, bool? keepDims, bool? noOp)
+            where T : IVarType
+            => Reduce(reduceKind, (Tensor<T>)tensor, axes, keepDims, noOp);
+
+        /// <summary>Reduce a rank-0 <see cref="Scalar{T}"/> (forwards to the tensor overload).</summary>
+        public static Tensor<T> Reduce<T>(ReduceKind reduceKind, Scalar<T> tensor, Tensor<int64>? axes, bool? keepDims, bool? noOp)
+            where T : IVarType
+            => Reduce(reduceKind, (Tensor<T>)tensor, axes, keepDims, noOp);
+
         /// <summary>
         /// Applies the reduction selected by <paramref name="reduceKind"/> along the given axes
         /// (dispatches to the corresponding ONNX Reduce* op); noOp makes empty axes a pass-through.

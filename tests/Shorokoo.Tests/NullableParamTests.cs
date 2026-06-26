@@ -93,14 +93,15 @@ public class NullableParamTests
     public void GeneratedSurface_ExposesOmittableNullableParameters()
     {
         // An OptionalTensor<T> input is exposed to callers as Tensor<T>? with a `= null` default,
-        // so it can be omitted or passed null.
+        // so it can be omitted or passed null. Tensor<T> is now a value-struct handle, so Tensor<T>?
+        // is Nullable<Tensor<T>>.
         var biasParam = typeof(NullableBiasLayer).GetMethod("Call")!.GetParameters().Single(p => p.Name == "bias");
-        Assert.Equal(typeof(Tensor<float32>), biasParam.ParameterType);
+        Assert.Equal(typeof(Tensor<float32>?), biasParam.ParameterType);
         Assert.True(biasParam.HasDefaultValue);
 
         // A [Hyper(default)] scalar is exposed on Model() as a nullable, omittable parameter.
         var factorParam = typeof(DefaultedHyperLayer).GetMethod("Model")!.GetParameters().Single(p => p.Name == "factor");
-        Assert.Equal(typeof(Scalar<float32>), factorParam.ParameterType);
+        Assert.Equal(typeof(Scalar<float32>?), factorParam.ParameterType);
         Assert.True(factorParam.HasDefaultValue);
     }
 
