@@ -549,7 +549,8 @@ namespace Shorokoo.Core
             var tType = typeof(T);
 
             if (tType.IsAssignableTo(typeof(IVariable)))
-                return (T)vars[0];
+                // T may be a value-struct handle; a plain unbox of the immutable would throw.
+                return Shorokoo.Core.VariableHandle.Cast<T>(vars[0]);
 
             if (IsValueTuple<T>())
             {
@@ -560,7 +561,11 @@ namespace Shorokoo.Core
                     throw new InvalidTensorOperationException(ErrorCodes.FW002, "Type Reformat", $"variables count: {vars.Length}, type arguments: {tType.GenericTypeArguments.Length}", "Variable count must match generic type argument count");
 
                 var constructor = tType.GetConstructors().First();
-                return (T)constructor.Invoke(vars);
+                var ctorParams = constructor.GetParameters();
+                var ctorArgs = new object?[vars.Length];
+                for (int i = 0; i < vars.Length; i++)
+                    ctorArgs[i] = Shorokoo.Core.VariableHandle.WrapForParam(vars[i], ctorParams[i].ParameterType);
+                return (T)constructor.Invoke(ctorArgs);
             }
 
             if (tType.IsArray)
@@ -569,7 +574,7 @@ namespace Shorokoo.Core
                 var convertedArray = Array.CreateInstance(elementType, vars.Length);
 
                 for (int i = 0; i < vars.Length; i++)
-                    convertedArray.SetValue(vars[i], i);
+                    convertedArray.SetValue(Shorokoo.Core.VariableHandle.WrapForParam(vars[i], elementType), i);
 
                 return (T)(object)convertedArray;
             }

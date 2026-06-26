@@ -37,16 +37,16 @@ namespace Shorokoo.Tests.Modules
             var t3 = x * Scalar(2f);             // 2..12
 
             var seq = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SequenceConstruct(t1, t2);
-            var at0 = (Tensor<float32>)OnnxOp.SequenceAt(seq, p0);
-            var atNeg = (Tensor<float32>)OnnxOp.SequenceAt(seq, p0 - Scalar(1L)); // −1 → t2
+            var at0 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(seq, p0);
+            var atNeg = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(seq, p0 - Scalar(1L)); // −1 → t2
 
             var ins = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SequenceInsert(seq, t3, p1); // [t1,t3,t2]
-            var insAt = (Tensor<float32>)OnnxOp.SequenceAt(ins, p1);
+            var insAt = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(ins, p1);
 
             var er = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SequenceErase(seq, p0);       // [t2]
-            var erAt = (Tensor<float32>)OnnxOp.SequenceAt(er, p0);
+            var erAt = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(er, p0);
             var erLast = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SequenceErase(ins);       // [t1,t3]
-            var erLastAt = (Tensor<float32>)OnnxOp.SequenceAt(erLast, p1);
+            var erLastAt = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(erLast, p1);
 
             var empty = Shorokoo.Core.TensorSequence<float32>.CreateEmpty();
             var emptyIns = empty.InsertAt(t1, null);                               // append → [t1]
@@ -75,7 +75,7 @@ namespace Shorokoo.Tests.Modules
 
         // NaN-safe: Not(<= tol) counts a NaN diff as a mismatch; a plain "> tol" would pass it (IEEE).
         private static Scalar<int64> FloatMismatch(Tensor<float32> actual, Vector<float32> expected)
-            => ((Tensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
+            => ((Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         private static Scalar<int64> ShapeMismatch(ITensor t, Vector<int64> expected)
@@ -96,17 +96,17 @@ namespace Shorokoo.Tests.Modules
             var p1 = p0 + Scalar(1L);
 
             var stsDef = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SplitToSequence(x);
-            var defAt0 = (Tensor<float32>)OnnxOp.SequenceAt(stsDef, p0);
+            var defAt0 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(stsDef, p0);
 
             var stsNk = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SplitToSequence(x, split: null, axis: 0L, keepdims: 0L);
-            var nkAt1 = (Tensor<float32>)OnnxOp.SequenceAt(stsNk, p1);
+            var nkAt1 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(stsNk, p1);
 
             // Scalar split 2 along axis 1 → [2,2] + [2,1].
             var stsS = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SplitToSequence(x, split: Scalar(2L), axis: 1L);
-            var sAt1 = (Tensor<float32>)OnnxOp.SequenceAt(stsS, p1);
+            var sAt1 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(stsS, p1);
 
             var stsV = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SplitToSequence(x, split: Vector(1L, 2L), axis: 1L);
-            var vAt1 = (Tensor<float32>)OnnxOp.SequenceAt(stsV, p1);
+            var vAt1 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(stsV, p1);
 
             var cfsUneven = stsS.Concat(axis: 1);            // [2,2]+[2,1] → [2,3] == x
             var cfsStack = stsDef.Concat(axis: 0, newAxis: true); // 2×[1,3] → [2,1,3]
@@ -137,7 +137,7 @@ namespace Shorokoo.Tests.Modules
 
         // NaN-safe: Not(<= tol) counts a NaN diff as a mismatch; a plain "> tol" would pass it (IEEE).
         private static Scalar<int64> FloatMismatch(Tensor<float32> actual, Vector<float32> expected)
-            => ((Tensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
+            => ((Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         private static Scalar<int64> ShapeMismatch(ITensor t, Vector<int64> expected)
@@ -157,7 +157,7 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<bit> Inline(Tensor<float32> x, Scalar<int64> p0)
         {
             var sts = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SplitToSequence(x, split: Scalar(2L), axis: 1L, keepdims: 0L);
-            var last = (Tensor<float32>)OnnxOp.SequenceAt(sts, p0 + Scalar(1L));
+            var last = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(sts, p0 + Scalar(1L));
             var mismatch =
                 ShapeMismatch(last, Vector(2L, 1L)) +
                 FloatMismatch(last.Reshape(Vector(-1L)), Vector(3f, 6f));
@@ -166,7 +166,7 @@ namespace Shorokoo.Tests.Modules
 
         // NaN-safe: Not(<= tol) counts a NaN diff as a mismatch; a plain "> tol" would pass it (IEEE).
         private static Scalar<int64> FloatMismatch(Tensor<float32> actual, Vector<float32> expected)
-            => ((Tensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
+            => ((Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         private static Scalar<int64> ShapeMismatch(ITensor t, Vector<int64> expected)
@@ -183,10 +183,10 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Tensor<float32> x4)
         {
-            var revBatch = (Tensor<float32>)OnnxOp.ReverseSequence(
+            var revBatch = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.ReverseSequence(
                 x4, Vector(1L, 2L, 3L, 4L), batchAxis: 0, timeAxis: 1);
             // No attrs → spec defaults batch_axis=1, time_axis=0.
-            var revTime = (Tensor<float32>)OnnxOp.ReverseSequence(x4, Vector(4L, 3L, 2L, 1L));
+            var revTime = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.ReverseSequence(x4, Vector(4L, 3L, 2L, 1L));
 
             var mismatch =
                 ShapeMismatch(revBatch, Vector(4L, 4L)) +
@@ -207,7 +207,7 @@ namespace Shorokoo.Tests.Modules
 
         // NaN-safe: Not(<= tol) counts a NaN diff as a mismatch; a plain "> tol" would pass it (IEEE).
         private static Scalar<int64> FloatMismatch(Tensor<float32> actual, Vector<float32> expected)
-            => ((Tensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
+            => ((Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         private static Scalar<int64> ShapeMismatch(ITensor t, Vector<int64> expected)
@@ -223,11 +223,11 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<bit> Inline(Tensor<float32> x)
         {
             var opt = OnnxOp.Optional(x, DataStructure.Tensor, DType.Float32);
-            var has = ((Scalar<bit>)OnnxOp.OptionalHasElement(opt)).Cast<int64>();
-            var got = (Tensor<float32>)OnnxOp.OptionalGetElement(opt);
+            var has = ((Scalar<bit>)(ImmutableScalar<bit>)OnnxOp.OptionalHasElement(opt)).Cast<int64>();
+            var got = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.OptionalGetElement(opt);
 
             var optNone = OnnxOp.Optional(null, DataStructure.Tensor, DType.Float32);
-            var hasNone = ((Scalar<bit>)OnnxOp.OptionalHasElement(optNone)).Cast<int64>();
+            var hasNone = ((Scalar<bit>)(ImmutableScalar<bit>)OnnxOp.OptionalHasElement(optNone)).Cast<int64>();
 
             var mismatch =
                 (Scalar(1L) - has).Abs() +
@@ -241,7 +241,7 @@ namespace Shorokoo.Tests.Modules
 
         // NaN-safe: Not(<= tol) counts a NaN diff as a mismatch; a plain "> tol" would pass it (IEEE).
         private static Scalar<int64> FloatMismatch(Tensor<float32> actual, Vector<float32> expected)
-            => ((Tensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
+            => ((Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         private static Scalar<int64> ShapeMismatch(ITensor t, Vector<int64> expected)
@@ -260,12 +260,12 @@ namespace Shorokoo.Tests.Modules
             var n5 = size - Scalar(3L);
             var n4 = size - Scalar(4L);
 
-            var hann8 = (Tensor<float32>)OnnxOp.HannWindow(size, outputDatatype: DType.Float32);
-            var hannSym5 = (Tensor<float32>)OnnxOp.HannWindow(n5, outputDatatype: DType.Float32, periodic: false);
-            var hamm4 = (Tensor<float32>)OnnxOp.HammingWindow(n4, outputDatatype: DType.Float32);
-            var hammSym5 = (Tensor<float32>)OnnxOp.HammingWindow(n5, outputDatatype: DType.Float32, periodic: false);
-            var black4 = (Tensor<float32>)OnnxOp.BlackmanWindow(n4, outputDatatype: DType.Float32, periodic: true);
-            var blackSym5 = (Tensor<float32>)OnnxOp.BlackmanWindow(n5, outputDatatype: DType.Float32, periodic: false);
+            var hann8 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.HannWindow(size, outputDatatype: DType.Float32);
+            var hannSym5 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.HannWindow(n5, outputDatatype: DType.Float32, periodic: false);
+            var hamm4 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.HammingWindow(n4, outputDatatype: DType.Float32);
+            var hammSym5 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.HammingWindow(n5, outputDatatype: DType.Float32, periodic: false);
+            var black4 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.BlackmanWindow(n4, outputDatatype: DType.Float32, periodic: true);
+            var blackSym5 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.BlackmanWindow(n5, outputDatatype: DType.Float32, periodic: false);
 
             var mismatch =
                 ShapeMismatch(hann8, Vector(8L)) +
@@ -283,7 +283,7 @@ namespace Shorokoo.Tests.Modules
 
         // NaN-safe: Not(<= tol) counts a NaN diff as a mismatch; a plain "> tol" would pass it (IEEE).
         private static Scalar<int64> FloatMismatch(Tensor<float32> actual, Vector<float32> expected)
-            => ((Tensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
+            => ((Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         private static Scalar<int64> ShapeMismatch(ITensor t, Vector<int64> expected)
@@ -302,13 +302,13 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<bit> Inline(
             Tensor<float32> sig, Tensor<float32> stftSig, Scalar<int64> frameStep, Vector<float32> win)
         {
-            var dftF = (Tensor<float32>)OnnxOp.Dft(sig, null, null, inverse: false, onesided: false);
-            var dftOne = (Tensor<float32>)OnnxOp.Dft(sig, null, null, inverse: false, onesided: true);
-            var dftInv = (Tensor<float32>)OnnxOp.Dft(dftF, null, null, inverse: true, onesided: false);
-            var dftLen = (Tensor<float32>)OnnxOp.Dft(sig, Scalar(2L), Scalar(1L), inverse: false, onesided: false);
+            var dftF = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Dft(sig, null, null, inverse: false, onesided: false);
+            var dftOne = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Dft(sig, null, null, inverse: false, onesided: true);
+            var dftInv = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Dft(dftF, null, null, inverse: true, onesided: false);
+            var dftLen = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Dft(sig, Scalar(2L), Scalar(1L), inverse: false, onesided: false);
 
-            var stft = (Tensor<float32>)OnnxOp.STFT(stftSig, frameStep, window: win, frameLength: null, onesided: true);
-            var mel = (Tensor<float32>)OnnxOp.MelWeightMatrix(
+            var stft = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.STFT(stftSig, frameStep, window: win, frameLength: null, onesided: true);
+            var mel = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.MelWeightMatrix(
                 Scalar(8L), Scalar(16L), Scalar(16000L), Scalar(0f), Scalar(8000f),
                 outputDatatype: DType.Float32);
 
@@ -330,7 +330,7 @@ namespace Shorokoo.Tests.Modules
 
         // NaN-safe: Not(<= tol) counts a NaN diff as a mismatch; a plain "> tol" would pass it (IEEE).
         private static Scalar<int64> FloatMismatch(Tensor<float32> actual, Vector<float32> expected)
-            => ((Tensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
+            => ((Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         private static Scalar<int64> ShapeMismatch(ITensor t, Vector<int64> expected)
@@ -346,13 +346,13 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Tensor<int64> xi)
         {
-            var v1 = (Tensor<float32>)OnnxOp.TfIdfVectorizer(xi,
+            var v1 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.TfIdfVectorizer(xi,
                 maxGramLength: 2L, maxSkipCount: 0L, minGramLength: 1L, mode: "TF",
                 ngramCounts: new long[] { 0L, 2L },
                 ngramIndexes: new long[] { 2L, 0L, 4L },
                 poolInt64s: new long[] { 1L, 2L, 3L, 4L },
                 poolStrings: null, weights: null);
-            var v2 = (Tensor<float32>)OnnxOp.TfIdfVectorizer(xi.Reshape(Vector(1L, 4L)),
+            var v2 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.TfIdfVectorizer(xi.Reshape(Vector(1L, 4L)),
                 maxGramLength: 2L, maxSkipCount: 0L, minGramLength: 1L, mode: "TF",
                 ngramCounts: new long[] { 0L, 2L },
                 ngramIndexes: new long[] { 2L, 0L, 4L },
@@ -381,12 +381,12 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Scalar<bit>, Tensor<@string>, Tensor<@string>) Inline(Tensor<@string> x, Tensor<@string> y)
         {
-            var concat = (Tensor<@string>)OnnxOp.StringConcat(x, y);
-            var norm = (Tensor<@string>)OnnxOp.StringNormalizer(x, caseChangeAction: "LOWER");
-            var normStop = (Tensor<@string>)OnnxOp.StringNormalizer(x,
+            var concat = (Tensor<@string>)(ImmutableTensor<@string>)OnnxOp.StringConcat(x, y);
+            var norm = (Tensor<@string>)(ImmutableTensor<@string>)OnnxOp.StringNormalizer(x, caseChangeAction: "LOWER");
+            var normStop = (Tensor<@string>)(ImmutableTensor<@string>)OnnxOp.StringNormalizer(x,
                 caseChangeAction: "LOWER", isCaseSensitive: 0L, locale: "en_US",
                 stopwords: new[] { "the" });
-            var regex = (Tensor<bit>)OnnxOp.RegexFullMatch(concat, pattern: ".*");
+            var regex = (Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.RegexFullMatch(concat, pattern: ".*");
             var (splitY, numSplits) = OnnxOp.StringSplit(x, delimiter: " ", maxsplit: 2L);
 
             var mismatch =
@@ -417,22 +417,22 @@ namespace Shorokoo.Tests.Modules
             Tensor<float32> x, Tensor<float32> xImg, Tensor<float32> w, Vector<float32> b)
         {
             var updated = x + Scalar(1f);
-            var link = (Tensor<float32>)InternalOp.StateUpdateLink(x, updated);
-            var main = (Tensor<float32>)InternalOp.WithStateDeps(x, link);
+            var link = (Tensor<float32>)(ImmutableTensor<float32>)InternalOp.StateUpdateLink(x, updated);
+            var main = (Tensor<float32>)(ImmutableTensor<float32>)InternalOp.WithStateDeps(x, link);
 
-            var conv = (Tensor<float32>)InternalOp.Conv(xImg, w, b, AutoPad.NotSet,
+            var conv = (Tensor<float32>)(ImmutableTensor<float32>)InternalOp.Conv(xImg, w, b, AutoPad.NotSet,
                 pads: Vector(0L, 0L, 0L, 0L),
                 strides: Vector(1L, 1L),
                 dilations: Vector(1L, 1L),
                 kernelShape: Vector(2L, 2L),
                 group: Scalar(1L));
 
-            var srn = (Tensor<float32>)InternalOp.RandomNormal(x.ShapeTensor(), mean: 0f, scale: 1f, seed: 7f);
-            var sru = (Tensor<float32>)InternalOp.RandomUniform(x.ShapeTensor(), high: 1f, low: 0f, seed: 8f);
+            var srn = (Tensor<float32>)(ImmutableTensor<float32>)InternalOp.RandomNormal(x.ShapeTensor(), mean: 0f, scale: 1f, seed: 7f);
+            var sru = (Tensor<float32>)(ImmutableTensor<float32>)InternalOp.RandomUniform(x.ShapeTensor(), high: 1f, low: 0f, seed: 8f);
 
-            var loopIdx = (Tensor<int64>)OnnxOp.LoopIndexVariable();
-            var fakeInput = (Tensor<float32>)OnnxOp.LoopFakeInput(DType.Float32, rank: 2, DataStructure.Tensor);
-            var scanVar = (Tensor<float32>)OnnxOp.LoopScanZombie(x);
+            var loopIdx = (Tensor<int64>)(ImmutableTensor<int64>)OnnxOp.LoopIndexVariable();
+            var fakeInput = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.LoopFakeInput(DType.Float32, rank: 2, DataStructure.Tensor);
+            var scanVar = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.LoopScanZombie(x);
 
             var mismatch =
                 FloatMismatch(Flat(link), Vector(2f, 3f, 4f, 5f, 6f, 7f)) +
@@ -450,7 +450,7 @@ namespace Shorokoo.Tests.Modules
 
         // NaN-safe: Not(<= tol) counts a NaN diff as a mismatch; a plain "> tol" would pass it (IEEE).
         private static Scalar<int64> FloatMismatch(Tensor<float32> actual, Vector<float32> expected)
-            => ((Tensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
+            => ((Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         private static Scalar<int64> IntMismatch(Tensor<int64> actual, Vector<int64> expected)

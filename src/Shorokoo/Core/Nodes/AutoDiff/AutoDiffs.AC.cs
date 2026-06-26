@@ -181,14 +181,21 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 $"(inputs: {inputs.Length}, outputs: {outputs.Length}, attributes: {attributes.AttributeDefs.Count})");
             
             int paramIndex = 0;
-            
-            // Add inputs
+
+            // Add inputs (wrapping graph values into value-struct parameter types — reflective
+            // Invoke does not apply the immutable→struct implicit conversion).
             foreach (var input in inputs)
-                paramValues[paramIndex++] = input;
-            
-            // Add output gradients
+            {
+                paramValues[paramIndex] = Shorokoo.Core.VariableHandle.WrapForParam(input, methodParams[paramIndex].ParameterType);
+                paramIndex++;
+            }
+
+            // Add output gradients (same wrapping).
             foreach (var output in outputs)
-                paramValues[paramIndex++] = output;
+            {
+                paramValues[paramIndex] = Shorokoo.Core.VariableHandle.WrapForParam(output, methodParams[paramIndex].ParameterType);
+                paramIndex++;
+            }
             
             // Add attributes in alphabetical order
             var attrDefs = attributes.AttributeDefs.OrderBy(x => x.AttributeName).ToArray();

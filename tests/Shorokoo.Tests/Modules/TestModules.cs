@@ -826,11 +826,11 @@ namespace Shorokoo.Tests.Modules
             var div = Vector(-7L, 7L, -7L) / Vector(2L, -2L, -2L);
             var divOk = AllWithin((div - Vector(-3L, -3L, 3L)).Cast<float32>(), 0f, 3);
 
-            var rev = (Tensor<float32>)OnnxOp.Slice(
+            var rev = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Slice(
                 Tensor(new long[] { 4L }, 1f, 2f, 3f, 4f), Vector(3L), Vector(-5L), Vector(0L), Vector(-1L));
             var revOk = AllWithin(rev - Tensor(new long[] { 4L }, 4f, 3f, 2f, 1f), 0f, 4);
 
-            var last = (Tensor<float32>)OnnxOp.Gather(x, Vector(-1L), axis: 0);
+            var last = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Gather(x, Vector(-1L), axis: 0);
             var gatherOk = AllWithin(last - Tensor(new long[] { 1L }, 30f), 1e-6f, 1);
 
             var emptySum = ((Tensor<float32>)VectorFill(0L, 1f)).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
@@ -918,7 +918,7 @@ namespace Shorokoo.Tests.Modules
         {
             var nan = (x - x) / (x - x);                       // elementwise 0/0 = NaN
             var diff = (nan - x).Abs();                        // still NaN
-            var counted = ((Tensor<bit>)OnnxOp.Not(diff <= Scalar(1e-3f))).Cast<int64>()
+            var counted = ((Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.Not(diff <= Scalar(1e-3f))).Cast<int64>()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var blind = (diff > Scalar(1e-3f)).Cast<int64>()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();

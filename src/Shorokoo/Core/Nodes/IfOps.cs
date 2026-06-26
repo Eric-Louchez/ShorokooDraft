@@ -19,7 +19,7 @@ namespace Shorokoo.Core.Nodes
         public static A IfElse<A>(Scalar<bit> condition, A aWhenTrue, A aWhenFalse) where A : IVariable
         {
             var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
-            return (A)OnnxOp.IfClose([aWhenTrue], [aWhenFalse], ifOpen)[0];
+            return VariableHandle.Cast<A>(OnnxOp.IfClose([aWhenTrue], [aWhenFalse], ifOpen)[0]);
         }
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
             var t = whenTrue();
             var f = whenFalse();
-            return (A)OnnxOp.IfClose([t], [f], ifOpen)[0];
+            return VariableHandle.Cast<A>(OnnxOp.IfClose([t], [f], ifOpen)[0]);
         }
 
         public static (A, B) IfElse<A, B>(Scalar<bit> condition, (A a, B b) whenTrue, (A a, B b) whenFalse)
@@ -44,7 +44,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
             var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b], [whenFalse.a, whenFalse.b], ifOpen);
 
-            return ((A)retval[0], (B)retval[1]);
+            return (VariableHandle.Cast<A>(retval[0]), VariableHandle.Cast<B>(retval[1]));
         }
 
         public static (A, B, C) IfElse<A, B, C>(Scalar<bit> condition, (A a, B b, C c) whenTrue, (A a, B b, C c) whenFalse)
@@ -55,7 +55,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
             var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c], [whenFalse.a, whenFalse.b, whenFalse.c], ifOpen);
 
-            return ((A)retval[0], (B)retval[1], (C)retval[2]);
+            return (VariableHandle.Cast<A>(retval[0]), VariableHandle.Cast<B>(retval[1]), VariableHandle.Cast<C>(retval[2]));
         }
 
         public static (A, B, C, D) IfElse<A, B, C, D>(Scalar<bit> condition, (A a, B b, C c, D d) whenTrue, (A a, B b, C c, D d) whenFalse)
@@ -67,7 +67,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
             var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c, whenTrue.d], [whenFalse.a, whenFalse.b, whenFalse.c, whenFalse.d], ifOpen);
 
-            return ((A)retval[0], (B)retval[1], (C)retval[2], (D)retval[3]);
+            return (VariableHandle.Cast<A>(retval[0]), VariableHandle.Cast<B>(retval[1]), VariableHandle.Cast<C>(retval[2]), VariableHandle.Cast<D>(retval[3]));
         }
 
         public static (A, B, C, D, E) IfElse<A, B, C, D, E>(Scalar<bit> condition, (A a, B b, C c, D d, E e) whenTrue, (A a, B b, C c, D d, E e) whenFalse)
@@ -80,7 +80,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
             var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c, whenTrue.d, whenTrue.e], [whenFalse.a, whenFalse.b, whenFalse.c, whenFalse.d, whenFalse.e], ifOpen);
 
-            return ((A)retval[0], (B)retval[1], (C)retval[2], (D)retval[3], (E)retval[4]);
+            return (VariableHandle.Cast<A>(retval[0]), VariableHandle.Cast<B>(retval[1]), VariableHandle.Cast<C>(retval[2]), VariableHandle.Cast<D>(retval[3]), VariableHandle.Cast<E>(retval[4]));
         }
 
         public static (A, B, C, D, E, F) IfElse<A, B, C, D, E, F>(Scalar<bit> condition, (A a, B b, C c, D d, E e, F f) whenTrue, (A a, B b, C c, D d, E e, F f) whenFalse)
@@ -94,7 +94,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
             var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c, whenTrue.d, whenTrue.e, whenTrue.f], [whenFalse.a, whenFalse.b, whenFalse.c, whenFalse.d, whenFalse.e, whenFalse.f], ifOpen);
 
-            return ((A)retval[0], (B)retval[1], (C)retval[2], (D)retval[3], (E)retval[4], (F)retval[5]);
+            return (VariableHandle.Cast<A>(retval[0]), VariableHandle.Cast<B>(retval[1]), VariableHandle.Cast<C>(retval[2]), VariableHandle.Cast<D>(retval[3]), VariableHandle.Cast<E>(retval[4]), VariableHandle.Cast<F>(retval[5]));
         }
 
         public static (A, B, C, D, E, F, G) IfElse<A, B, C, D, E, F, G>(Scalar<bit> condition, (A a, B b, C c, D d, E e, F f, G g) whenTrue, (A a, B b, C c, D d, E e, F f, G g) whenFalse)
@@ -109,7 +109,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
             var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c, whenTrue.d, whenTrue.e, whenTrue.f, whenTrue.g], [whenFalse.a, whenFalse.b, whenFalse.c, whenFalse.d, whenFalse.e, whenFalse.f, whenFalse.g], ifOpen);
 
-            return ((A)retval[0], (B)retval[1], (C)retval[2], (D)retval[3], (E)retval[4], (F)retval[5], (G)retval[6]);
+            return (VariableHandle.Cast<A>(retval[0]), VariableHandle.Cast<B>(retval[1]), VariableHandle.Cast<C>(retval[2]), VariableHandle.Cast<D>(retval[3]), VariableHandle.Cast<E>(retval[4]), VariableHandle.Cast<F>(retval[5]), VariableHandle.Cast<G>(retval[6]));
         }
 
         public static (A, B, C, D, E, F, G, H) IfElse<A, B, C, D, E, F, G, H>(Scalar<bit> condition, (A a, B b, C c, D d, E e, F f, G g, H h) whenTrue, (A a, B b, C c, D d, E e, F f, G g, H h) whenFalse)
@@ -125,7 +125,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
             var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c, whenTrue.d, whenTrue.e, whenTrue.f, whenTrue.g, whenTrue.h], [whenFalse.a, whenFalse.b, whenFalse.c, whenFalse.d, whenFalse.e, whenFalse.f, whenFalse.g, whenFalse.h], ifOpen);
 
-            return ((A)retval[0], (B)retval[1], (C)retval[2], (D)retval[3], (E)retval[4], (F)retval[5], (G)retval[6], (H)retval[7]);
+            return (VariableHandle.Cast<A>(retval[0]), VariableHandle.Cast<B>(retval[1]), VariableHandle.Cast<C>(retval[2]), VariableHandle.Cast<D>(retval[3]), VariableHandle.Cast<E>(retval[4]), VariableHandle.Cast<F>(retval[5]), VariableHandle.Cast<G>(retval[6]), VariableHandle.Cast<H>(retval[7]));
         }
 
         public static ITensor[] IfElse(Scalar<bit> condition, ITensor[] whenTrue, ITensor[] whenFalse)

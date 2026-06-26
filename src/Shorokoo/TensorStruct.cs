@@ -73,9 +73,11 @@ namespace Shorokoo
     /// accessing it throws — a TensorStruct must be produced by a graph op (e.g. <c>Globals.TensorStruct</c>).
     /// </para>
     /// </summary>
-    public struct TensorStruct<T> : ITensorStruct where T : IStruct
+    public struct TensorStruct<T> : ITensorStruct, Shorokoo.Core.IValueHandle where T : IStruct
     {
         private ImmutableTensorStruct<T>? inner;
+
+        IVariable Shorokoo.Core.IValueHandle.Immutable => Imm;
 
         /// <summary>The wrapped immutable. A defaulted handle has no recoverable field layout, so this throws.</summary>
         internal readonly ImmutableTensorStruct<T> Imm

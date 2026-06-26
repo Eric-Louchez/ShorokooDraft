@@ -78,24 +78,24 @@ namespace Shorokoo
                 return CreateGenericScalar<T>(val);
             
             // Original non-generic logic
-            if (typeofT == typeof(bit)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToBoolean(val));
-            else if (typeofT == typeof(int8)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToSByte(val));
-            else if (typeofT == typeof(int16)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToInt16(val));
-            else if (typeofT == typeof(int32)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToInt32(val));
-            else if (typeofT == typeof(int64)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToInt64(val));
-            else if (typeofT == typeof(uint8)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToByte(val));
-            else if (typeofT == typeof(uint16)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToUInt16(val));
-            else if (typeofT == typeof(uint32)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToUInt32(val));
-            else if (typeofT == typeof(uint64)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToUInt64(val));
+            if (typeofT == typeof(bit)) return (Scalar<T>)(object)Scalar(Convert.ToBoolean(val));
+            else if (typeofT == typeof(int8)) return (Scalar<T>)(object)Scalar(Convert.ToSByte(val));
+            else if (typeofT == typeof(int16)) return (Scalar<T>)(object)Scalar(Convert.ToInt16(val));
+            else if (typeofT == typeof(int32)) return (Scalar<T>)(object)Scalar(Convert.ToInt32(val));
+            else if (typeofT == typeof(int64)) return (Scalar<T>)(object)Scalar(Convert.ToInt64(val));
+            else if (typeofT == typeof(uint8)) return (Scalar<T>)(object)Scalar(Convert.ToByte(val));
+            else if (typeofT == typeof(uint16)) return (Scalar<T>)(object)Scalar(Convert.ToUInt16(val));
+            else if (typeofT == typeof(uint32)) return (Scalar<T>)(object)Scalar(Convert.ToUInt32(val));
+            else if (typeofT == typeof(uint64)) return (Scalar<T>)(object)Scalar(Convert.ToUInt64(val));
             // Use an already-half value directly; otherwise route any other numeric value
             // through float (every supported numeric primitive is IConvertible). A bare
             // (BFloat16)/(Float16) cast off `object` is an unbox that only succeeds when the
             // boxed value is already that exact half type, so it would throw for e.g. an int —
             // the path reached by `Scalar<bfloat16> x = 5;` via the implicit conversions.
-            else if (typeofT == typeof(bfloat16)) return (ImmutableScalar<T>)(IScalar)Scalar(val is BFloat16 bf ? bf : (BFloat16)Convert.ToSingle(val));
-            else if (typeofT == typeof(float16)) return (ImmutableScalar<T>)(IScalar)Scalar(val is Float16 f16 ? f16 : (Float16)Convert.ToSingle(val));
-            else if (typeofT == typeof(float32)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToSingle(val));
-            else if (typeofT == typeof(float64)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToDouble(val));
+            else if (typeofT == typeof(bfloat16)) return (Scalar<T>)(object)Scalar(val is BFloat16 bf ? bf : (BFloat16)Convert.ToSingle(val));
+            else if (typeofT == typeof(float16)) return (Scalar<T>)(object)Scalar(val is Float16 f16 ? f16 : (Float16)Convert.ToSingle(val));
+            else if (typeofT == typeof(float32)) return (Scalar<T>)(object)Scalar(Convert.ToSingle(val));
+            else if (typeofT == typeof(float64)) return (Scalar<T>)(object)Scalar(Convert.ToDouble(val));
             else 
                 throw new UnsupportedDTypeException(ErrorCodes.GC002, typeof(T).Name, "Scalar<T>", 
                     $"Type '{typeof(T).FullName}' is not supported for generic scalar creation. Supported IVarTypes: bit, int8, int16, int32, int64, uint8, uint16, uint32, uint64, bfloat16, float16, float32, float64");
@@ -165,18 +165,18 @@ namespace Shorokoo
         /// <summary>Creates an empty (length-0) constant vector of element type T.</summary>
         public static Vector<T> EmptyVector<T>() where T : IVarType
         {
-            if (typeof(T) == typeof(bit)) return (ImmutableVector<T>)(object)Vector(new bool[0]);
-            if (typeof(T) == typeof(int8)) return (ImmutableVector<T>)(object)Vector(new sbyte[0]);
-            if (typeof(T) == typeof(int16)) return (ImmutableVector<T>)(object)Vector(new short[0]);
-            if (typeof(T) == typeof(int32)) return (ImmutableVector<T>)(object)Vector(new int[0]);
-            if (typeof(T) == typeof(int64)) return (ImmutableVector<T>)(object)Vector(new long[0]);
-            if (typeof(T) == typeof(uint8)) return (ImmutableVector<T>)(object)Vector(new byte[0]);
-            if (typeof(T) == typeof(uint16)) return (ImmutableVector<T>)(object)Vector(new ushort[0]);
-            if (typeof(T) == typeof(uint32)) return (ImmutableVector<T>)(object)Vector(new uint[0]);
-            if (typeof(T) == typeof(uint64)) return (ImmutableVector<T>)(object)Vector(new ulong[0]);
-            if (typeof(T) == typeof(float16)) return (ImmutableVector<T>)(object)Vector(new Float16[0]);
-            if (typeof(T) == typeof(bfloat16)) return (ImmutableVector<T>)(object)Vector(new BFloat16[0]);
-            if (typeof(T) == typeof(float32)) return (ImmutableVector<T>)(object)Vector(new float[0]);
+            if (typeof(T) == typeof(bit)) return (Vector<T>)(object)Vector(new bool[0]);
+            if (typeof(T) == typeof(int8)) return (Vector<T>)(object)Vector(new sbyte[0]);
+            if (typeof(T) == typeof(int16)) return (Vector<T>)(object)Vector(new short[0]);
+            if (typeof(T) == typeof(int32)) return (Vector<T>)(object)Vector(new int[0]);
+            if (typeof(T) == typeof(int64)) return (Vector<T>)(object)Vector(new long[0]);
+            if (typeof(T) == typeof(uint8)) return (Vector<T>)(object)Vector(new byte[0]);
+            if (typeof(T) == typeof(uint16)) return (Vector<T>)(object)Vector(new ushort[0]);
+            if (typeof(T) == typeof(uint32)) return (Vector<T>)(object)Vector(new uint[0]);
+            if (typeof(T) == typeof(uint64)) return (Vector<T>)(object)Vector(new ulong[0]);
+            if (typeof(T) == typeof(float16)) return (Vector<T>)(object)Vector(new Float16[0]);
+            if (typeof(T) == typeof(bfloat16)) return (Vector<T>)(object)Vector(new BFloat16[0]);
+            if (typeof(T) == typeof(float32)) return (Vector<T>)(object)Vector(new float[0]);
             throw new UnsupportedDTypeException(ErrorCodes.GC006, typeof(T).Name, "Vector<T>", 
                 $"Type '{typeof(T).FullName}' is not supported for generic empty vector creation");
         }

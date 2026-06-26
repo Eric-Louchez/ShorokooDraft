@@ -17,7 +17,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
     public static partial class Ops
     {
         public static A AutoGrad<A, T>(A input, Scalar<T> loss) where A : IVariable where T : FloatLike
-            => (A)InternalOp.AutoGrad([input], loss)[0]!;
+            => Shorokoo.Core.VariableHandle.Cast<A>(InternalOp.AutoGrad([input], loss)[0]!);
 
         public static (A?, B?) AutoGrad<A, B, T>(A? a, B? b, Scalar<T> loss)
             where A : IVariable
@@ -25,7 +25,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             where T : FloatLike
         {
             var retval = InternalOp.AutoGrad([a, b], loss);
-            return ((A?)retval[0], (B?)retval[1]);
+            return (Shorokoo.Core.VariableHandle.Cast<A>(retval[0]), Shorokoo.Core.VariableHandle.Cast<B>(retval[1]));
         }
 
         public static IVariable?[] AutoGrad<T>(IVariable?[] inputs, Scalar<T> loss) where T : FloatLike

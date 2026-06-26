@@ -1076,7 +1076,7 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions
             for (int i = 0; i < attributeNameAndValues.Length; i += 2)
                 attrs.Add(((string)attributeNameAndValues[i].NotNull(), attributeNameAndValues[i + 1]));
 
-            return (T)BuildNodeSingleOut(opCode, inputs, attrs.ToArray());
+            return Shorokoo.Core.VariableHandle.Cast<T>(BuildNodeSingleOut(opCode, inputs, attrs.ToArray()));
         }
 
         public static (T1, T2) CallCustomOperator<T1, T2>(string opCode, IVariable?[] inputs, object?[] attributeNameAndValues)
@@ -1088,7 +1088,7 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions
                 attrs.Add(((string)attributeNameAndValues[i].NotNull(), attributeNameAndValues[i + 1]));
 
             var retvals = BuildNodeMultiOut(opCode, inputs, attrs.ToArray());
-            return ((T1)(retvals[0].AssertNotNull()), (T2)(retvals[1].AssertNotNull()));
+            return (Shorokoo.Core.VariableHandle.Cast<T1>(retvals[0].AssertNotNull()), Shorokoo.Core.VariableHandle.Cast<T2>(retvals[1].AssertNotNull()));
         }
 
         public static (T1, T2, T3) CallCustomOperator<T1, T2, T3>(string opCode, IVariable?[] inputs, object?[] attributeNameAndValues)
@@ -1101,7 +1101,7 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions
                 attrs.Add(((string)attributeNameAndValues[i].NotNull(), attributeNameAndValues[i + 1]));
 
             var retvals = BuildNodeMultiOut(opCode, inputs, attrs.ToArray());
-            return ((T1)(retvals[0].AssertNotNull()), (T2)(retvals[1].AssertNotNull()), (T3)(retvals[2].AssertNotNull()));
+            return (Shorokoo.Core.VariableHandle.Cast<T1>(retvals[0].AssertNotNull()), Shorokoo.Core.VariableHandle.Cast<T2>(retvals[1].AssertNotNull()), Shorokoo.Core.VariableHandle.Cast<T3>(retvals[2].AssertNotNull()));
         }
 
         public static (T1, T2, T3, T4) CallCustomOperator<T1, T2, T3, T4>(string opCode, IVariable?[] inputs, object?[] attributeNameAndValues)
@@ -1115,7 +1115,7 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions
                 attrs.Add(((string)attributeNameAndValues[i].NotNull(), attributeNameAndValues[i + 1]));
 
             var retvals = BuildNodeMultiOut(opCode, inputs, attrs.ToArray());
-            return ((T1)(retvals[0].AssertNotNull()), (T2)(retvals[1].AssertNotNull()), (T3)(retvals[2].AssertNotNull()), (T4)(retvals[3].AssertNotNull()));
+            return (Shorokoo.Core.VariableHandle.Cast<T1>(retvals[0].AssertNotNull()), Shorokoo.Core.VariableHandle.Cast<T2>(retvals[1].AssertNotNull()), Shorokoo.Core.VariableHandle.Cast<T3>(retvals[2].AssertNotNull()), Shorokoo.Core.VariableHandle.Cast<T4>(retvals[3].AssertNotNull()));
         }
 
         public static T[] CallCustomOperatorArrayOut<T>(string opCode, IVariable?[] inputs, object?[] attributeNameAndValues)
@@ -1126,7 +1126,7 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions
                 attrs.Add(((string)attributeNameAndValues[i].NotNull(), attributeNameAndValues[i + 1]));
 
             var retvals = BuildNodeMultiOut(opCode, inputs, attrs.ToArray());
-            return retvals.Cast<T>().ToArray();
+            return retvals.Select(v => Shorokoo.Core.VariableHandle.Cast<T>(v)).ToArray();
         }
 
         public static ImmutableDictionary<string, IVariable?[]> BuildNodeFullOut(string opCode, IVariable?[] inputs, (string attributeName, object? attributeValue)[] attrs, string? identifierTemplateString = null, string?[]? outputNames = null, Function? targetFunction = null, Node? openNode = null)
@@ -1136,9 +1136,12 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions
         {
             var nodeDefResolver = Definitions.NodeDefinitions[opCode];
             var csharpAttributeVals = attrs.ToDictionary(x => x.attributeName, x => x.attributeValue);
-            
+
             var fullInputs = new Dictionary<string, IVariable?[]>();
-            fullInputs[""] = inputs;
+            // Normalise any value-struct handle to the Immutable* graph value it wraps: the graph
+            // identifies tensors by node reference, so a struct handle leaking in as an input would
+            // not match its producer's output (breaking key assignment / topological checks).
+            fullInputs[""] = NormalizeInputs(inputs);
 
             if (nodeDefResolver.IsCloseNode)
             {
@@ -1147,7 +1150,7 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions
                     Debug.Assert(csharpAttributeVals[graphDef.AttributeName] is not null,
                         $"Graph attribute '{graphDef.AttributeName}' is null when it should contain variables");
 
-                    fullInputs[graphDef.AttributeName] = (IVariable?[])csharpAttributeVals[graphDef.AttributeName]!;
+                    fullInputs[graphDef.AttributeName] = NormalizeInputs((IVariable?[])csharpAttributeVals[graphDef.AttributeName]!);
                     csharpAttributeVals[graphDef.AttributeName] = new BestGraphAttribute { GraphAttributeName = graphDef.AttributeName };
                 }
             }
@@ -1155,6 +1158,24 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions
             var attributes = OnnxProtoAttributes.FromCSharpVals(csharpAttributeVals, nodeDefResolver.AttributeDefs);
 
             return BuildNode(opCode, fullInputs, attributes, identifierTemplateString, outputNames, targetFunction, openNode);
+        }
+
+        // Replace any value-struct handle with the Immutable* graph value it wraps (see BuildNode).
+        private static IVariable?[] NormalizeInputs(IVariable?[] inputs)
+        {
+            IVariable?[]? normalized = null;
+            for (int i = 0; i < inputs.Length; i++)
+            {
+                var input = inputs[i];
+                if (input is null) continue;
+                var imm = Shorokoo.Core.VariableHandle.Normalize(input);
+                if (!ReferenceEquals(imm, input))
+                {
+                    normalized ??= (IVariable?[])inputs.Clone();
+                    normalized[i] = imm;
+                }
+            }
+            return normalized ?? inputs;
         }
 
         public static Node BuildNode(string opCode, Dictionary<string, IVariable?[]> fullInputs, OnnxProtoAttributes attributes, string? identifierTemplateString = null, string?[]? outputNames = null, Function? function = null, Node? openNode = null)

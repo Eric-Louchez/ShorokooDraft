@@ -89,9 +89,11 @@ namespace Shorokoo.Core
     /// a defaulted handle lazily materialises an empty sequence. This pass only makes mutation
     /// possible — behaviour is unchanged (de-facto immutable).
     /// </summary>
-    public struct TensorSequence<T> : ITensorSequence where T : IVarType
+    public struct TensorSequence<T> : ITensorSequence, IValueHandle where T : IVarType
     {
         private ImmutableTensorSequence<T>? inner;
+
+        IVariable IValueHandle.Immutable => Imm;
 
         /// <summary>The wrapped immutable, materialising an empty sequence for a defaulted handle.</summary>
         internal ImmutableTensorSequence<T> Imm => inner ??= ImmutableTensorSequence<T>.CreateEmpty();

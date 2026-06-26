@@ -68,19 +68,19 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<bit> Inline(Tensor<float32> x)
         {
             // dilations: 10 - ((3-1)*2+1) + 1 = 6.
-            var dil = (Tensor<float32>)OnnxOp.AveragePool(x, autoPad: AutoPad.NotSet, ceilMode: false,
+            var dil = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.AveragePool(x, autoPad: AutoPad.NotSet, ceilMode: false,
                 countIncludePad: false, dilations: [2L, 2L], kernelShape: [3L, 3L],
                 pads: [0L, 0L, 0L, 0L], strides: [1L, 1L]);
             // ceil_mode + count_include_pad + clamp: ceil((10+2-2)/4)+1 = 4 → clamp → 3.
-            var ceilClamp = (Tensor<float32>)OnnxOp.AveragePool(x, autoPad: AutoPad.NotSet, ceilMode: true,
+            var ceilClamp = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.AveragePool(x, autoPad: AutoPad.NotSet, ceilMode: true,
                 countIncludePad: true, dilations: [1L, 1L], kernelShape: [2L, 2L],
                 pads: [1L, 1L, 1L, 1L], strides: [4L, 4L]);
             // SAME_UPPER: ceil(10/3) = 4.
-            var sameUpper = (Tensor<float32>)OnnxOp.AveragePool(x, autoPad: AutoPad.SameUpper, ceilMode: false,
+            var sameUpper = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.AveragePool(x, autoPad: AutoPad.SameUpper, ceilMode: false,
                 countIncludePad: false, dilations: null, kernelShape: [4L, 4L],
                 pads: null, strides: [3L, 3L]);
             // VALID: (10-4)/2+1 = 4.
-            var valid = (Tensor<float32>)OnnxOp.AveragePool(x, autoPad: AutoPad.Valid, ceilMode: false,
+            var valid = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.AveragePool(x, autoPad: AutoPad.Valid, ceilMode: false,
                 countIncludePad: false, dilations: null, kernelShape: [4L, 4L],
                 pads: null, strides: [2L, 2L]);
 
@@ -105,11 +105,11 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<bit> Inline(Tensor<float32> x)
         {
             // ceil_mode + clamp: ceil((10+2-2)/4)+1 = 4 → (4-1)*4 ≥ 10+1 → 3.
-            var lpCeilClamp = (Tensor<float32>)OnnxOp.LpPool(x, autoPad: AutoPad.NotSet, ceilMode: true,
+            var lpCeilClamp = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.LpPool(x, autoPad: AutoPad.NotSet, ceilMode: true,
                 dilations: [1L, 1L], kernelShape: [2L, 2L], p: 3L,
                 pads: [1L, 1L, 1L, 1L], strides: [4L, 4L]);
             // dilations: (10 - ((3-1)*2+1))/2 + 1 = 3.
-            var lpDil = (Tensor<float32>)OnnxOp.LpPool(x, autoPad: AutoPad.NotSet, ceilMode: false,
+            var lpDil = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.LpPool(x, autoPad: AutoPad.NotSet, ceilMode: false,
                 dilations: [2L, 2L], kernelShape: [3L, 3L], p: 2L,
                 pads: [0L, 0L, 0L, 0L], strides: [2L, 2L]);
             var gap = NN.GlobalAveragePool(x);
@@ -233,19 +233,19 @@ namespace Shorokoo.Tests.Modules
             Scalar<float32> xScale, Scalar<float32> wScale, Scalar<float32> yScale, Scalar<int8> yZp)
         {
             // ConvInteger with dilations: 7 - ((3-1)*2+1) + 1 = 3; output dtype int32.
-            var ciDil = (Tensor<int32>)OnnxOp.ConvInteger(x, w, xZp, wZp,
+            var ciDil = (Tensor<int32>)(ImmutableTensor<int32>)OnnxOp.ConvInteger(x, w, xZp, wZp,
                 autoPad: AutoPad.NotSet, dilations: [2L, 2L], group: 1L,
                 kernelShape: [3L, 3L], pads: [0L, 0L, 0L, 0L], strides: [1L, 1L]);
             // ConvInteger SAME_LOWER: ceil(7/2) = 4 (pads unset — ORT rejects auto_pad + pads).
-            var ciSame = (Tensor<int32>)OnnxOp.ConvInteger(x, w, xZp, wZp,
+            var ciSame = (Tensor<int32>)(ImmutableTensor<int32>)OnnxOp.ConvInteger(x, w, xZp, wZp,
                 autoPad: AutoPad.SameLower, dilations: [1L, 1L], group: 1L,
                 kernelShape: [3L, 3L], pads: null, strides: [2L, 2L]);
             // QLinearConv SAME_UPPER: ceil(7/2) = 4; output dtype int8 (y_zero_point's type).
-            var qlcSame = (Tensor<int8>)OnnxOp.QLinearConv(x, xScale, xZp, w, wScale, wZp, yScale, yZp,
+            var qlcSame = (Tensor<int8>)(ImmutableTensor<int8>)OnnxOp.QLinearConv(x, xScale, xZp, w, wScale, wZp, yScale, yZp,
                 b: null, autoPad: AutoPad.SameUpper, dilations: null, group: 1L,
                 kernelShape: [3L, 3L], pads: null, strides: [2L, 2L]);
             // QLinearConv asymmetric pads [2,0,0,1]: H 7+2+0-3+1 = 7, W 7+0+1-3+1 = 6.
-            var qlcAsym = (Tensor<int8>)OnnxOp.QLinearConv(x, xScale, xZp, w, wScale, wZp, yScale, yZp,
+            var qlcAsym = (Tensor<int8>)(ImmutableTensor<int8>)OnnxOp.QLinearConv(x, xScale, xZp, w, wScale, wZp, yScale, yZp,
                 b: null, autoPad: AutoPad.NotSet, dilations: [1L, 1L], group: 1L,
                 kernelShape: [3L, 3L], pads: [2L, 0L, 0L, 1L], strides: [1L, 1L]);
 
@@ -268,7 +268,7 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Tensor<float32> x, Tensor<float32> rois)
         {
-            var roi = (Tensor<float32>)OnnxOp.MaxRoiPool(x, rois,
+            var roi = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.MaxRoiPool(x, rois,
                 pooledShape: [3L, 4L], spatialScale: 1f);
             var mismatch = (roi.ShapeTensor() - Vector(2L, 2L, 3L, 4L)).Abs()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();
@@ -285,7 +285,7 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<bit> Inline(Tensor<float32> x, Tensor<float32> w, Tensor<float32> offset, Vector<float32> b)
         {
             // H: (4+1+1-2)/2+1 = 3; W: (4-2)/2+1 = 2.
-            var dc = (Tensor<float32>)OnnxOp.DeformConv(x, w, offset, b, mask: null,
+            var dc = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.DeformConv(x, w, offset, b, mask: null,
                 dilations: [1L, 1L], group: 1L, kernelShape: [2L, 2L],
                 offsetGroup: 1L, pads: [1L, 0L, 1L, 0L], strides: [2L, 2L]);
             var mismatch = (dc.ShapeTensor() - Vector(1L, 1L, 3L, 2L)).Abs()
@@ -304,10 +304,10 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<bit> Inline(Tensor<float32> pooled, Tensor<int64> indices)
         {
             // H: 2*(2-1)+2-1-1 = 2; W: 2*(2-1)+2 = 4.
-            var formula = (Tensor<float32>)OnnxOp.MaxUnpool(pooled, indices,
+            var formula = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.MaxUnpool(pooled, indices,
                 kernelShape: [2L, 2L], pads: [1L, 0L, 1L, 0L], strides: [2L, 2L]);
             // output_shape input overrides the formula (default would be [1,1,4,4]).
-            var overridden = (Tensor<float32>)OnnxOp.MaxUnpool(pooled, indices,
+            var overridden = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.MaxUnpool(pooled, indices,
                 kernelShape: [2L, 2L], strides: [2L, 2L],
                 outputShape: Vector(1L, 1L, 5L, 5L));
 

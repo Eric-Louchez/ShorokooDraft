@@ -415,19 +415,19 @@ namespace Shorokoo
         /// <summary>Splits into <paramref name="numOutputs"/> equal parts along <paramref name="axis"/>.</summary>
         public Tensor<T>[] Split(long numOutputs, long axis = 0)
         {
-            return OnnxOp.Split(this, null, axis: axis, numOutputs: numOutputs, variadicOutputCount: numOutputs).Cast<Tensor<T>>().ToArray();
+            return OnnxOp.Split(this, null, axis: axis, numOutputs: numOutputs, variadicOutputCount: numOutputs).Select(v => (Tensor<T>)(ImmutableTensor<T>)v).ToArray();
         }
 
         /// <summary>Splits along <paramref name="axis"/> into parts of the given sizes.</summary>
         public Tensor<T>[] Split(long[] splits, long axis = 0)
         {
-            return OnnxOp.Split(this, Vector(splits), axis: axis, numOutputs: null, variadicOutputCount: splits.Length).Cast<Tensor<T>>().ToArray();
+            return OnnxOp.Split(this, Vector(splits), axis: axis, numOutputs: null, variadicOutputCount: splits.Length).Select(v => (Tensor<T>)(ImmutableTensor<T>)v).ToArray();
         }
 
         /// <summary>Splits along <paramref name="axis"/>: by <paramref name="splits"/> sizes when given, otherwise into <paramref name="numOutputs"/> equal parts.</summary>
         public Tensor<T>[] Split(Vector<int64>? splits, long axis, long numOutputs)
         {
-            return OnnxOp.Split(this, splits, axis: axis, numOutputs: splits is null ? numOutputs : null, variadicOutputCount: numOutputs).Cast<Tensor<T>>().ToArray();
+            return OnnxOp.Split(this, splits, axis: axis, numOutputs: splits is null ? numOutputs : null, variadicOutputCount: numOutputs).Select(v => (Tensor<T>)(ImmutableTensor<T>)v).ToArray();
         }
 
         /// <summary>Resizes to the target <paramref name="sizes"/> (ONNX Resize).</summary>
@@ -515,8 +515,8 @@ namespace Shorokoo
 
         /// <summary>Casts the element type to <typeparamref name="V"/>; returns this tensor unchanged when the types already match.</summary>
         public Tensor<V> Cast<V>(bool saturate = true) where V : IVarType
-            => typeof(V) == typeof(T) ? 
-                (ImmutableTensor<V>)(ITensor)this :
+            => typeof(V) == typeof(T) ?
+                (Tensor<V>)(object)this :
                 (ImmutableTensor<V>)OnnxOp.Cast(this, saturate ? null : saturate, OnnxUtils.GetDType<V>());
 
         /// <summary>Creates a tensor of the given shape filled with the scalar value <paramref name="val"/> (ONNX ConstantOfShape).</summary>

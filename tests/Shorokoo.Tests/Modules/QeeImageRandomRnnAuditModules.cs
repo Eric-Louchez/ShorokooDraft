@@ -29,20 +29,20 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<bit> Inline(Tensor<float32> x)
         {
             // scales over every dim: floor(8*0.5)=4, floor(8*2)=16.
-            var scalesAll = (Tensor<float32>)OnnxOp.Resize(x, roi: null,
+            var scalesAll = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Resize(x, roi: null,
                 scales: Vector(1f, 1f, 0.5f, 2f), sizes: null,
                 antialias: null, axes: null, coordinateTransformationMode: null,
                 cubicCoeffA: null, excludeOutside: null, extrapolationValue: null,
                 keepAspectRatioPolicy: null, mode: ResizeMode.Nearest, nearestMode: null);
             // sizes over every dim (linear + align_corners): exactly [1,1,3,5].
-            var sizesAll = (Tensor<float32>)OnnxOp.Resize(x, roi: null,
+            var sizesAll = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Resize(x, roi: null,
                 scales: null, sizes: Vector(1L, 1L, 3L, 5L),
                 antialias: null, axes: null,
                 coordinateTransformationMode: CoordinateTransformationMode.Align_corners,
                 cubicCoeffA: null, excludeOutside: null, extrapolationValue: null,
                 keepAspectRatioPolicy: null, mode: ResizeMode.Linear, nearestMode: null);
             // axes subset with sizes (nearest + floor nearest_mode): only dims 2,3 change.
-            var axesSizes = (Tensor<float32>)OnnxOp.Resize(x, roi: null,
+            var axesSizes = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Resize(x, roi: null,
                 scales: null, sizes: Vector(4L, 4L),
                 antialias: null, axes: [2L, 3L], coordinateTransformationMode: null,
                 cubicCoeffA: null, excludeOutside: null, extrapolationValue: null,
@@ -50,39 +50,39 @@ namespace Shorokoo.Tests.Modules
                 nearestMode: NearestMode.Floor);
             // single-axis scales: axes [3] → floor(8*0.5) = 4 (negative axes are covered by
             // the QEE-only module below — ORT 1.25.1's Resize kernel rejects them).
-            var axesScales = (Tensor<float32>)OnnxOp.Resize(x, roi: null,
+            var axesScales = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Resize(x, roi: null,
                 scales: Vector(0.5f), sizes: null,
                 antialias: null, axes: [3L], coordinateTransformationMode: null,
                 cubicCoeffA: null, excludeOutside: null, extrapolationValue: null,
                 keepAspectRatioPolicy: null, mode: ResizeMode.Nearest, nearestMode: null);
             // not_larger: uniform scale = min(4/8, 6/8) = 0.5 → round(0.5*8) = 4 on both axes.
-            var notLarger = (Tensor<float32>)OnnxOp.Resize(x, roi: null,
+            var notLarger = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Resize(x, roi: null,
                 scales: null, sizes: Vector(4L, 6L),
                 antialias: null, axes: [2L, 3L], coordinateTransformationMode: null,
                 cubicCoeffA: null, excludeOutside: null, extrapolationValue: null,
                 keepAspectRatioPolicy: KeepAspectRatioPolicy.not_larger,
                 mode: ResizeMode.Nearest, nearestMode: null);
             // not_smaller: uniform scale = max(4/8, 6/8) = 0.75 → round(0.75*8) = 6.
-            var notSmaller = (Tensor<float32>)OnnxOp.Resize(x, roi: null,
+            var notSmaller = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Resize(x, roi: null,
                 scales: null, sizes: Vector(4L, 6L),
                 antialias: null, axes: [2L, 3L], coordinateTransformationMode: null,
                 cubicCoeffA: null, excludeOutside: null, extrapolationValue: null,
                 keepAspectRatioPolicy: KeepAspectRatioPolicy.not_smaller,
                 mode: ResizeMode.Nearest, nearestMode: null);
             // cubic upscale with cubic_coeff_a + exclude_outside.
-            var cubic = (Tensor<float32>)OnnxOp.Resize(x, roi: null,
+            var cubic = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Resize(x, roi: null,
                 scales: Vector(1f, 1f, 2f, 2f), sizes: null,
                 antialias: null, axes: null, coordinateTransformationMode: null,
                 cubicCoeffA: -0.5f, excludeOutside: true, extrapolationValue: null,
                 keepAspectRatioPolicy: null, mode: ResizeMode.Cubic, nearestMode: null);
             // antialiased linear downscale.
-            var anti = (Tensor<float32>)OnnxOp.Resize(x, roi: null,
+            var anti = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Resize(x, roi: null,
                 scales: Vector(1f, 1f, 0.5f, 0.5f), sizes: null,
                 antialias: true, axes: null, coordinateTransformationMode: null,
                 cubicCoeffA: null, excludeOutside: null, extrapolationValue: null,
                 keepAspectRatioPolicy: null, mode: ResizeMode.Linear, nearestMode: null);
             // tf_crop_and_resize: roi [start*4, end*4] + extrapolation_value; scales halve H/W.
-            var cropResize = (Tensor<float32>)OnnxOp.Resize(x,
+            var cropResize = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Resize(x,
                 roi: Vector(0f, 0f, 0f, 0f, 1f, 1f, 0.5f, 0.5f),
                 scales: Vector(1f, 1f, 0.5f, 0.5f), sizes: null,
                 antialias: null, axes: null,
@@ -117,13 +117,13 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<bit> Inline(Tensor<float32> x)
         {
             // axes [-1] = dim 3 → floor(8*0.5) = 4.
-            var negScales = (Tensor<float32>)OnnxOp.Resize(x, roi: null,
+            var negScales = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Resize(x, roi: null,
                 scales: Vector(0.5f), sizes: null,
                 antialias: null, axes: [-1L], coordinateTransformationMode: null,
                 cubicCoeffA: null, excludeOutside: null, extrapolationValue: null,
                 keepAspectRatioPolicy: null, mode: ResizeMode.Nearest, nearestMode: null);
             // axes [-2, -1] = dims 2, 3 with sizes.
-            var negSizes = (Tensor<float32>)OnnxOp.Resize(x, roi: null,
+            var negSizes = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Resize(x, roi: null,
                 scales: null, sizes: Vector(3L, 5L),
                 antialias: null, axes: [-2L, -1L], coordinateTransformationMode: null,
                 cubicCoeffA: null, excludeOutside: null, extrapolationValue: null,
@@ -149,19 +149,19 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<bit> Inline(Tensor<float32> x)
         {
             // floor semantics: [1, floor(2*2), floor(4*1.5), floor(4*2)] = [1,4,6,8].
-            var up = (Tensor<float32>)OnnxOp.Upsample(x, Vector(1f, 2f, 1.5f, 2f),
+            var up = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Upsample(x, Vector(1f, 2f, 1.5f, 2f),
                 mode: ResizeMode.Nearest);
 
             // Identity affine theta [1,2,3]; size [N=1, C=2, H=3, W=5] → grid [1,3,5,2].
             var theta = OnnxOp.Reshape(Vector(1f, 0f, 0f, 0f, 1f, 0f), Vector(1L, 2L, 3L),
                 allowZero: false);
-            var grid = (Tensor<float32>)OnnxOp.AffineGrid(theta, Vector(1L, 2L, 3L, 5L),
+            var grid = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.AffineGrid(theta, Vector(1L, 2L, 3L, 5L),
                 alignCorners: false);
             // GridSample: batch/channels from X, spatial dims from the grid → [1,2,3,5].
-            var sampledLinear = (Tensor<float32>)OnnxOp.GridSample(x, grid,
+            var sampledLinear = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.GridSample(x, grid,
                 alignCorners: false, mode: GridSampleMode.Linear,
                 paddingMode: GridSamplePaddingMode.Zeros);
-            var sampledNearest = (Tensor<float32>)OnnxOp.GridSample(x, grid,
+            var sampledNearest = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.GridSample(x, grid,
                 alignCorners: true, mode: GridSampleMode.Nearest,
                 paddingMode: GridSamplePaddingMode.Border);
 
@@ -187,9 +187,9 @@ namespace Shorokoo.Tests.Modules
             var theta3d = OnnxOp.Reshape(
                 Vector(1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f),
                 Vector(1L, 3L, 4L), allowZero: false);
-            var grid5 = (Tensor<float32>)OnnxOp.AffineGrid(theta3d, Vector(1L, 1L, 2L, 3L, 4L),
+            var grid5 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.AffineGrid(theta3d, Vector(1L, 1L, 2L, 3L, 4L),
                 alignCorners: true);
-            var sampled5 = (Tensor<float32>)OnnxOp.GridSample(x5, grid5,
+            var sampled5 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.GridSample(x5, grid5,
                 alignCorners: true, mode: GridSampleMode.Linear,
                 paddingMode: GridSamplePaddingMode.Zeros);
 
@@ -211,11 +211,11 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Tensor<float32> x, Tensor<float32> rois, Tensor<int64> batchIdx)
         {
-            var avg = (Tensor<float32>)OnnxOp.RoiAlign(x, rois, batchIdx,
+            var avg = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.RoiAlign(x, rois, batchIdx,
                 coordinateTransformationMode: RoiAlignTransformationMode.Half_pixel,
                 mode: RoiAlignMode.Avg, outputHeight: 3, outputWidth: 4,
                 samplingRatio: 2, spatialScale: 1f);
-            var max = (Tensor<float32>)OnnxOp.RoiAlign(x, rois, batchIdx,
+            var max = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.RoiAlign(x, rois, batchIdx,
                 coordinateTransformationMode: RoiAlignTransformationMode.Output_half_pixel,
                 mode: RoiAlignMode.Max, outputHeight: 2, outputWidth: 2,
                 samplingRatio: 1, spatialScale: 0.5f);
@@ -242,13 +242,13 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<bit> Inline(Tensor<float32> boxes, Tensor<float32> scores)
         {
             // 4 boxes; boxes 0/1 overlap (IoU > 0.5), boxes 2/3 overlap → 2 survivors.
-            var nms2 = (Tensor<int64>)OnnxOp.NonMaxSuppression(boxes, scores,
+            var nms2 = (Tensor<int64>)(ImmutableTensor<int64>)OnnxOp.NonMaxSuppression(boxes, scores,
                 Scalar(2L), Scalar(0.5f), Scalar(0.0f), centerPointBox: false);
             // Cap of one box per class → [1,3].
-            var nms1 = (Tensor<int64>)OnnxOp.NonMaxSuppression(boxes, scores,
+            var nms1 = (Tensor<int64>)(ImmutableTensor<int64>)OnnxOp.NonMaxSuppression(boxes, scores,
                 Scalar(1L), Scalar(0.5f), Scalar(0.0f), centerPointBox: false);
             // center_point_box=1 ([cx,cy,w,h] interpretation), cap 1 → [1,3].
-            var nmsCenter = (Tensor<int64>)OnnxOp.NonMaxSuppression(boxes, scores,
+            var nmsCenter = (Tensor<int64>)(ImmutableTensor<int64>)OnnxOp.NonMaxSuppression(boxes, scores,
                 Scalar(1L), Scalar(0.5f), Scalar(0.0f), centerPointBox: true);
 
             var mismatch =
@@ -270,7 +270,7 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Tensor<float32> boxes, Tensor<float32> scores)
         {
-            var nmsEmpty = (Tensor<int64>)OnnxOp.NonMaxSuppression(boxes, scores);
+            var nmsEmpty = (Tensor<int64>)(ImmutableTensor<int64>)OnnxOp.NonMaxSuppression(boxes, scores);
             var mismatch = (nmsEmpty.ShapeTensor() - Vector(0L, 3L)).Abs()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             return mismatch < Scalar(1L);
@@ -283,7 +283,7 @@ namespace Shorokoo.Tests.Modules
     public partial class QeeNmsRankOnlyCheck
     {
         public static Tensor<int64> Inline(Tensor<float32> boxes, Tensor<float32> scores)
-            => (Tensor<int64>)OnnxOp.NonMaxSuppression(boxes, scores,
+            => (Tensor<int64>)(ImmutableTensor<int64>)OnnxOp.NonMaxSuppression(boxes, scores,
                 Scalar(2L), Scalar(0.5f), Scalar(0.0f), centerPointBox: false);
     }
 
@@ -297,18 +297,18 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<bit> Inline(Tensor<float32> cols, Tensor<float32> img)
         {
             // [1, 8, 12] with block [2,2] → C = 8/4 = 2; image [4,5] (L = 3*4 = 12).
-            var c2i = (Tensor<float32>)OnnxOp.Col2Im(cols, Vector(4L, 5L), Vector(2L, 2L),
+            var c2i = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Col2Im(cols, Vector(4L, 5L), Vector(2L, 2L),
                 dilations: [1L, 1L], pads: [0L, 0L, 0L, 0L], strides: [1L, 1L]);
 
             // All axes: rows crop 3→2 (offset (3-2)/2 = 0 → rows 0..1), cols pad 5→7.
             // Σ out = Σ rows 0..1 of img = 55 (zero padding adds nothing).
-            var cropPad = (Tensor<float32>)OnnxOp.CenterCropPad(img, Vector(2L, 7L), axes: null);
+            var cropPad = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.CenterCropPad(img, Vector(2L, 7L), axes: null);
             // Negative axis subset: axes [-1], cols crop 5→4 (offset 0 → cols 0..3) → Σ = 90.
-            var cropAxes = (Tensor<float32>)OnnxOp.CenterCropPad(img, Vector(4L), axes: [-1L]);
+            var cropAxes = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.CenterCropPad(img, Vector(4L), axes: [-1L]);
             // Pad rows 3→5: begin pad (5-3)/2 = 1 → out row 0 is zeros, out row 1 = in row 0.
-            var padRows = (Tensor<float32>)OnnxOp.CenterCropPad(img, Vector(5L, 5L), axes: null);
-            var padRow0 = (Tensor<float32>)OnnxOp.Gather(padRows, Scalar(0L), axis: 0);
-            var padRow1 = (Tensor<float32>)OnnxOp.Gather(padRows, Scalar(1L), axis: 0);
+            var padRows = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.CenterCropPad(img, Vector(5L, 5L), axes: null);
+            var padRow0 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Gather(padRows, Scalar(0L), axis: 0);
+            var padRow1 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Gather(padRows, Scalar(1L), axis: 0);
 
             var shapeMismatch =
                 ShapeMismatch(c2i, Vector(1L, 2L, 4L, 5L)) +
@@ -342,24 +342,24 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Tensor<float32> probs, Tensor<float32> logits)
         {
-            var rn = (Tensor<float32>)OnnxOp.RandomNormal([2L, 2L], mean: 0f, scale: 1f,
+            var rn = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.RandomNormal([2L, 2L], mean: 0f, scale: 1f,
                 dtype: DType.Float32, seed: 5f);
             // dtype omitted → defaults to float32 (validated by the QEE dtype pass).
-            var ru = (Tensor<float32>)OnnxOp.RandomUniform([3L], high: 1f, low: 0f,
+            var ru = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.RandomUniform([3L], high: 1f, low: 0f,
                 dtype: null, seed: 3f);
-            var rnl = (Tensor<float32>)OnnxOp.RandomNormalLike(probs, mean: 0f, scale: 1f,
+            var rnl = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.RandomNormalLike(probs, mean: 0f, scale: 1f,
                 dtype: null, seed: 1f);
             // dtype override on the Like-variant.
-            var rul = (Tensor<float64>)OnnxOp.RandomUniformLike(probs, high: 1f, low: 0f,
+            var rul = (Tensor<float64>)(ImmutableTensor<float64>)OnnxOp.RandomUniformLike(probs, high: 1f, low: 0f,
                 dtype: DType.Float64, seed: 2f);
-            var bern = (Tensor<float32>)OnnxOp.Bernoulli(probs, dtype: null, seed: 7f);
-            var bernInt = (Tensor<int32>)OnnxOp.Bernoulli(probs, dtype: DType.Int32, seed: 7f);
+            var bern = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Bernoulli(probs, dtype: null, seed: 7f);
+            var bernInt = (Tensor<int32>)(ImmutableTensor<int32>)OnnxOp.Bernoulli(probs, dtype: DType.Int32, seed: 7f);
             // No dtype → int32 per spec (the node-def default branch used to be unresolvable).
-            var mult = (Tensor<int32>)OnnxOp.Multinomial(logits, dtype: null, sampleSize: 5L, seed: 11f);
+            var mult = (Tensor<int32>)(ImmutableTensor<int32>)OnnxOp.Multinomial(logits, dtype: null, sampleSize: 5L, seed: 11f);
 
             // EyeLike is deterministic: ones on diagonal k. [2,4] k=1 → 2 ones; k=-1 → 1 one.
-            var eyeUp = (Tensor<float32>)OnnxOp.EyeLike(logits, dtype: null, k: 1);
-            var eyeDown = (Tensor<int64>)OnnxOp.EyeLike(logits, dtype: DType.Int64, k: -1);
+            var eyeUp = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.EyeLike(logits, dtype: null, k: 1);
+            var eyeDown = (Tensor<int64>)(ImmutableTensor<int64>)OnnxOp.EyeLike(logits, dtype: DType.Int64, k: -1);
 
             var mismatch =
                 ShapeMismatch(rn, Vector(2L, 2L)) +
@@ -389,13 +389,13 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline()
         {
-            var rn1 = (Tensor<float32>)OnnxOp.RandomNormal([2L, 3L], mean: 0f, scale: 1f,
+            var rn1 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.RandomNormal([2L, 3L], mean: 0f, scale: 1f,
                 dtype: DType.Float32, seed: 42f);
-            var rn2 = (Tensor<float32>)OnnxOp.RandomNormal([2L, 3L], mean: 0f, scale: 1f,
+            var rn2 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.RandomNormal([2L, 3L], mean: 0f, scale: 1f,
                 dtype: DType.Float32, seed: 42f);
-            var ru1 = (Tensor<float32>)OnnxOp.RandomUniform([2L, 3L], high: 1f, low: 0f,
+            var ru1 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.RandomUniform([2L, 3L], high: 1f, low: 0f,
                 dtype: DType.Float32, seed: 7f);
-            var ru2 = (Tensor<float32>)OnnxOp.RandomUniform([2L, 3L], high: 1f, low: 0f,
+            var ru2 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.RandomUniform([2L, 3L], high: 1f, low: 0f,
                 dtype: DType.Float32, seed: 7f);
             var diff = (rn1 - rn2).Abs().Reduce(ReduceKind.Sum, keepDims: false).Scalar()
                      + (ru1 - ru2).Abs().Reduce(ReduceKind.Sum, keepDims: false).Scalar();
@@ -412,14 +412,14 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline()
         {
-            var rInt = (Tensor<int64>)OnnxOp.Range(Scalar(0L), Scalar(7L), Scalar(2L));
-            var rNeg = (Tensor<int64>)OnnxOp.Range(Scalar(5L), Scalar(-5L), Scalar(-3L));
-            var rEmpty = (Tensor<int64>)OnnxOp.Range(Scalar(3L), Scalar(3L), Scalar(1L));
-            var rFloat = (Tensor<float32>)OnnxOp.Range(Scalar(0.5f), Scalar(2f), Scalar(0.5f));
+            var rInt = (Tensor<int64>)(ImmutableTensor<int64>)OnnxOp.Range(Scalar(0L), Scalar(7L), Scalar(2L));
+            var rNeg = (Tensor<int64>)(ImmutableTensor<int64>)OnnxOp.Range(Scalar(5L), Scalar(-5L), Scalar(-3L));
+            var rEmpty = (Tensor<int64>)(ImmutableTensor<int64>)OnnxOp.Range(Scalar(3L), Scalar(3L), Scalar(1L));
+            var rFloat = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Range(Scalar(0.5f), Scalar(2f), Scalar(0.5f));
 
-            var cosInt = (Tensor<int64>)OnnxOp.ConstantOfShape(Vector(2L, 3L),
+            var cosInt = (Tensor<int64>)(ImmutableTensor<int64>)OnnxOp.ConstantOfShape(Vector(2L, 3L),
                 TensorData(DType.Int64, [1L], 5L));
-            var cosBool = (Tensor<bit>)OnnxOp.ConstantOfShape(Vector(2L, 2L),
+            var cosBool = (Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.ConstantOfShape(Vector(2L, 2L),
                 TensorData(DType.Bool, [1L], true));
 
             var shapeMismatch =
@@ -449,8 +449,8 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Tensor<@string>, Tensor<@string>) Inline()
         {
-            var cs = (Tensor<@string>)OnnxOp.Constant("hello");
-            var css = (Tensor<@string>)OnnxOp.Constant(new[] { "a", "b", "c" });
+            var cs = (Tensor<@string>)(ImmutableTensor<@string>)OnnxOp.Constant("hello");
+            var css = (Tensor<@string>)(ImmutableTensor<@string>)OnnxOp.Constant(new[] { "a", "b", "c" });
             return (cs, css);
         }
     }
@@ -548,7 +548,7 @@ namespace Shorokoo.Tests.Modules
                 null, null, null, null, LSTMDirection.Forward, null, null, false);
 
             // layout=1 (batch-first): x becomes [batch, seq, input] in-graph.
-            var xBatchFirst = (Tensor<float32>)OnnxOp.Transpose(x, [1L, 0L, 2L]);
+            var xBatchFirst = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Transpose(x, [1L, 0L, 2L]);
             var (yRnnL, yhRnnL) = OnnxOp.Rnn(xBatchFirst, wRnn, rRnn, null, null, null,
                 null, null, null, null, RNNDirection.Forward, 5L, true);
             var (yGruL, yhGruL) = OnnxOp.Gru(xBatchFirst, wGru, rGru, null, null, null,

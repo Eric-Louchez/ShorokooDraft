@@ -114,10 +114,10 @@ namespace Shorokoo.Core
 
             var genericTypeArgs = ModuleHelper.ExtractGenericTypeArgsFromType(this.GetType());
 
-            var modelVariableConstructor = typeof(T).GetConstructor(new Type[] { typeof(ImmutableScalar<IModelVarType>), typeof(DType[]) });
+            var modelVariableConstructor = typeof(T).GetConstructor(new Type[] { typeof(Scalar<IModelVarType>), typeof(DType[]) });
             if (modelVariableConstructor == null)
             {
-                modelVariableConstructor = typeof(T).GetConstructor(new Type[] { typeof(ImmutableScalar<IModelVarType>) });
+                modelVariableConstructor = typeof(T).GetConstructor(new Type[] { typeof(Scalar<IModelVarType>) });
                 var model = (T)modelVariableConstructor.AssertNotNull().Invoke(new object[] { modelVariable });
                 model.GenericTypeArgs = genericTypeArgs;
                 return model;
@@ -155,10 +155,10 @@ namespace Shorokoo.Core
 
             var genericTypeArgs = ModuleHelper.ExtractGenericTypeArgsFromType(this.GetType());
 
-            var modelVariableConstructor = typeof(T).GetConstructor(new Type[] { typeof(ImmutableScalar<IModelVarType>), typeof(DType[]) });
+            var modelVariableConstructor = typeof(T).GetConstructor(new Type[] { typeof(Scalar<IModelVarType>), typeof(DType[]) });
             if (modelVariableConstructor == null)
             {
-                modelVariableConstructor = typeof(T).GetConstructor(new Type[] { typeof(ImmutableScalar<IModelVarType>) });
+                modelVariableConstructor = typeof(T).GetConstructor(new Type[] { typeof(Scalar<IModelVarType>) });
                 var model = (T)modelVariableConstructor.AssertNotNull().Invoke(new object[] { modelVariable });
                 model.GenericTypeArgs = genericTypeArgs;
                 return model;
@@ -195,10 +195,10 @@ namespace Shorokoo.Core
 
             var genericTypeArgs = ModuleHelper.ExtractGenericTypeArgsFromType(this.GetType());
 
-            var modelVariableConstructor = typeof(T).GetConstructor(new Type[] { typeof(ImmutableScalar<IModelVarType>), typeof(DType[]) });
+            var modelVariableConstructor = typeof(T).GetConstructor(new Type[] { typeof(Scalar<IModelVarType>), typeof(DType[]) });
             if (modelVariableConstructor == null)
             {
-                modelVariableConstructor = typeof(T).GetConstructor(new Type[] { typeof(ImmutableScalar<IModelVarType>) });
+                modelVariableConstructor = typeof(T).GetConstructor(new Type[] { typeof(Scalar<IModelVarType>) });
                 var model = (T)modelVariableConstructor.AssertNotNull().Invoke(new object[] { modelVariable });
                 model.GenericTypeArgs = genericTypeArgs;
                 return model;
@@ -236,10 +236,10 @@ namespace Shorokoo.Core
 
             var genericTypeArgs = ModuleHelper.ExtractGenericTypeArgsFromType(this.GetType());
 
-            var modelVariableConstructor = typeof(T).GetConstructor(new Type[] { typeof(ImmutableScalar<IModelVarType>), typeof(DType[]) });
+            var modelVariableConstructor = typeof(T).GetConstructor(new Type[] { typeof(Scalar<IModelVarType>), typeof(DType[]) });
             if (modelVariableConstructor == null)
             {
-                modelVariableConstructor = typeof(T).GetConstructor(new Type[] { typeof(ImmutableScalar<IModelVarType>) });
+                modelVariableConstructor = typeof(T).GetConstructor(new Type[] { typeof(Scalar<IModelVarType>) });
                 var model = (T)modelVariableConstructor.AssertNotNull().Invoke(new object[] { modelVariable });
                 model.GenericTypeArgs = genericTypeArgs;
                 return model;

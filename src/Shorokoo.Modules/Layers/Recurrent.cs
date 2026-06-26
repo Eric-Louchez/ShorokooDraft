@@ -196,8 +196,8 @@ public static class Recurrent
             var (yVar, yhVar) = OnnxOp.Rnn(curX, w, r, b, null, null,
                 null, null, activations, null, onnxDir, hiddenSize, false);
 
-            var yLayer = (Tensor<float32>)yVar;    // [L, D, N, H]
-            var yhLayer = (Tensor<float32>)yhVar;  // [D, N, H]
+            var yLayer = (Tensor<float32>)(ImmutableTensor<float32>)yVar;    // [L, D, N, H]
+            var yhLayer = (Tensor<float32>)(ImmutableTensor<float32>)yhVar;  // [D, N, H]
 
             // Reshape Y [L, D, N, H] -> [L, N, D*H] for the next layer's X / the return.
             // Transpose to [L, N, D, H] first so the D and H axes are adjacent, then fold.
@@ -359,9 +359,9 @@ public static class Recurrent
             var (yVar, yhVar, ycVar) = OnnxOp.Lstm(curX, w, r, b, null, null, null, null,
                 null, null, null, null, onnxDir, hiddenSize, false, false);
 
-            var yLayer = (Tensor<float32>)yVar;    // [L, D, N, H]
-            var yhLayer = (Tensor<float32>)yhVar;  // [D, N, H]
-            var ycLayer = (Tensor<float32>)ycVar;  // [D, N, H]
+            var yLayer = (Tensor<float32>)(ImmutableTensor<float32>)yVar;    // [L, D, N, H]
+            var yhLayer = (Tensor<float32>)(ImmutableTensor<float32>)yhVar;  // [D, N, H]
+            var ycLayer = (Tensor<float32>)(ImmutableTensor<float32>)ycVar;  // [D, N, H]
 
             // Reshape Y [L, D, N, H] -> [L, N, D*H] for the next layer's X / the return.
             // Transpose to [L, N, D, H] first so the D and H axes are adjacent, then fold.
@@ -549,8 +549,8 @@ public static class Recurrent
             var (yVar, yhVar) = OnnxOp.Gru(curX, w, r, b, null, null,
                 null, null, null, null, onnxDir, hiddenSize, false, linearBeforeReset);
 
-            var yLayer = (Tensor<float32>)yVar;    // [L, D, N, H]
-            var yhLayer = (Tensor<float32>)yhVar;  // [D, N, H]
+            var yLayer = (Tensor<float32>)(ImmutableTensor<float32>)yVar;    // [L, D, N, H]
+            var yhLayer = (Tensor<float32>)(ImmutableTensor<float32>)yhVar;  // [D, N, H]
 
             // Reshape Y [L, D, N, H] -> [L, N, D*H] for the next layer's X / the return.
             // Transpose to [L, N, D, H] first so the D and H axes are adjacent, then fold.
@@ -653,7 +653,7 @@ public static class Recurrent
             null, null, activations, null, RNNDirection.Forward, hiddenSize, false);
 
         // Y_h is [num_dir=1, N, H]; squeeze the num_dir axis -> [N, H].
-        return ((Tensor<float32>)yhVar).Squeeze(Vector(0L));
+        return ((Tensor<float32>)(ImmutableTensor<float32>)yhVar).Squeeze(Vector(0L));
     }
 
     /// <summary>
@@ -735,8 +735,8 @@ public static class Recurrent
             null, null, null, null, LSTMDirection.Forward, hiddenSize, false, false);
 
         // Y_h / Y_c are [num_dir=1, N, H]; squeeze the num_dir axis -> [N, H].
-        var hOut = ((Tensor<float32>)yhVar).Squeeze(Vector(0L));
-        var cOut = ((Tensor<float32>)ycVar).Squeeze(Vector(0L));
+        var hOut = ((Tensor<float32>)(ImmutableTensor<float32>)yhVar).Squeeze(Vector(0L));
+        var cOut = ((Tensor<float32>)(ImmutableTensor<float32>)ycVar).Squeeze(Vector(0L));
         return (hOut, cOut);
     }
 
@@ -825,6 +825,6 @@ public static class Recurrent
             null, null, null, null, GRUDirection.Forward, hiddenSize, false, linearBeforeReset);
 
         // Y_h is [num_dir=1, N, H]; squeeze the num_dir axis -> [N, H].
-        return ((Tensor<float32>)yhVar).Squeeze(Vector(0L));
+        return ((Tensor<float32>)(ImmutableTensor<float32>)yhVar).Squeeze(Vector(0L));
     }
 }

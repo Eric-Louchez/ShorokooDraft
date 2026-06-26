@@ -61,8 +61,8 @@ public partial class AdamOptimizer
         var newV = beta2 * v + (one - beta2) * grad * grad;
 
         // Bias correction.
-        var mHat = newM / (one - (Tensor<float32>)OnnxOp.Pow(beta1, newStep));
-        var vHat = newV / (one - (Tensor<float32>)OnnxOp.Pow(beta2, newStep));
+        var mHat = newM / (one - (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Pow(beta1, newStep));
+        var vHat = newV / (one - (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Pow(beta2, newStep));
 
         var updatedParam = currentParam - learningRate * mHat / (vHat.Sqrt() + epsilon);
 

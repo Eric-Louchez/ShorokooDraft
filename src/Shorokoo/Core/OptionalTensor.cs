@@ -51,9 +51,11 @@ namespace Shorokoo.Core
     /// <b>absent</b> optional on first use.
     /// </para>
     /// </summary>
-    public struct OptionalTensor<T> : IOptionalTensor where T : IVarType
+    public struct OptionalTensor<T> : IOptionalTensor, IValueHandle where T : IVarType
     {
         private ImmutableOptionalTensor<T>? inner;
+
+        IVariable IValueHandle.Immutable => Imm;
 
         /// <summary>The wrapped immutable, materialising an absent optional for a defaulted handle.</summary>
         internal ImmutableOptionalTensor<T> Imm

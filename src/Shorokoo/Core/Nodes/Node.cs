@@ -295,6 +295,14 @@ namespace Shorokoo.Core.Nodes
 
             // Loops do a lot of strange things that override the normal way nodes are constructed.
             (this.FullInputs, this.FullOutputs) = LoopAPI.ProcessNode(this);
+
+            // Graph values must be Immutable* (reference identity drives key assignment); normalise
+            // any value-struct handle that LoopAPI's variable remapping may have introduced.
+            this.FullInputs = this.FullInputs.ToImmutableDictionary(
+                kv => kv.Key, kv => kv.Value.Select(v => v is null ? null : Shorokoo.Core.VariableHandle.Normalize(v)).ToArray());
+            this.FullOutputs = this.FullOutputs.ToImmutableDictionary(
+                kv => kv.Key, kv => kv.Value.Select(v => v is null ? null : Shorokoo.Core.VariableHandle.Normalize(v)).ToArray());
+
             this.inputs = null;
 
             // Assign TensorKeys to all outputs after FullOutputs is finalized
@@ -355,15 +363,15 @@ namespace Shorokoo.Core.Nodes
             {
                 case DataStructure.Tensor:
                     if (rank == 0)
-                        return Scalar(type, this, moduleFn, name);
+                        return InternalGlobals.Scalar(type, this, moduleFn, name);
                     else if (rank == 1)
-                        return Vector(null, type, this, moduleFn, name);
+                        return InternalGlobals.Vector(null, type, this, moduleFn, name);
                     else
-                        return Tensor(null, type, this, moduleFn, name, rank: rank);
+                        return InternalGlobals.Tensor(null, type, this, moduleFn, name, rank: rank);
                 case DataStructure.Sequence:
-                    return TensorSequence(type, this, moduleFn, name);
+                    return InternalGlobals.TensorSequence(type, this, moduleFn, name);
                 case DataStructure.Optional:
-                    return OptionalTensor(type, this, moduleFn, name);
+                    return InternalGlobals.OptionalTensor(type, this, moduleFn, name);
                 case DataStructure.TensorStruct:
                     return Shorokoo.Core.InternalGlobals.TensorStruct(type, this, moduleFn, name);
             }

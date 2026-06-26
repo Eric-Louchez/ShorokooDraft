@@ -75,7 +75,7 @@ namespace Shorokoo.Tests.Modules
     public partial class QeePReluCheck
     {
         public static Tensor<float32> Inline(Tensor<float32> x, Tensor<float32> slope)
-            => (Tensor<float32>)OnnxOp.PRelu(x, slope);
+            => (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.PRelu(x, slope);
     }
 
     /// <summary>NegativeLogLikelihoodLoss + SoftmaxCrossEntropyLoss — reduction-aware loss ops.</summary>
@@ -84,7 +84,7 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Tensor<float32>, Tensor<float32>) Inline(Tensor<float32> scores, Tensor<int64> labels)
         {
-            var nll = (Tensor<float32>)OnnxOp.NegativeLogLikelihoodLoss(scores, labels, weight: null, ignoreIndex: -100L, reduction: "mean");
+            var nll = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.NegativeLogLikelihoodLoss(scores, labels, weight: null, ignoreIndex: -100L, reduction: "mean");
             var (sce, _) = OnnxOp.SoftmaxCrossEntropyLoss(scores, labels, weights: null, ignoreIndex: -100L, reduction: "mean");
             return (nll, (Tensor<float32>)sce);
         }
@@ -96,8 +96,8 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Tensor<float32>, Tensor<float32>) Inline(Scalar<int64> size)
         {
-            var hamming = (Tensor<float32>)OnnxOp.HammingWindow(size, outputDatatype: DType.Float32, periodic: true);
-            var hann = (Tensor<float32>)OnnxOp.HannWindow(size, outputDatatype: DType.Float32, periodic: true);
+            var hamming = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.HammingWindow(size, outputDatatype: DType.Float32, periodic: true);
+            var hann = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.HannWindow(size, outputDatatype: DType.Float32, periodic: true);
             return (hamming, hann);
         }
     }
@@ -107,7 +107,7 @@ namespace Shorokoo.Tests.Modules
     public partial class QeeSTFTCheck
     {
         public static Tensor<float32> Inline(Tensor<float32> signal, Scalar<int64> frameStep, Vector<float32> window)
-            => (Tensor<float32>)OnnxOp.STFT(signal, frameStep, window: window, frameLength: null, onesided: true);
+            => (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.STFT(signal, frameStep, window: window, frameLength: null, onesided: true);
     }
 
     /// <summary>MelWeightMatrix — five scalar attribute-like inputs producing a 2-D mel matrix.</summary>
@@ -117,7 +117,7 @@ namespace Shorokoo.Tests.Modules
         public static Tensor<float32> Inline(
             Scalar<int64> numMelBins, Scalar<int64> dftLength, Scalar<int64> sampleRate,
             Scalar<float32> lower, Scalar<float32> upper)
-            => (Tensor<float32>)OnnxOp.MelWeightMatrix(numMelBins, dftLength, sampleRate, lower, upper,
+            => (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.MelWeightMatrix(numMelBins, dftLength, sampleRate, lower, upper,
                 outputDatatype: DType.Float32);
     }
 
@@ -129,7 +129,7 @@ namespace Shorokoo.Tests.Modules
         {
             var r = x.Round();
             var sh = x.Shrink(bias: 0.5f, lambd: 1f);
-            var sz = (Tensor<int64>)OnnxOp.Size(x);
+            var sz = (Tensor<int64>)(ImmutableTensor<int64>)OnnxOp.Size(x);
             return (r, sh, sz);
         }
     }
@@ -139,7 +139,7 @@ namespace Shorokoo.Tests.Modules
     public partial class QeeOneHotCheck
     {
         public static Tensor<float32> Inline(Tensor<int64> indices, Scalar<int64> depth, Vector<float32> values)
-            => (Tensor<float32>)OnnxOp.OneHot(indices, depth, values, axis: -1);
+            => (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.OneHot(indices, depth, values, axis: -1);
     }
 
     /// <summary>QuantizeLinear — float32 → int8 with explicit scale + zero point.</summary>
@@ -147,7 +147,7 @@ namespace Shorokoo.Tests.Modules
     public partial class QeeQuantizeLinearCheck
     {
         public static Tensor<int8> Inline(Tensor<float32> x, Tensor<float32> scale, Tensor<int8> zp)
-            => (Tensor<int8>)OnnxOp.QuantizeLinear(x, scale, zp,
+            => (Tensor<int8>)(ImmutableTensor<int8>)OnnxOp.QuantizeLinear(x, scale, zp,
                 axis: 1L, blockSize: null, outputDatatype: null, saturate: true, precision: null);
     }
 
@@ -159,7 +159,7 @@ namespace Shorokoo.Tests.Modules
             Tensor<int8> a, Scalar<float32> aScale, Scalar<int8> aZp,
             Tensor<int8> b, Scalar<float32> bScale, Scalar<int8> bZp,
             Scalar<float32> yScale, Scalar<int8> yZp)
-            => (Tensor<int8>)OnnxOp.QLinearMatMul(a, aScale, aZp, b, bScale, bZp, yScale, yZp);
+            => (Tensor<int8>)(ImmutableTensor<int8>)OnnxOp.QLinearMatMul(a, aScale, aZp, b, bScale, bZp, yScale, yZp);
     }
 
     /// <summary>QLinearConv — quantized Conv with the standard 8-input layout (no bias).</summary>
@@ -170,7 +170,7 @@ namespace Shorokoo.Tests.Modules
             Tensor<int8> x, Scalar<float32> xScale, Scalar<int8> xZp,
             Tensor<int8> w, Scalar<float32> wScale, Scalar<int8> wZp,
             Scalar<float32> yScale, Scalar<int8> yZp)
-            => (Tensor<int8>)OnnxOp.QLinearConv(x, xScale, xZp, w, wScale, wZp, yScale, yZp, b: null,
+            => (Tensor<int8>)(ImmutableTensor<int8>)OnnxOp.QLinearConv(x, xScale, xZp, w, wScale, wZp, yScale, yZp, b: null,
                 autoPad: AutoPad.NotSet, dilations: new long[] { 1, 1 }, group: 1L,
                 kernelShape: new long[] { 2, 2 },
                 pads: new long[] { 0, 0, 0, 0 }, strides: new long[] { 1, 1 });
@@ -181,7 +181,7 @@ namespace Shorokoo.Tests.Modules
     public partial class QeeMultinomialCheck
     {
         public static Tensor<int64> Inline(Tensor<float32> input)
-            => (Tensor<int64>)OnnxOp.Multinomial(input, dtype: DType.Int64, sampleSize: 5L, seed: 42f);
+            => (Tensor<int64>)(ImmutableTensor<int64>)OnnxOp.Multinomial(input, dtype: DType.Int64, sampleSize: 5L, seed: 42f);
     }
 
     /// <summary>SplitToSequence followed by SequenceAt — extract one tensor from the sequence output.</summary>
@@ -191,7 +191,7 @@ namespace Shorokoo.Tests.Modules
         public static Tensor<float32> Inline(Tensor<float32> x)
         {
             var seq = OnnxOp.SplitToSequence(x, split: null, axis: 0L, keepdims: 1L);
-            return (Tensor<float32>)OnnxOp.SequenceAt(seq, Scalar(0L));
+            return (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(seq, Scalar(0L));
         }
     }
 
@@ -201,7 +201,7 @@ namespace Shorokoo.Tests.Modules
     public partial class QeeImageDecoderCheck
     {
         public static Tensor<uint8> Inline(Vector<uint8> encoded)
-            => (Tensor<uint8>)OnnxOp.ImageDecoder(encoded, pixelFormat: "RGB");
+            => (Tensor<uint8>)(ImmutableTensor<uint8>)OnnxOp.ImageDecoder(encoded, pixelFormat: "RGB");
     }
 
     /// <summary>TfIdfVectorizer — n-gram tf-idf with ngram_indexes attribute setting output width.</summary>
@@ -209,7 +209,7 @@ namespace Shorokoo.Tests.Modules
     public partial class QeeTfIdfVectorizerCheck
     {
         public static Tensor<float32> Inline(Tensor<int64> x)
-            => (Tensor<float32>)OnnxOp.TfIdfVectorizer(x,
+            => (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.TfIdfVectorizer(x,
                 maxGramLength: 2L, maxSkipCount: 0L, minGramLength: 1L,
                 mode: "TF",
                 ngramCounts: new long[] { 0L, 2L },
@@ -229,8 +229,8 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Tensor<@string>, Tensor<bit>) Inline(Tensor<@string> x, Tensor<@string> y)
         {
-            var concat = (Tensor<@string>)OnnxOp.StringConcat(x, y);
-            var match = (Tensor<bit>)OnnxOp.RegexFullMatch(concat, pattern: ".*");
+            var concat = (Tensor<@string>)(ImmutableTensor<@string>)OnnxOp.StringConcat(x, y);
+            var match = (Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.RegexFullMatch(concat, pattern: ".*");
             return (concat, match);
         }
     }
@@ -247,7 +247,7 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Tensor<@string>, Tensor<@string>, Tensor<int64>) Inline(Tensor<@string> x)
         {
-            var normalized = (Tensor<@string>)OnnxOp.StringNormalizer(x,
+            var normalized = (Tensor<@string>)(ImmutableTensor<@string>)OnnxOp.StringNormalizer(x,
                 caseChangeAction: "LOWER", isCaseSensitive: 0L,
                 locale: "en_US", stopwords: new[] { "the", "a" });
             var (split, numSplits) = OnnxOp.StringSplit(x, delimiter: " ", maxsplit: 4L);

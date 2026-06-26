@@ -48,7 +48,7 @@ namespace Shorokoo.Tests.Modules
 
         // NaN-safe: Not(<= tol) counts a NaN diff as a mismatch; a plain "> tol" would pass it (IEEE).
         private static Scalar<int64> FloatMismatch(Tensor<float32> actual, Vector<float32> expected)
-            => ((Tensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
+            => ((Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         private static Scalar<int64> IntMismatch(Tensor<int64> actual, Vector<int64> expected)
