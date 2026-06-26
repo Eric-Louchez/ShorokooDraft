@@ -32,14 +32,14 @@ namespace Shorokoo.Tests.Modules
                 IntMismatch(FlatI(small2Idx), Vector(1L, 3L, 2L, 0L)) +
                 FloatMismatch(Flat(mid), Vector(3f, 4f, 7f, 8f)) +
                 IntMismatch(FlatI(midIdx), Vector(1L, 1L, 1L, 1L)) +
-                FloatMismatch(Flat((Tensor<float32>)yS), Vector(1f, 2f, 3f, 4f)) +
-                IntMismatch(FlatI((Tensor<int64>)idxS), Vector(1L, 0L, 3L, 4L)) +
-                IntMismatch(FlatI((Tensor<int64>)invS), Vector(1L, 0L, 0L, 2L, 3L, 2L)) +
-                IntMismatch(FlatI((Tensor<int64>)cntS), Vector(2L, 1L, 2L, 1L)) +
-                FloatMismatch(Flat((Tensor<float32>)yF), Vector(2f, 1f, 3f, 4f)) +
-                IntMismatch(FlatI((Tensor<int64>)idxF), Vector(0L, 1L, 3L, 4L)) +
-                IntMismatch(FlatI((Tensor<int64>)invF), Vector(0L, 1L, 1L, 2L, 3L, 2L)) +
-                IntMismatch(FlatI((Tensor<int64>)cntF), Vector(1L, 2L, 2L, 1L));
+                FloatMismatch(Flat((Tensor<float32>)(ImmutableTensor<float32>)yS), Vector(1f, 2f, 3f, 4f)) +
+                IntMismatch(FlatI((Tensor<int64>)(ImmutableTensor<int64>)idxS), Vector(1L, 0L, 3L, 4L)) +
+                IntMismatch(FlatI((Tensor<int64>)(ImmutableTensor<int64>)invS), Vector(1L, 0L, 0L, 2L, 3L, 2L)) +
+                IntMismatch(FlatI((Tensor<int64>)(ImmutableTensor<int64>)cntS), Vector(2L, 1L, 2L, 1L)) +
+                FloatMismatch(Flat((Tensor<float32>)(ImmutableTensor<float32>)yF), Vector(2f, 1f, 3f, 4f)) +
+                IntMismatch(FlatI((Tensor<int64>)(ImmutableTensor<int64>)idxF), Vector(0L, 1L, 3L, 4L)) +
+                IntMismatch(FlatI((Tensor<int64>)(ImmutableTensor<int64>)invF), Vector(0L, 1L, 1L, 2L, 3L, 2L)) +
+                IntMismatch(FlatI((Tensor<int64>)(ImmutableTensor<int64>)cntF), Vector(1L, 2L, 2L, 1L));
             return mismatch < Scalar(1L);
         }
 
@@ -71,8 +71,8 @@ namespace Shorokoo.Tests.Modules
             var (vals, _) = NN.TopK(x, k, axis: 0);
 
             var mismatch =
-                IntMismatch(((Tensor<float32>)y).ShapeTensor(), Vector(2L, 2L)) +
-                IntMismatch(((Tensor<int64>)inv).ShapeTensor(), Vector(3L)) +
+                IntMismatch(((Tensor<float32>)(ImmutableTensor<float32>)y).ShapeTensor(), Vector(2L, 2L)) +
+                IntMismatch(((Tensor<int64>)(ImmutableTensor<int64>)inv).ShapeTensor(), Vector(3L)) +
                 IntMismatch(vals.ShapeTensor(), Vector(2L, 2L));
             return mismatch < Scalar(1L);
         }

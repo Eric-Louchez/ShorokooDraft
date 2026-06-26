@@ -3498,8 +3498,8 @@ internal static class RnnRefHelpers
 
         var (yVar, yhVar) = OnnxOp.Rnn(x, w, r, b, null, null,
             null, null, activations, null, onnxDir, hiddenSize, false);
-        var yLayer = (Tensor<float32>)yVar;     // [L, D, N, H]
-        var yh = (Tensor<float32>)yhVar;        // [D, N, H]
+        var yLayer = (Tensor<float32>)(ImmutableTensor<float32>)yVar;     // [L, D, N, H]
+        var yh = (Tensor<float32>)(ImmutableTensor<float32>)yhVar;        // [D, N, H]
 
         var l = yLayer.DimTensor(0);
         var n = yLayer.DimTensor(2);
@@ -3811,9 +3811,9 @@ internal static class LstmRefHelpers
 
         var (yVar, yhVar, ycVar) = OnnxOp.Lstm(x, w, r, b, null, null, null, null,
             null, null, null, null, onnxDir, hiddenSize, false, false);
-        var yLayer = (Tensor<float32>)yVar;     // [L, D, N, H]
-        var yh = (Tensor<float32>)yhVar;        // [D, N, H]
-        var yc = (Tensor<float32>)ycVar;        // [D, N, H]
+        var yLayer = (Tensor<float32>)(ImmutableTensor<float32>)yVar;     // [L, D, N, H]
+        var yh = (Tensor<float32>)(ImmutableTensor<float32>)yhVar;        // [D, N, H]
+        var yc = (Tensor<float32>)(ImmutableTensor<float32>)ycVar;        // [D, N, H]
 
         var l = yLayer.DimTensor(0);
         var n = yLayer.DimTensor(2);
@@ -4147,8 +4147,8 @@ internal static class GruRefHelpers
 
         var (yVar, yhVar) = OnnxOp.Gru(x, w, r, b, null, null,
             null, null, null, null, onnxDir, hiddenSize, false, linearBeforeReset);
-        var yLayer = (Tensor<float32>)yVar;     // [L, D, N, H]
-        var yh = (Tensor<float32>)yhVar;        // [D, N, H]
+        var yLayer = (Tensor<float32>)(ImmutableTensor<float32>)yVar;     // [L, D, N, H]
+        var yh = (Tensor<float32>)(ImmutableTensor<float32>)yhVar;        // [D, N, H]
 
         var l = yLayer.DimTensor(0);
         var n = yLayer.DimTensor(2);
@@ -4487,7 +4487,7 @@ internal static class CellRefHelpers
 
         var (_, yhVar) = OnnxOp.Rnn(x.Unsqueeze(0L), w, r, b, null, h.Unsqueeze(0L),
             null, null, activations, null, RNNDirection.Forward, hiddenSize, false);
-        return ((Tensor<float32>)yhVar).Squeeze(Vector(0L));           // [N, H]
+        return ((Tensor<float32>)(ImmutableTensor<float32>)yhVar).Squeeze(Vector(0L));           // [N, H]
     }
 
     /// <summary>Hand-built seq=1 LSTM reference: Unsqueeze x/h/c, run the op forward with the same SAME-shape
@@ -4504,8 +4504,8 @@ internal static class CellRefHelpers
 
         var (_, yhVar, ycVar) = OnnxOp.Lstm(x.Unsqueeze(0L), w, r, b, null, h.Unsqueeze(0L), c.Unsqueeze(0L),
             null, null, null, null, null, LSTMDirection.Forward, hiddenSize, false, false);
-        return (((Tensor<float32>)yhVar).Squeeze(Vector(0L)),
-                ((Tensor<float32>)ycVar).Squeeze(Vector(0L)));            // each [N, H]
+        return (((Tensor<float32>)(ImmutableTensor<float32>)yhVar).Squeeze(Vector(0L)),
+                ((Tensor<float32>)(ImmutableTensor<float32>)ycVar).Squeeze(Vector(0L)));            // each [N, H]
     }
 
     /// <summary>Hand-built seq=1 GRU reference: Unsqueeze x/h, run the op forward with the same SAME-shape
@@ -4523,7 +4523,7 @@ internal static class CellRefHelpers
 
         var (_, yhVar) = OnnxOp.Gru(x.Unsqueeze(0L), w, r, b, null, h.Unsqueeze(0L),
             null, null, null, null, GRUDirection.Forward, hiddenSize, false, linearBeforeReset);
-        return ((Tensor<float32>)yhVar).Squeeze(Vector(0L));              // [N, H]
+        return ((Tensor<float32>)(ImmutableTensor<float32>)yhVar).Squeeze(Vector(0L));              // [N, H]
     }
 }
 

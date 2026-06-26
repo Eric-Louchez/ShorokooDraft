@@ -664,7 +664,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             {
                 if (inputs[i] is null) continue;
                 result[i] = ReverseBroadcast(
-                    (Tensor<float32>)scaledGrad,
+                    (Tensor<float32>)(ImmutableTensor<float32>)scaledGrad,
                     ((ImmutableTensor<float32>)inputs[i]!).DShape);
             }
 

@@ -393,8 +393,8 @@ namespace Shorokoo.Tests.Modules
                 ShapeMismatch(concat, Vector(2L)) +
                 ShapeMismatch(norm, Vector(2L)) +
                 ShapeMismatch(regex, Vector(2L)) +
-                ShapeMismatch((Tensor<int64>)numSplits, Vector(2L));
-            return (mismatch < Scalar(1L), normStop, (Tensor<@string>)splitY);
+                ShapeMismatch((Tensor<int64>)(ImmutableTensor<int64>)numSplits, Vector(2L));
+            return (mismatch < Scalar(1L), normStop, (Tensor<@string>)(ImmutableTensor<@string>)splitY);
         }
 
         private static Scalar<int64> ShapeMismatch(ITensor t, Vector<int64> expected)

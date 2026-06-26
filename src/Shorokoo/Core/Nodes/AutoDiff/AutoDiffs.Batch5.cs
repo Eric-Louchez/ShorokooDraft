@@ -716,7 +716,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             for (int d = 0; d < nDims; d++)
             {
                 Tensor<int64> xSizeD = (ImmutableTensor<int64>)OnnxOp.Gather(xShapeFinal, Globals.Scalar(2L + d), axis: 0);
-                Tensor<int64> pb = (Tensor<int64>)padBeginVars![d];
+                Tensor<int64> pb = (ImmutableTensor<int64>)padBeginVars![d];
                 startsParts[d] = OnnxOp.Reshape(pb, Globals.Vector(1L), allowZero: false);
                 endsParts[d] = OnnxOp.Reshape(pb + xSizeD, Globals.Vector(1L), allowZero: false);
                 axesArray[d] = 2L + d;

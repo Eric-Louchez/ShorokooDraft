@@ -109,17 +109,26 @@ namespace Shorokoo
         /// <summary>Quantizes to uint8 with scale and zero point computed from the data (ONNX DynamicQuantizeLinear).</summary>
         public static (Scalar<uint8> y, Scalar<float32> y_scale, Scalar<uint8> y_zero_point) DynamicQuantizeLinear<T>(Scalar<T> x)
             where T : FloatLike
-            => ((Scalar<uint8> y, Scalar<float32> y_scale, Scalar<uint8> y_zero_point))OnnxOp.DynamicQuantizeLinear(x);
+        {
+            var (y, scale, zp) = OnnxOp.DynamicQuantizeLinear(x);
+            return ((ImmutableScalar<uint8>)y, (ImmutableScalar<float32>)scale, (ImmutableScalar<uint8>)zp);
+        }
 
         /// <summary>Quantizes to uint8 with scale and zero point computed from the data (ONNX DynamicQuantizeLinear).</summary>
         public static (Vector<uint8> y, Scalar<float32> y_scale, Scalar<uint8> y_zero_point) DynamicQuantizeLinear<T>(Vector<T> x)
             where T : FloatLike
-            => ((Vector<uint8> y, Scalar<float32> y_scale, Scalar<uint8> y_zero_point))OnnxOp.DynamicQuantizeLinear(x);
+        {
+            var (y, scale, zp) = OnnxOp.DynamicQuantizeLinear(x);
+            return ((ImmutableVector<uint8>)y, (ImmutableScalar<float32>)scale, (ImmutableScalar<uint8>)zp);
+        }
 
         /// <summary>Quantizes to uint8 with scale and zero point computed from the data (ONNX DynamicQuantizeLinear).</summary>
         public static (Tensor<uint8> y, Scalar<float32> y_scale, Scalar<uint8> y_zero_point) DynamicQuantizeLinear<T>(Tensor<T> x)
             where T : FloatLike
-            => ((Tensor<uint8> y, Scalar<float32> y_scale, Scalar<uint8> y_zero_point))OnnxOp.DynamicQuantizeLinear(x);
+        {
+            var (y, scale, zp) = OnnxOp.DynamicQuantizeLinear(x);
+            return ((ImmutableTensor<uint8>)y, (ImmutableScalar<float32>)scale, (ImmutableScalar<uint8>)zp);
+        }
 
         /// <summary>Tensor of input's shape and dtype with ones on the k-th diagonal, zeros elsewhere (ONNX EyeLike).</summary>
         public static Tensor<T> EyeLike<T>(Tensor<T> input, long k = 0)
@@ -189,7 +198,7 @@ namespace Shorokoo
 
         /// <summary>Passes the variable through unchanged (ONNX Identity).</summary>
         public static T Identity<T>(T x) where T : IVariable
-            => (T)OnnxOp.Identity(x, x.Rank());
+            => Shorokoo.Core.VariableHandle.Cast<T>(OnnxOp.Identity(x, x.Rank()));
 
         /// <summary>Integer matrix product with zero points, producing an int32 result (ONNX MatMulInteger).</summary>
         public static Tensor<int32> MatMulInteger<T1, T2>(Tensor<T1> a, Tensor<T2> b, Tensor<T1> aZeroPoint, Tensor<T2> bZeroPoint)
@@ -213,7 +222,7 @@ namespace Shorokoo
         {
             (IVariable result, IVariable indices) = OnnxOp.MaxPoolWithIndices(x, autoPad, ceilMode,
                 kernelShape: kernelShape, pads: pads, strides: strides);
-            return ((ImmutableTensor<T>)result, (Tensor<int64>)indices);
+            return ((ImmutableTensor<T>)result, (ImmutableTensor<int64>)indices);
         }
 
         /// <summary>Element-wise minimum of the given tensors, with broadcasting (ONNX Min).</summary>
@@ -308,12 +317,18 @@ namespace Shorokoo
         /// <summary>Top-k values and their indices along an axis (ONNX TopK); scalar-k overload.</summary>
         public static (Tensor<T> topK, Tensor<int64> indices) TopK<T>(Tensor<T> tensor, Scalar<int64> k, long? axis, bool? largest = null, bool? sorted = null)
             where T : IVarType
-            => ((Tensor<T> topK, Tensor<int64> indices))OnnxOp.TopK(tensor, k.Unsqueeze(), axis, largest, sorted);
+        {
+            var (values, indices) = OnnxOp.TopK(tensor, k.Unsqueeze(), axis, largest, sorted);
+            return ((ImmutableTensor<T>)values, (ImmutableTensor<int64>)indices);
+        }
 
         /// <summary>Top-k values and their indices along an axis (ONNX TopK); 1-element-vector-k overload.</summary>
         public static (Tensor<T> topK, Tensor<int64> indices) TopK<T>(Tensor<T> tensor, Vector<int64> k, long? axis, bool? largest = null, bool? sorted = null)
             where T : IVarType
-            => ((Tensor<T> topK, Tensor<int64> indices))OnnxOp.TopK(tensor, k, axis, largest, sorted);
+        {
+            var (values, indices) = OnnxOp.TopK(tensor, k, axis, largest, sorted);
+            return ((ImmutableTensor<T>)values, (ImmutableTensor<int64>)indices);
+        }
 
         // -- New opset-21 operators ---------------------------------------------
 

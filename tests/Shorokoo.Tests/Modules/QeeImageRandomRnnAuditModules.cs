@@ -482,10 +482,10 @@ namespace Shorokoo.Tests.Modules
                 null, null, ["Tanh", "Tanh"], null, RNNDirection.Bidirectional, 5L, false);
 
             var mismatch =
-                ShapeMismatch((Tensor<float32>)y1, Vector(4L, 1L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yh1, Vector(1L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)y3, Vector(4L, 2L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yh3, Vector(2L, 2L, 5L));
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)y1, Vector(4L, 1L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yh1, Vector(1L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)y3, Vector(4L, 2L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yh3, Vector(2L, 2L, 5L));
             return mismatch < Scalar(1L);
         }
 
@@ -511,10 +511,10 @@ namespace Shorokoo.Tests.Modules
                 null, null, null, null, GRUDirection.Bidirectional, 5L, false, null);
 
             var mismatch =
-                ShapeMismatch((Tensor<float32>)y1, Vector(4L, 1L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yh1, Vector(1L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)y2, Vector(4L, 2L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yh2, Vector(2L, 2L, 5L));
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)y1, Vector(4L, 1L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yh1, Vector(1L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)y2, Vector(4L, 2L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yh2, Vector(2L, 2L, 5L));
             return mismatch < Scalar(1L);
         }
 
@@ -557,20 +557,20 @@ namespace Shorokoo.Tests.Modules
                 null, null, null, null, LSTMDirection.Forward, 5L, null, true);
 
             var mismatch =
-                ShapeMismatch((Tensor<float32>)yRnn, Vector(4L, 1L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yhRnn, Vector(1L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yGru, Vector(4L, 1L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yhGru, Vector(1L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yLstm, Vector(4L, 1L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yhLstm, Vector(1L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)ycLstm, Vector(1L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yRnnL, Vector(2L, 4L, 1L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yhRnnL, Vector(2L, 1L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yGruL, Vector(2L, 4L, 1L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yhGruL, Vector(2L, 1L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yLstmL, Vector(2L, 4L, 1L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yhLstmL, Vector(2L, 1L, 5L)) +
-                ShapeMismatch((Tensor<float32>)ycLstmL, Vector(2L, 1L, 5L));
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yRnn, Vector(4L, 1L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yhRnn, Vector(1L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yGru, Vector(4L, 1L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yhGru, Vector(1L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yLstm, Vector(4L, 1L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yhLstm, Vector(1L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)ycLstm, Vector(1L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yRnnL, Vector(2L, 4L, 1L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yhRnnL, Vector(2L, 1L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yGruL, Vector(2L, 4L, 1L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yhGruL, Vector(2L, 1L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yLstmL, Vector(2L, 4L, 1L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yhLstmL, Vector(2L, 1L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)ycLstmL, Vector(2L, 1L, 5L));
             return mismatch < Scalar(1L);
         }
 
@@ -602,12 +602,12 @@ namespace Shorokoo.Tests.Modules
                 null, null, null, null, LSTMDirection.Bidirectional, 5L, inputForget: true, layout: false);
 
             var mismatch =
-                ShapeMismatch((Tensor<float32>)y1, Vector(4L, 1L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yh1, Vector(1L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yc1, Vector(1L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)y2, Vector(4L, 2L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yh2, Vector(2L, 2L, 5L)) +
-                ShapeMismatch((Tensor<float32>)yc2, Vector(2L, 2L, 5L));
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)y1, Vector(4L, 1L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yh1, Vector(1L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yc1, Vector(1L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)y2, Vector(4L, 2L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yh2, Vector(2L, 2L, 5L)) +
+                ShapeMismatch((Tensor<float32>)(ImmutableTensor<float32>)yc2, Vector(2L, 2L, 5L));
             return mismatch < Scalar(1L);
         }
 

@@ -66,7 +66,7 @@ namespace Shorokoo.Tests.Modules
         public static (Tensor<float32>, Tensor<float32>, Tensor<float32>) Inline(Tensor<float32> x, Tensor<float32> scale, Tensor<float32> bias)
         {
             var (y, mean, invStd) = OnnxOp.LayerNormalization(x, scale, bias, axis: -1, epsilon: 1e-5f, stashType: 1L);
-            return ((Tensor<float32>)y, (Tensor<float32>)mean!, (Tensor<float32>)invStd!);
+            return ((Tensor<float32>)(ImmutableTensor<float32>)y, (Tensor<float32>)(ImmutableTensor<float32>)mean!, (Tensor<float32>)(ImmutableTensor<float32>)invStd!);
         }
     }
 
@@ -86,7 +86,7 @@ namespace Shorokoo.Tests.Modules
         {
             var nll = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.NegativeLogLikelihoodLoss(scores, labels, weight: null, ignoreIndex: -100L, reduction: "mean");
             var (sce, _) = OnnxOp.SoftmaxCrossEntropyLoss(scores, labels, weights: null, ignoreIndex: -100L, reduction: "mean");
-            return (nll, (Tensor<float32>)sce);
+            return (nll, (Tensor<float32>)(ImmutableTensor<float32>)sce);
         }
     }
 
@@ -251,7 +251,7 @@ namespace Shorokoo.Tests.Modules
                 caseChangeAction: "LOWER", isCaseSensitive: 0L,
                 locale: "en_US", stopwords: new[] { "the", "a" });
             var (split, numSplits) = OnnxOp.StringSplit(x, delimiter: " ", maxsplit: 4L);
-            return (normalized, (Tensor<@string>)split, (Tensor<int64>)numSplits);
+            return (normalized, (Tensor<@string>)(ImmutableTensor<@string>)split, (Tensor<int64>)(ImmutableTensor<int64>)numSplits);
         }
     }
 }

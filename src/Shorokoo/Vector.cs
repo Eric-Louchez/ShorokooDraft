@@ -36,7 +36,9 @@ namespace Shorokoo
     /// </summary>
     public partial class ImmutableVector<T> : ImmutableTensor<T>, IVector where T : IVarType
     {
-        public override Vector<int64>? InfShape => ((Tensor<T>)this).InfShape;
+        // The base computes the inferred shape; the former ((Tensor<T>)this) round-trip now wraps a
+        // struct handle that forwards straight back here, so call the base implementation directly.
+        public override Vector<int64>? InfShape => base.InfShape;
         internal ImmutableVector(Func<Vector<int64>>? shapeFn, DType dtype, Node owningNode, Function? moduleFn, string? name = null) : base(shapeFn, dtype, owningNode, moduleFn, name, rank: 1) {}
     }
 

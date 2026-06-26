@@ -166,7 +166,7 @@ namespace Shorokoo.Tests.Modules
         public static (Tensor<float32>, Tensor<int64>, Tensor<int64>, Tensor<int64>) Inline(Tensor<float32> x)
         {
             var (y, idx, inv, counts) = OnnxOp.Unique(x, axis: 0, sorted: true);
-            return ((Tensor<float32>)y, (Tensor<int64>)idx, (Tensor<int64>)inv, (Tensor<int64>)counts);
+            return ((Tensor<float32>)(ImmutableTensor<float32>)y, (Tensor<int64>)(ImmutableTensor<int64>)idx, (Tensor<int64>)(ImmutableTensor<int64>)inv, (Tensor<int64>)(ImmutableTensor<int64>)counts);
         }
     }
 
@@ -177,7 +177,7 @@ namespace Shorokoo.Tests.Modules
         public static (Tensor<float32>, Tensor<int64>) Inline(Tensor<float32> x)
         {
             var (y, idx, _, _) = OnnxOp.Unique(x, axis: null, sorted: true);
-            return ((Tensor<float32>)y, (Tensor<int64>)idx);
+            return ((Tensor<float32>)(ImmutableTensor<float32>)y, (Tensor<int64>)(ImmutableTensor<int64>)idx);
         }
     }
 
@@ -257,7 +257,7 @@ namespace Shorokoo.Tests.Modules
         public static (Scalar<uint8>, Scalar<float32>, Scalar<uint8>) Inline(Scalar<float32> x)
         {
             var (y, scale, zp) = OnnxOp.DynamicQuantizeLinear(x);
-            return ((Scalar<uint8>)y, (Scalar<float32>)scale, (Scalar<uint8>)zp);
+            return ((Scalar<uint8>)(ImmutableScalar<uint8>)y, (Scalar<float32>)(ImmutableScalar<float32>)scale, (Scalar<uint8>)(ImmutableScalar<uint8>)zp);
         }
     }
 

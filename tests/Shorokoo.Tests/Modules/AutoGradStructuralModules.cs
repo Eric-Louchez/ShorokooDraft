@@ -30,7 +30,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(2L), Scalar(2L), Scalar(3L), Scalar(3L)]);
             var b = InitSimple.Init([Scalar(2L)]).Vec();
             var loss = ConvLoss(x, w, b);
-            var grad = (Tensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
+            var grad = (Tensor<float32>)(ImmutableTensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
 
             var h = Scalar(1e-3f);
             var pert = h * grad;
@@ -61,7 +61,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(2L), Scalar(2L), Scalar(3L), Scalar(3L)]);
             var b = InitSimple.Init([Scalar(2L)]).Vec();
             var loss = ConvLoss(x, w, b);
-            var grad = (Tensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
+            var grad = (Tensor<float32>)(ImmutableTensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
 
             var h = Scalar(1e-3f);
             var pert = h * grad;
@@ -94,7 +94,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(2L), Scalar(2L), Scalar(2L), Scalar(2L)]);
             var b = InitSimple.Init([Scalar(2L)]).Vec();
             var loss = ConvLoss(x, w, b);
-            var grad = (Tensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
+            var grad = (Tensor<float32>)(ImmutableTensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
 
             var h = Scalar(1e-3f);
             var pert = h * grad;
@@ -125,7 +125,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(4L), Scalar(2L), Scalar(3L), Scalar(3L)]);
             var b = InitSimple.Init([Scalar(4L)]).Vec();
             var loss = ConvLoss(x, w, b);
-            var grad = (Tensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
+            var grad = (Tensor<float32>)(ImmutableTensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
 
             var h = Scalar(1e-3f);
             var pert = h * grad;
@@ -159,7 +159,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(4L), Scalar(2L), Scalar(3L), Scalar(3L)]);
             var b = InitSimple.Init([Scalar(4L)]).Vec();
             var loss = ConvLoss(x, w, b);
-            var grad = (Tensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
+            var grad = (Tensor<float32>)(ImmutableTensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
 
             // Closed form: every weight element's gradient is OH*OW * x_val = 9 * 0.1 = 0.9.
             var diff = (grad - Scalar(0.9f)).Abs();
@@ -190,7 +190,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(4L), Scalar(2L), Scalar(2L), Scalar(2L)]);
             var b = InitSimple.Init([Scalar(4L)]).Vec();
             var loss = ConvLoss(x, w, b);
-            var grad = (Tensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
+            var grad = (Tensor<float32>)(ImmutableTensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
 
             var h = Scalar(1e-3f);
             var pert = h * grad;
@@ -224,7 +224,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(4L), Scalar(2L), Scalar(3L), Scalar(3L)]);
             var b = InitSimple.Init([Scalar(4L)]).Vec();
             var loss = ConvTLoss(x, w, b);
-            var grad = (Tensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
+            var grad = (Tensor<float32>)(ImmutableTensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
 
             var diff = (grad - Scalar(2.5f)).Abs();
             return diff.Reduce(ReduceKind.Max, keepDims: false).Scalar() < Scalar(1e-3f);
@@ -232,7 +232,7 @@ namespace Shorokoo.Tests.Modules
 
         private static Scalar<float32> ConvTLoss(Tensor<float32> x, Tensor<float32> w, Vector<float32> b)
         {
-            var convT = (Tensor<float32>)NN.ConvTranspose(x, w, b, AutoPad.NotSet,
+            var convT = (Tensor<float32>)(ImmutableTensor<float32>)NN.ConvTranspose(x, w, b, AutoPad.NotSet,
                 dilations: [1L, 1L], group: 2L, kernelShape: [3L, 3L],
                 outputPadding: [0L, 0L], outputShape: [],
                 pads: [0L, 0L, 0L, 0L], strides: [1L, 1L]);
@@ -261,7 +261,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(3L), Scalar(2L), Scalar(3L), Scalar(3L)]);
             var b = InitSimple.Init([Scalar(2L)]).Vec();
             var loss = ConvTLoss(x, w, b);
-            var grad = (Tensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
+            var grad = (Tensor<float32>)(ImmutableTensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
 
             // Closed form: every weight element's gradient is H*W * x_val = 25 * 0.1 = 2.5.
             var diff = (grad - Scalar(2.5f)).Abs();
@@ -270,7 +270,7 @@ namespace Shorokoo.Tests.Modules
 
         private static Scalar<float32> ConvTLoss(Tensor<float32> x, Tensor<float32> w, Vector<float32> b)
         {
-            var convT = (Tensor<float32>)NN.ConvTranspose(x, w, b, AutoPad.NotSet,
+            var convT = (Tensor<float32>)(ImmutableTensor<float32>)NN.ConvTranspose(x, w, b, AutoPad.NotSet,
                 dilations: [1L, 1L], group: 1L, kernelShape: [3L, 3L],
                 outputPadding: [0L, 0L], outputShape: [],
                 pads: [0L, 0L, 0L, 0L], strides: [1L, 1L]);
@@ -292,7 +292,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(2L), Scalar(2L), Scalar(3L), Scalar(3L)]);
             var b = InitSimple.Init([Scalar(2L)]).Vec();
             var loss = ConvTLoss(x, w, b);
-            var grad = (Tensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
+            var grad = (Tensor<float32>)(ImmutableTensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
 
             var h = Scalar(1e-3f);
             var pert = h * grad;
@@ -303,7 +303,7 @@ namespace Shorokoo.Tests.Modules
 
         private static Scalar<float32> ConvTLoss(Tensor<float32> x, Tensor<float32> w, Vector<float32> b)
         {
-            var convT = (Tensor<float32>)NN.ConvTranspose(x, w, b, AutoPad.NotSet,
+            var convT = (Tensor<float32>)(ImmutableTensor<float32>)NN.ConvTranspose(x, w, b, AutoPad.NotSet,
                 dilations: [1L, 1L], group: 1L, kernelShape: [3L, 3L],
                 outputPadding: [1L, 1L], outputShape: [],
                 pads: [0L, 0L, 0L, 0L], strides: [2L, 2L]);
@@ -326,7 +326,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(2L), Scalar(2L), Scalar(3L), Scalar(3L)]);
             var b = InitSimple.Init([Scalar(2L)]).Vec();
             var loss = ConvTLoss(x, w, b);
-            var grad = (Tensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
+            var grad = (Tensor<float32>)(ImmutableTensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
 
             var h = Scalar(1e-3f);
             var pert = h * grad;
@@ -337,7 +337,7 @@ namespace Shorokoo.Tests.Modules
 
         private static Scalar<float32> ConvTLoss(Tensor<float32> x, Tensor<float32> w, Vector<float32> b)
         {
-            var convT = (Tensor<float32>)NN.ConvTranspose(x, w, b, AutoPad.NotSet,
+            var convT = (Tensor<float32>)(ImmutableTensor<float32>)NN.ConvTranspose(x, w, b, AutoPad.NotSet,
                 dilations: [1L, 1L], group: 1L, kernelShape: [3L, 3L],
                 outputPadding: [1L, 1L], outputShape: [],
                 pads: [0L, 0L, 0L, 0L], strides: [2L, 2L]);
@@ -686,8 +686,8 @@ namespace Shorokoo.Tests.Modules
                 Vector(2L, 4L), allowZero: false);
             var data = grid * a;
             var splits = OnnxOp.Split(data, Vector(2L, 2L), axis: -1, numOutputs: null, variadicOutputCount: 2);
-            var s0 = ((Tensor<float32>)splits[0]).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
-            var s1 = ((Tensor<float32>)splits[1]).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+            var s0 = ((Tensor<float32>)(ImmutableTensor<float32>)splits[0]).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+            var s1 = ((Tensor<float32>)(ImmutableTensor<float32>)splits[1]).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var loss = s0 + Scalar(3f) * s1;
             var grad = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(a, loss);
             return (grad - Scalar(80f)).Abs() < Scalar(1e-3f);
@@ -706,8 +706,8 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<bit> Inline(Tensor<float32> x)
         {
             var splits = OnnxOp.Split(x, Vector(2L, 2L), axis: 0, numOutputs: null, variadicOutputCount: 2);
-            var loss = ((Tensor<float32>)splits[1]).Reduce(ReduceKind.Sum, keepDims: false).Scalar() * Scalar(3f);
-            var grad = (Tensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
+            var loss = ((Tensor<float32>)(ImmutableTensor<float32>)splits[1]).Reduce(ReduceKind.Sum, keepDims: false).Scalar() * Scalar(3f);
+            var grad = (Tensor<float32>)(ImmutableTensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
 
             var zeros = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Expand(Scalar(0f), Vector(2L));
             var threes = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Expand(Scalar(3f), Vector(2L));
@@ -811,7 +811,7 @@ namespace Shorokoo.Tests.Modules
         {
             var aVec = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Expand(a, Vector(3L));
             var (output, _) = OnnxOp.Dropout(aVec, Scalar(0.5f), Scalar(false));
-            var loss = ((Tensor<float32>)output).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+            var loss = ((Tensor<float32>)(ImmutableTensor<float32>)output).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var grad = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(a, loss);
             return (grad - Scalar(3f)).Abs() < Scalar(1e-3f);
         }

@@ -530,19 +530,19 @@ namespace Shorokoo
                 return CreateGenericTensorFill<T>(shape, val);
             
             // Original non-generic logic
-            if (typeofT == typeof(bit)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToBoolean(val));
-            else if (typeofT == typeof(int8)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToSByte(val));
-            else if (typeofT == typeof(int16)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToInt16(val));
-            else if (typeofT == typeof(int32)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToInt32(val));
-            else if (typeofT == typeof(int64)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToInt64(val));
-            else if (typeofT == typeof(uint8)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToByte(val));
-            else if (typeofT == typeof(uint16)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToUInt16(val));
-            else if (typeofT == typeof(uint32)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToUInt32(val));
-            else if (typeofT == typeof(uint64)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToUInt64(val));
-            else if (typeofT == typeof(bfloat16)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, (BFloat16)val);
-            else if (typeofT == typeof(float16)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, (Float16)val);
-            else if (typeofT == typeof(float32)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToSingle(val));
-            else if (typeofT == typeof(float64)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToDouble(val));
+            if (typeofT == typeof(bit)) return (Tensor<T>)(object)TensorFill(shape, Convert.ToBoolean(val));
+            else if (typeofT == typeof(int8)) return (Tensor<T>)(object)TensorFill(shape, Convert.ToSByte(val));
+            else if (typeofT == typeof(int16)) return (Tensor<T>)(object)TensorFill(shape, Convert.ToInt16(val));
+            else if (typeofT == typeof(int32)) return (Tensor<T>)(object)TensorFill(shape, Convert.ToInt32(val));
+            else if (typeofT == typeof(int64)) return (Tensor<T>)(object)TensorFill(shape, Convert.ToInt64(val));
+            else if (typeofT == typeof(uint8)) return (Tensor<T>)(object)TensorFill(shape, Convert.ToByte(val));
+            else if (typeofT == typeof(uint16)) return (Tensor<T>)(object)TensorFill(shape, Convert.ToUInt16(val));
+            else if (typeofT == typeof(uint32)) return (Tensor<T>)(object)TensorFill(shape, Convert.ToUInt32(val));
+            else if (typeofT == typeof(uint64)) return (Tensor<T>)(object)TensorFill(shape, Convert.ToUInt64(val));
+            else if (typeofT == typeof(bfloat16)) return (Tensor<T>)(object)TensorFill(shape, (BFloat16)val);
+            else if (typeofT == typeof(float16)) return (Tensor<T>)(object)TensorFill(shape, (Float16)val);
+            else if (typeofT == typeof(float32)) return (Tensor<T>)(object)TensorFill(shape, Convert.ToSingle(val));
+            else if (typeofT == typeof(float64)) return (Tensor<T>)(object)TensorFill(shape, Convert.ToDouble(val));
             else 
                 throw new UnsupportedDTypeException(ErrorCodes.GC003, typeof(T).Name, "TensorFill<T>", 
                     $"Type '{typeof(T).FullName}' is not supported for generic tensor fill creation. Supported IVarTypes: bit, int8, int16, int32, int64, uint8, uint16, uint32, uint64, bfloat16, float16, float32, float64");

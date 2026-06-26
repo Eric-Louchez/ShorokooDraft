@@ -165,11 +165,11 @@ namespace Shorokoo.Tests.Modules
                 ShapeMismatch(logProbMean!, Vector(2L, 3L)) +
                 ShapeMismatch(nllNone, Vector(2L)) +
                 IntMismatch(nllSum.ShapeTensor().ShapeTensor(), Vector(0L)) +
-                FloatMismatch(Flat((Tensor<float32>)drop1), flatScores) +
-                IntMismatch(FlatI(((Tensor<bit>)mask1!).Cast<int64>()), Vector(1L, 1L, 1L, 1L, 1L, 1L)) +
-                ShapeMismatch((Tensor<bit>)mask1!, Vector(2L, 3L)) +
-                FloatMismatch(Flat((Tensor<float32>)drop2), flatScores) +
-                IntMismatch(FlatI(((Tensor<bit>)mask2!).Cast<int64>()), Vector(1L, 1L, 1L, 1L, 1L, 1L));
+                FloatMismatch(Flat((Tensor<float32>)(ImmutableTensor<float32>)drop1), flatScores) +
+                IntMismatch(FlatI(((Tensor<bit>)(ImmutableTensor<bit>)mask1!).Cast<int64>()), Vector(1L, 1L, 1L, 1L, 1L, 1L)) +
+                ShapeMismatch((Tensor<bit>)(ImmutableTensor<bit>)mask1!, Vector(2L, 3L)) +
+                FloatMismatch(Flat((Tensor<float32>)(ImmutableTensor<float32>)drop2), flatScores) +
+                IntMismatch(FlatI(((Tensor<bit>)(ImmutableTensor<bit>)mask2!).Cast<int64>()), Vector(1L, 1L, 1L, 1L, 1L, 1L));
             return mismatch < Scalar(1L);
         }
 
