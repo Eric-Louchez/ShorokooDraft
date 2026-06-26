@@ -23,7 +23,7 @@ namespace Shorokoo
     /// API lives on the value-type handle <see cref="TensorStruct{T}"/>.
     /// </summary>
     /// <typeparam name="T">The IStruct type that defines the struct fields. Use DTypeStruct for dynamic struct definitions.</typeparam>
-    public class ImmutableTensorStruct<T> : Variable<T>, ITensorStruct where T : IStruct
+    public class ImmutableTensorStruct<T> : ImmutableVariable<T>, ITensorStruct where T : IStruct
     {
         private readonly ImmutableDictionary<string, IVariable> _fields;
         private readonly TensorStructDef _definition;
@@ -122,7 +122,7 @@ namespace Shorokoo
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public Variable<V> As<V>() where V : IVarType => ((IVariable)Imm).As<V>();
+        public ImmutableVariable<V> As<V>() where V : IVarType => ((IVariable)Imm).As<V>();
 
 #pragma warning disable CS0618 // forwarding the obsolete member is intentional
         string? IVariable.FriendlyName => ((IVariable)Imm).FriendlyName;

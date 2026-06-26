@@ -24,7 +24,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         //
         //   The dispatch wrapper splits the flat inputs[] coming from the autograd
         //   engine into (cond, branchInputs):
-        //     cond                          = the IF_OPEN condition (Scalar<bit>)
+        //     cond                          = the IF_OPEN condition (ImmutableScalar<bit>)
         //     branchInputs[0..n]            = else_branch tensors  (alphabetical: "else" < "then")
         //     branchInputs[n..2n]           = then_branch tensors
         //   where n = outputGrads.Length. The returned array has shape 1 + 2n,

@@ -19,7 +19,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         /// Helper to create a scalar constant of a specific DType and cast to Tensor&lt;T&gt;.
         /// </summary>
         private static Tensor<T> TypedConst<T>(float value, Tensor<T> likeThis) where T : IVarType
-            => (Tensor<T>)OnnxOp.Cast(Scalar(value), saturate: null, to: likeThis.Type);
+            => (ImmutableTensor<T>)OnnxOp.Cast(Scalar(value), saturate: null, to: likeThis.Type);
 
         /// <summary>
         /// Expands the upstream gradient back to the original data shape for reduction ops.
@@ -35,13 +35,13 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var effectiveKeepdims = keepdims ?? true;
 
             if (axes is null)
-                return (Tensor<T1>)OnnxOp.Expand(grad, originalShape);
+                return (ImmutableTensor<T1>)OnnxOp.Expand(grad, originalShape);
 
             if (effectiveKeepdims)
-                return (Tensor<T1>)OnnxOp.Expand(grad, originalShape);
+                return (ImmutableTensor<T1>)OnnxOp.Expand(grad, originalShape);
 
-            var unsqueezedGrad = (Tensor<T1>)OnnxOp.Unsqueeze(grad, axes);
-            return (Tensor<T1>)OnnxOp.Expand(unsqueezedGrad, originalShape);
+            var unsqueezedGrad = (ImmutableTensor<T1>)OnnxOp.Unsqueeze(grad, axes);
+            return (ImmutableTensor<T1>)OnnxOp.Expand(unsqueezedGrad, originalShape);
         }
 
         // ===== Arithmetic Operations =====
@@ -79,8 +79,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // d(x^y)/dx = y * x^(y-1) * grad
             // d(x^y)/dy = x^y * ln(x) * grad
             var one = TypedConst(1.0f, x);
-            var powResult = (Tensor<T>)OnnxOp.Pow(x, y);     // x^y
-            var powMinus1 = (Tensor<T>)OnnxOp.Pow(x, y - one); // x^(y-1)
+            var powResult = (ImmutableTensor<T>)OnnxOp.Pow(x, y);     // x^y
+            var powMinus1 = (ImmutableTensor<T>)OnnxOp.Pow(x, y - one); // x^(y-1)
             var xGrad = ReverseBroadcast(grad * y * powMinus1, x.DShape);
             var yGrad = ReverseBroadcast(grad * powResult * x.Ln(), y.DShape);
 
@@ -165,16 +165,16 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             if (axes is null)
             {
                 // All axes reduced — N is the total number of elements = product of all dims
-                var fullShape = (Tensor<int64>)OnnxOp.Shape(data);
-                var totalSize = (Tensor<int64>)OnnxOp.ReduceProd(fullShape, keepdims: false);
-                reducedCountTyped = (Tensor<T1>)OnnxOp.Cast(totalSize, saturate: null, to: data.Type);
+                var fullShape = (ImmutableTensor<int64>)OnnxOp.Shape(data);
+                var totalSize = (ImmutableTensor<int64>)OnnxOp.ReduceProd(fullShape, keepdims: false);
+                reducedCountTyped = (ImmutableTensor<T1>)OnnxOp.Cast(totalSize, saturate: null, to: data.Type);
             }
             else
             {
-                var reducedShape = (Tensor<int64>)OnnxOp.Shape(data);
-                var gatheredDims = (Tensor<int64>)OnnxOp.Gather(reducedShape, axes, axis: 0);
-                var reducedCount = (Tensor<int64>)OnnxOp.ReduceProd(gatheredDims, keepdims: false);
-                reducedCountTyped = (Tensor<T1>)OnnxOp.Cast(reducedCount, saturate: null, to: data.Type);
+                var reducedShape = (ImmutableTensor<int64>)OnnxOp.Shape(data);
+                var gatheredDims = (ImmutableTensor<int64>)OnnxOp.Gather(reducedShape, axes, axis: 0);
+                var reducedCount = (ImmutableTensor<int64>)OnnxOp.ReduceProd(gatheredDims, keepdims: false);
+                reducedCountTyped = (ImmutableTensor<T1>)OnnxOp.Cast(reducedCount, saturate: null, to: data.Type);
             }
 
             return [expandedGrad / reducedCountTyped, null];
@@ -189,7 +189,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         {
             // Gradient of Reshape: reshape grad back to original shape
             var originalShape = input.DShape;
-            return [(Tensor<T1>)OnnxOp.Reshape(grad, originalShape, allowZero: false), null];
+            return [(ImmutableTensor<T1>)OnnxOp.Reshape(grad, originalShape, allowZero: false), null];
         }
 
         [AutoDiff(TRANSPOSE)]
@@ -200,7 +200,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             {
                 // Default: reverse all axes; inverse of reverse is reverse.
                 // Use OnnxOp.Transpose with null perm to signal "reverse all dims" per ONNX spec.
-                return [(Tensor<T>)OnnxOp.Transpose(grad, null)];
+                return [(ImmutableTensor<T>)OnnxOp.Transpose(grad, null)];
             }
 
             // Compute inverse permutation
@@ -221,8 +221,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var bTransposed = TransposeLastTwoDims(b);
             var aTransposed = TransposeLastTwoDims(a);
 
-            var aGrad = (Tensor<T>)OnnxOp.MatMul(grad, bTransposed);
-            var bGrad = (Tensor<T>)OnnxOp.MatMul(aTransposed, grad);
+            var aGrad = (ImmutableTensor<T>)OnnxOp.MatMul(grad, bTransposed);
+            var bGrad = (ImmutableTensor<T>)OnnxOp.MatMul(aTransposed, grad);
 
             // Handle broadcasting: reduce to original shapes
             aGrad = ReverseBroadcast(aGrad, a.DShape);
@@ -258,16 +258,16 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // leading dims. The shapes are read at runtime via Shape, so this needs no
             // static rank. Operands always have rank >= 2 here — a matmul never contracts a
             // statically-rank-<2 operand, so that degenerate case does not reach this point.
-            var lastTwo = (Tensor<int64>)OnnxOp.Shape(tensor, start: -2);                      // [M, N]
-            var collapsedShape = (Tensor<int64>)OnnxOp.Concat([Vector(-1L), lastTwo], axis: 0); // [-1, M, N]
-            var collapsed = (Tensor<T>)OnnxOp.Reshape(tensor, collapsedShape, allowZero: false); // (B', M, N)
+            var lastTwo = (ImmutableTensor<int64>)OnnxOp.Shape(tensor, start: -2);                      // [M, N]
+            var collapsedShape = (ImmutableTensor<int64>)OnnxOp.Concat([Vector(-1L), lastTwo], axis: 0); // [-1, M, N]
+            var collapsed = (ImmutableTensor<T>)OnnxOp.Reshape(tensor, collapsedShape, allowZero: false); // (B', M, N)
             var swapped = collapsed.Transpose(0L, 2L, 1L);                                      // (B', N, M)
 
-            var leading = (Tensor<int64>)OnnxOp.Shape(tensor, end: -2);                         // [d0 .. d_{r-3}]
-            var mDim = (Tensor<int64>)OnnxOp.Shape(tensor, start: -2, end: -1);                 // [M]
-            var nDim = (Tensor<int64>)OnnxOp.Shape(tensor, start: -1);                          // [N]
-            var restoredShape = (Tensor<int64>)OnnxOp.Concat([leading, nDim, mDim], axis: 0);   // [..., N, M]
-            return (Tensor<T>)OnnxOp.Reshape(swapped, restoredShape, allowZero: false);
+            var leading = (ImmutableTensor<int64>)OnnxOp.Shape(tensor, end: -2);                         // [d0 .. d_{r-3}]
+            var mDim = (ImmutableTensor<int64>)OnnxOp.Shape(tensor, start: -2, end: -1);                 // [M]
+            var nDim = (ImmutableTensor<int64>)OnnxOp.Shape(tensor, start: -1);                          // [N]
+            var restoredShape = (ImmutableTensor<int64>)OnnxOp.Concat([leading, nDim, mDim], axis: 0);   // [..., N, M]
+            return (ImmutableTensor<T>)OnnxOp.Reshape(swapped, restoredShape, allowZero: false);
         }
 
         // ===== Identity Operation =====
@@ -318,11 +318,11 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var originalShape = data.DShape;
 
             // Compute product along axes
-            var prod = (Tensor<T1>)OnnxOp.ReduceProd(data, axes, keepdims: true, noopWithEmptyAxes: noopWithEmptyAxes);
+            var prod = (ImmutableTensor<T1>)OnnxOp.ReduceProd(data, axes, keepdims: true, noopWithEmptyAxes: noopWithEmptyAxes);
             var expandedGrad = ExpandGradToOriginalShape(grad, data, axes, keepdims);
 
             // Gradient: prod / x_i * grad (broadcast prod to match data shape)
-            var expandedProd = (Tensor<T1>)OnnxOp.Expand(prod, originalShape);
+            var expandedProd = (ImmutableTensor<T1>)OnnxOp.Expand(prod, originalShape);
             return [expandedGrad * expandedProd / data, null];
         }
 
@@ -352,8 +352,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             // Compute softmax-like term: exp(x_i) / sum(exp(x_j)) along the reduction axes
             var expData = data.Exp();
-            var sumExp = (Tensor<T1>)OnnxOp.ReduceSum(expData, axes, keepdims: true, noopWithEmptyAxes: noopWithEmptyAxes);
-            var softmaxLike = expData / (Tensor<T1>)OnnxOp.Expand(sumExp, originalShape);
+            var sumExp = (ImmutableTensor<T1>)OnnxOp.ReduceSum(expData, axes, keepdims: true, noopWithEmptyAxes: noopWithEmptyAxes);
+            var softmaxLike = expData / (ImmutableTensor<T1>)OnnxOp.Expand(sumExp, originalShape);
 
             var expandedGrad = ExpandGradToOriginalShape(grad, data, axes, keepdims);
             return [softmaxLike * expandedGrad, null];
@@ -368,7 +368,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         {
             // ReduceL1(x) = sum(|x|) → d/dx_i = sign(x_i)
             var expandedGrad = ExpandGradToOriginalShape(grad, data, axes, keepdims);
-            return [(Tensor<T1>)OnnxOp.Sign(data) * expandedGrad, null];
+            return [(ImmutableTensor<T1>)OnnxOp.Sign(data) * expandedGrad, null];
         }
 
         // ===== ReduceL2 =====
@@ -382,10 +382,10 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var originalShape = data.DShape;
 
             // Compute L2 norm with keepdims=true for broadcasting
-            var l2 = (Tensor<T1>)OnnxOp.ReduceL2(data, axes, keepdims: true, noopWithEmptyAxes: noopWithEmptyAxes);
+            var l2 = (ImmutableTensor<T1>)OnnxOp.ReduceL2(data, axes, keepdims: true, noopWithEmptyAxes: noopWithEmptyAxes);
             var expandedGrad = ExpandGradToOriginalShape(grad, data, axes, keepdims);
 
-            var expandedL2 = (Tensor<T1>)OnnxOp.Expand(l2, originalShape);
+            var expandedL2 = (ImmutableTensor<T1>)OnnxOp.Expand(l2, originalShape);
             return [data / expandedL2 * expandedGrad, null];
         }
 
@@ -400,10 +400,10 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var originalShape = data.DShape;
 
             // Compute sum with keepdims=true for broadcasting
-            var sumData = (Tensor<T1>)OnnxOp.ReduceSum(data, axes, keepdims: true, noopWithEmptyAxes: noopWithEmptyAxes);
+            var sumData = (ImmutableTensor<T1>)OnnxOp.ReduceSum(data, axes, keepdims: true, noopWithEmptyAxes: noopWithEmptyAxes);
             var expandedGrad = ExpandGradToOriginalShape(grad, data, axes, keepdims);
 
-            var expandedSum = (Tensor<T1>)OnnxOp.Expand(sumData, originalShape);
+            var expandedSum = (ImmutableTensor<T1>)OnnxOp.Expand(sumData, originalShape);
             return [expandedGrad / expandedSum, null];
         }
 
@@ -419,13 +419,13 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var originalShape = data.DShape;
 
             // Compute max with keepdims=true for broadcasting
-            var maxVal = (Tensor<T1>)OnnxOp.ReduceMax(data, axes, keepdims: true, noopWithEmptyAxes: noopWithEmptyAxes);
-            var expandedMax = (Tensor<T1>)OnnxOp.Expand(maxVal, originalShape);
+            var maxVal = (ImmutableTensor<T1>)OnnxOp.ReduceMax(data, axes, keepdims: true, noopWithEmptyAxes: noopWithEmptyAxes);
+            var expandedMax = (ImmutableTensor<T1>)OnnxOp.Expand(maxVal, originalShape);
 
             // Create mask where data equals max; normalize by tie count
-            var mask = (Tensor<T1>)OnnxOp.Cast(OnnxOp.Equal(data, expandedMax), saturate: null, to: data.Type);
-            var maskSum = (Tensor<T1>)OnnxOp.ReduceSum(mask, axes, keepdims: true, noopWithEmptyAxes: noopWithEmptyAxes);
-            var expandedMaskSum = (Tensor<T1>)OnnxOp.Expand(maskSum, originalShape);
+            var mask = (ImmutableTensor<T1>)OnnxOp.Cast(OnnxOp.Equal(data, expandedMax), saturate: null, to: data.Type);
+            var maskSum = (ImmutableTensor<T1>)OnnxOp.ReduceSum(mask, axes, keepdims: true, noopWithEmptyAxes: noopWithEmptyAxes);
+            var expandedMaskSum = (ImmutableTensor<T1>)OnnxOp.Expand(maskSum, originalShape);
 
             var expandedGrad = ExpandGradToOriginalShape(grad, data, axes, keepdims);
             return [mask / expandedMaskSum * expandedGrad, null];
@@ -443,13 +443,13 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var originalShape = data.DShape;
 
             // Compute min with keepdims=true for broadcasting
-            var minVal = (Tensor<T1>)OnnxOp.ReduceMin(data, axes, keepdims: true, noopWithEmptyAxes: noopWithEmptyAxes);
-            var expandedMin = (Tensor<T1>)OnnxOp.Expand(minVal, originalShape);
+            var minVal = (ImmutableTensor<T1>)OnnxOp.ReduceMin(data, axes, keepdims: true, noopWithEmptyAxes: noopWithEmptyAxes);
+            var expandedMin = (ImmutableTensor<T1>)OnnxOp.Expand(minVal, originalShape);
 
             // Create mask where data equals min; normalize by tie count
-            var mask = (Tensor<T1>)OnnxOp.Cast(OnnxOp.Equal(data, expandedMin), saturate: null, to: data.Type);
-            var maskSum = (Tensor<T1>)OnnxOp.ReduceSum(mask, axes, keepdims: true, noopWithEmptyAxes: noopWithEmptyAxes);
-            var expandedMaskSum = (Tensor<T1>)OnnxOp.Expand(maskSum, originalShape);
+            var mask = (ImmutableTensor<T1>)OnnxOp.Cast(OnnxOp.Equal(data, expandedMin), saturate: null, to: data.Type);
+            var maskSum = (ImmutableTensor<T1>)OnnxOp.ReduceSum(mask, axes, keepdims: true, noopWithEmptyAxes: noopWithEmptyAxes);
+            var expandedMaskSum = (ImmutableTensor<T1>)OnnxOp.Expand(maskSum, originalShape);
 
             var expandedGrad = ExpandGradToOriginalShape(grad, data, axes, keepdims);
             return [mask / expandedMaskSum * expandedGrad, null];
@@ -466,7 +466,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // Gradient: CumSum(grad, axis, exclusive=same, reverse=!reverse)
             var effectiveExclusive = exclusive ?? false;
             var effectiveReverse = reverse ?? false;
-            var gradX = (Tensor<T1>)OnnxOp.CumSum(grad, axis, exclusive: effectiveExclusive, reverse: !effectiveReverse);
+            var gradX = (ImmutableTensor<T1>)OnnxOp.CumSum(grad, axis, exclusive: effectiveExclusive, reverse: !effectiveReverse);
             return [gradX, null];
         }
     }

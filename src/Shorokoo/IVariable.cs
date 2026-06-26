@@ -34,7 +34,7 @@ namespace Shorokoo
         public Node ParentNode => this.OwningNode;
         public DType Type { get; }
         public DType DType => this.Type;
-        public Variable<V> As<V>() where V : IVarType;
+        public ImmutableVariable<V> As<V>() where V : IVarType;
         public Function? ModuleFn { get; }
         
         /// <summary>
@@ -131,21 +131,21 @@ namespace Shorokoo
 
     public static class IVariableExtensions
     {
-        public static Variable<T> As<T>(this IVariable var) where T : IVarType => ((Variable<T>)var);
-        public static Variable<uint4> uint4(this IVariable var) => ((Variable<uint4>)var);
-        public static Variable<uint8> uint8(this IVariable var) => ((Variable<uint8>)var);
-        public static Variable<uint16> uint16(this IVariable var) => ((Variable<uint16>)var);
-        public static Variable<uint32> uint32(this IVariable var) => ((Variable<uint32>)var);
-        public static Variable<uint64> uint64(this IVariable var) => ((Variable<uint64>)var);
-        public static Variable<int4> int4(this IVariable var) => ((Variable<int4>)var);
-        public static Variable<int8> int8(this IVariable var) => ((Variable<int8>)var);
-        public static Variable<int16> int16(this IVariable var) => ((Variable<int16>)var);
-        public static Variable<int32> int32(this IVariable var) => ((Variable<int32>)var);
-        public static Variable<int64> int64(this IVariable var) => ((Variable<int64>)var);
-        public static Variable<float16> float16(this IVariable var) => ((Variable<float16>)var);
-        public static Variable<bfloat16> bfloat16(this IVariable var) => ((Variable<bfloat16>)var);
-        public static Variable<float32> float32(this IVariable var) => ((Variable<float32>)var);
-        public static Variable<float64> float64(this IVariable var) => ((Variable<float64>)var);
+        public static ImmutableVariable<T> As<T>(this IVariable var) where T : IVarType => ((ImmutableVariable<T>)var);
+        public static ImmutableVariable<uint4> uint4(this IVariable var) => ((ImmutableVariable<uint4>)var);
+        public static ImmutableVariable<uint8> uint8(this IVariable var) => ((ImmutableVariable<uint8>)var);
+        public static ImmutableVariable<uint16> uint16(this IVariable var) => ((ImmutableVariable<uint16>)var);
+        public static ImmutableVariable<uint32> uint32(this IVariable var) => ((ImmutableVariable<uint32>)var);
+        public static ImmutableVariable<uint64> uint64(this IVariable var) => ((ImmutableVariable<uint64>)var);
+        public static ImmutableVariable<int4> int4(this IVariable var) => ((ImmutableVariable<int4>)var);
+        public static ImmutableVariable<int8> int8(this IVariable var) => ((ImmutableVariable<int8>)var);
+        public static ImmutableVariable<int16> int16(this IVariable var) => ((ImmutableVariable<int16>)var);
+        public static ImmutableVariable<int32> int32(this IVariable var) => ((ImmutableVariable<int32>)var);
+        public static ImmutableVariable<int64> int64(this IVariable var) => ((ImmutableVariable<int64>)var);
+        public static ImmutableVariable<float16> float16(this IVariable var) => ((ImmutableVariable<float16>)var);
+        public static ImmutableVariable<bfloat16> bfloat16(this IVariable var) => ((ImmutableVariable<bfloat16>)var);
+        public static ImmutableVariable<float32> float32(this IVariable var) => ((ImmutableVariable<float32>)var);
+        public static ImmutableVariable<float64> float64(this IVariable var) => ((ImmutableVariable<float64>)var);
 
         public static DataStructure Structure(this IVariable var)
             => var is ITensorStruct ? DataStructure.TensorStruct :

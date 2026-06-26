@@ -374,7 +374,7 @@ namespace Shorokoo.Runtime
             /// <summary>Lifts the tensor data into a tensor variable.</summary>
             public Tensor<T> Get<T>(TensorData<T> tensorData) where T : IVarType
             {
-                return (Tensor<T>)Globals.Tensor(tensorData);
+                return (ImmutableTensor<T>)Globals.Tensor(tensorData);
             }
         }
 

@@ -40,8 +40,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var inputShape = input.DShape;
 
             // Find positions where condition is True
-            var truePositions = (Tensor<int64>)OnnxOp.NonZero(condition); // [1, K]
-            var indices = (Tensor<int64>)OnnxOp.Reshape(truePositions, Vector(-1L), allowZero: false); // [K]
+            var truePositions = (ImmutableTensor<int64>)OnnxOp.NonZero(condition); // [1, K]
+            var indices = (ImmutableTensor<int64>)OnnxOp.Reshape(truePositions, Vector(-1L), allowZero: false); // [K]
 
             var zero = TypedConst(0f, input);
 
@@ -49,15 +49,15 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             {
                 // No-axis case: input was flattened, grad is 1D [K]
                 // Create 1D zeros of flattened input size
-                var flatSize = (Tensor<int64>)OnnxOp.ReduceProd(inputShape, keepdims: false);
-                var flatShape = (Tensor<int64>)OnnxOp.Reshape(flatSize, Vector(1L), allowZero: false);
-                var zeros = (Tensor<T1>)OnnxOp.Expand(zero, flatShape);
+                var flatSize = (ImmutableTensor<int64>)OnnxOp.ReduceProd(inputShape, keepdims: false);
+                var flatShape = (ImmutableTensor<int64>)OnnxOp.Reshape(flatSize, Vector(1L), allowZero: false);
+                var zeros = (ImmutableTensor<T1>)OnnxOp.Expand(zero, flatShape);
 
                 // Scatter gradient at true positions
-                var dFlat = (Tensor<T1>)OnnxOp.ScatterElements(zeros, indices, grad, axis: 0);
+                var dFlat = (ImmutableTensor<T1>)OnnxOp.ScatterElements(zeros, indices, grad, axis: 0);
 
                 // Reshape back to input shape
-                var dInput = (Tensor<T1>)OnnxOp.Reshape(dFlat, inputShape, allowZero: false);
+                var dInput = (ImmutableTensor<T1>)OnnxOp.Reshape(dFlat, inputShape, allowZero: false);
                 return [dInput, null];
             }
             else
@@ -66,20 +66,20 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 var effectiveAxis = axis.Value;
 
                 // Build reshape target [1,...,-1,...,1] with -1 at axis position
-                var rank = (Tensor<int64>)OnnxOp.Shape(inputShape); // [rank_value]
-                var ones = (Tensor<int64>)OnnxOp.Expand(Scalar(1L), rank);
-                var axisIdx = (Tensor<int64>)OnnxOp.Reshape(Scalar(effectiveAxis), Vector(1L), allowZero: false);
-                var negOne = (Tensor<int64>)OnnxOp.Reshape(Scalar(-1L), Vector(1L), allowZero: false);
-                var reshapeTarget = (Tensor<int64>)OnnxOp.ScatterElements(ones, axisIdx, negOne, axis: 0);
+                var rank = (ImmutableTensor<int64>)OnnxOp.Shape(inputShape); // [rank_value]
+                var ones = (ImmutableTensor<int64>)OnnxOp.Expand(Scalar(1L), rank);
+                var axisIdx = (ImmutableTensor<int64>)OnnxOp.Reshape(Scalar(effectiveAxis), Vector(1L), allowZero: false);
+                var negOne = (ImmutableTensor<int64>)OnnxOp.Reshape(Scalar(-1L), Vector(1L), allowZero: false);
+                var reshapeTarget = (ImmutableTensor<int64>)OnnxOp.ScatterElements(ones, axisIdx, negOne, axis: 0);
 
                 // Reshape indices to [1,...,K,...,1] and expand to grad shape
-                var indicesReshaped = (Tensor<int64>)OnnxOp.Reshape(indices, reshapeTarget, allowZero: false);
+                var indicesReshaped = (ImmutableTensor<int64>)OnnxOp.Reshape(indices, reshapeTarget, allowZero: false);
                 var gradShape = grad.DShape;
-                var indicesExpanded = (Tensor<int64>)OnnxOp.Expand(indicesReshaped, gradShape);
+                var indicesExpanded = (ImmutableTensor<int64>)OnnxOp.Expand(indicesReshaped, gradShape);
 
                 // Create zeros of input shape and scatter grad back
-                var zeros = (Tensor<T1>)OnnxOp.Expand(zero, inputShape);
-                var dInput = (Tensor<T1>)OnnxOp.ScatterElements(zeros, indicesExpanded, grad, axis: effectiveAxis);
+                var zeros = (ImmutableTensor<T1>)OnnxOp.Expand(zero, inputShape);
+                var dInput = (ImmutableTensor<T1>)OnnxOp.ScatterElements(zeros, indicesExpanded, grad, axis: effectiveAxis);
 
                 return [dInput, null];
             }

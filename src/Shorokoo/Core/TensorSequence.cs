@@ -54,14 +54,14 @@ namespace Shorokoo.Core
     /// graph-plumbing factories. The user-facing typed API lives on the value-type handle
     /// <see cref="TensorSequence{T}"/>.
     /// </summary>
-    public class ImmutableTensorSequence<T> : Variable<T>, ITensorSequence
+    public class ImmutableTensorSequence<T> : ImmutableVariable<T>, ITensorSequence
         where T : IVarType
     {
         internal ImmutableTensorSequence(DType dtype, Node owningNode, Function? moduleFn, string? name) : base(dtype, owningNode, moduleFn, name) {}
 
-        Scalar<int64> ITensorSequence.Count => (Scalar<int64>)OnnxOp.SequenceLength(this);
-        ITensor ITensorSequence.Concat(long axis, bool newAxis) => (Tensor<T>)OnnxOp.ConcatFromSequence(this, axis, newAxis);
-        ITensor ITensorSequence.this[Scalar<int64> index] => (Tensor<T>)OnnxOp.SequenceAt(this, index);
+        Scalar<int64> ITensorSequence.Count => (ImmutableScalar<int64>)OnnxOp.SequenceLength(this);
+        ITensor ITensorSequence.Concat(long axis, bool newAxis) => (ImmutableTensor<T>)OnnxOp.ConcatFromSequence(this, axis, newAxis);
+        ITensor ITensorSequence.this[Scalar<int64> index] => (ImmutableTensor<T>)OnnxOp.SequenceAt(this, index);
         ITensorSequence ITensorSequence.RemoveAt(Scalar<int64> index) => (ImmutableTensorSequence<T>)OnnxOp.SequenceErase(this, index);
         ITensorSequence ITensorSequence.InsertAt(ITensor tensor, Scalar<int64> index) => (ImmutableTensorSequence<T>)OnnxOp.SequenceInsert(this, tensor, index);
 
@@ -102,13 +102,13 @@ namespace Shorokoo.Core
             => handle.Imm;
 
         // ── User-facing typed API (the sequence surface lives here, not on the immutable) ──
-        public Scalar<int64> Count => (Scalar<int64>)OnnxOp.SequenceLength(Imm);
+        public Scalar<int64> Count => (ImmutableScalar<int64>)OnnxOp.SequenceLength(Imm);
 
         public Tensor<T> Concat(long axis, bool newAxis = false)
-            => (Tensor<T>)OnnxOp.ConcatFromSequence(Imm, axis, newAxis);
+            => (ImmutableTensor<T>)OnnxOp.ConcatFromSequence(Imm, axis, newAxis);
 
         public Tensor<T> this[Scalar<int64> index]
-            => (Tensor<T>)OnnxOp.SequenceAt(Imm, index);
+            => (ImmutableTensor<T>)OnnxOp.SequenceAt(Imm, index);
 
         /// <summary>Removes the element at <paramref name="index"/>, or the LAST element when called
         /// without an index (ONNX SequenceErase's optional-position default).</summary>
@@ -134,7 +134,7 @@ namespace Shorokoo.Core
         ITensor ITensorSequence.Concat(long axis, bool newAxis) => this.Concat(axis, newAxis);
         ITensor ITensorSequence.this[Scalar<int64> index] => this[index];
         ITensorSequence ITensorSequence.RemoveAt(Scalar<int64> index) => this.RemoveAt(index);
-        ITensorSequence ITensorSequence.InsertAt(ITensor tensor, Scalar<int64> index) => this.InsertAt((Tensor<T>)tensor, index);
+        ITensorSequence ITensorSequence.InsertAt(ITensor tensor, Scalar<int64> index) => this.InsertAt((ImmutableTensor<T>)tensor, index);
 
         // IVariable surface — forward to the wrapped immutable.
         public Node OwningNode => Imm.OwningNode;
@@ -143,7 +143,7 @@ namespace Shorokoo.Core
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public Variable<V> As<V>() where V : IVarType => ((IVariable)Imm).As<V>();
+        public ImmutableVariable<V> As<V>() where V : IVarType => ((IVariable)Imm).As<V>();
 
 #pragma warning disable CS0618 // forwarding the obsolete member is intentional
         string? IVariable.FriendlyName => ((IVariable)Imm).FriendlyName;

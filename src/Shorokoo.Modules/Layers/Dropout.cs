@@ -27,7 +27,7 @@ public partial class Dropout
         [Hyper] Scalar<bit> training)
     {
         var (y, _) = OnnxOp.Dropout(x, ratio, training, seed: 42L);
-        return (Tensor<float32>)y;
+        return (ImmutableTensor<float32>)y;
     }
 }
 
@@ -73,7 +73,7 @@ public partial class SpatialDropout
         var (mask, _) = OnnxOp.Dropout(ones, ratio, training, seed: 42L);
 
         // Broadcast the per-channel mask over the spatial dims and apply.
-        return x * (Tensor<float32>)mask;
+        return x * (ImmutableTensor<float32>)mask;
     }
 }
 
@@ -160,7 +160,7 @@ public partial class AlphaDropout
         // (Eval: r = 1 everywhere ⇒ d = q, unused — the training gate restores identity.)
         var ones = TensorFill(x.ShapeTensor(), 1.0f);
         var (r, _) = OnnxOp.Dropout(ones, ratio, training, seed: 42L);
-        Tensor<float32> d = (Tensor<float32>)r * q;
+        Tensor<float32> d = (ImmutableTensor<float32>)r * q;
 
         // Kept → x, dropped → α'; then the affine renorm a·x' + b.
         Tensor<float32> xPrime = x * d + alphaP * (1f - d);
@@ -221,7 +221,7 @@ public partial class FeatureAlphaDropout
         // identity.)
         var ones = TensorFill(maskShape, 1.0f);
         var (r, _) = OnnxOp.Dropout(ones, ratio, training, seed: 42L);
-        Tensor<float32> d = (Tensor<float32>)r * q;
+        Tensor<float32> d = (ImmutableTensor<float32>)r * q;
 
         // Kept → x, dropped → α'; then the affine renorm a·x' + b. The [N,C,1,…,1] mask d
         // broadcasts over the spatial axes in x·d exactly as a spatial-dropout mask does.

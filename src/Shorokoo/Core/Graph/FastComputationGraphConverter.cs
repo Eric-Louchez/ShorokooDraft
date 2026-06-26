@@ -464,11 +464,11 @@ namespace Shorokoo.Graph
             for (int i = 0; i < variables.Length && i < names.Count; i++)
             {
                 if (names[i] is null) continue;
-                if (variables[i] is Variable<IVarType> v)
+                if (variables[i] is ImmutableVariable<IVarType> v)
                     v.SetUniqueName(names[i]);
                 else
                 {
-                    // Variable<T> is generic; cast through dynamic to reach SetUniqueName.
+                    // ImmutableVariable<T> is generic; cast through dynamic to reach SetUniqueName.
                     var dyn = (dynamic)variables[i];
                     dyn.SetUniqueName(names[i]);
                 }

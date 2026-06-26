@@ -31,7 +31,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             where T1 : IVarType
             where T2 : IVarType
         {
-            var dInput = (Tensor<T1>)OnnxOp.ReverseSequence(grad, sequenceLens,
+            var dInput = (ImmutableTensor<T1>)OnnxOp.ReverseSequence(grad, sequenceLens,
                 batchAxis: batch_axis, timeAxis: time_axis);
             return [dInput, null];
         }

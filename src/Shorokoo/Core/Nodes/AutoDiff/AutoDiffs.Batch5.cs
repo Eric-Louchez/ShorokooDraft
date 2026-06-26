@@ -27,7 +27,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var effectiveTransA = transA ?? 0;
             var effectiveTransB = transB ?? 0;
 
-            var alphaConst = TypedConst(effectiveAlpha, (Tensor<T>)grad);
+            var alphaConst = TypedConst(effectiveAlpha, (ImmutableTensor<T>)grad);
 
             // Compute gradient w.r.t. A
             Tensor<T> gradA;
@@ -36,11 +36,11 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 // A was transposed: Y = alpha * A^T @ B' + beta*C
                 // dL/dA^T = alpha * grad @ B'^T, so dL/dA = (dL/dA^T)^T = alpha * B' @ grad^T
                 if (effectiveTransB != 0)
-                    gradA = alphaConst * (Tensor<T>)OnnxOp.MatMul(
+                    gradA = alphaConst * (ImmutableTensor<T>)OnnxOp.MatMul(
                         OnnxOp.Transpose(b, perm: [1, 0]),
                         OnnxOp.Transpose(grad, perm: [1, 0]));
                 else
-                    gradA = alphaConst * (Tensor<T>)OnnxOp.MatMul(
+                    gradA = alphaConst * (ImmutableTensor<T>)OnnxOp.MatMul(
                         b,
                         OnnxOp.Transpose(grad, perm: [1, 0]));
             }
@@ -48,9 +48,9 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             {
                 // A was not transposed: dL/dA = alpha * grad @ B'^T
                 if (effectiveTransB != 0)
-                    gradA = alphaConst * (Tensor<T>)OnnxOp.MatMul(grad, b);
+                    gradA = alphaConst * (ImmutableTensor<T>)OnnxOp.MatMul(grad, b);
                 else
-                    gradA = alphaConst * (Tensor<T>)OnnxOp.MatMul(
+                    gradA = alphaConst * (ImmutableTensor<T>)OnnxOp.MatMul(
                         grad,
                         OnnxOp.Transpose(b, perm: [1, 0]));
             }
@@ -61,11 +61,11 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             {
                 // B was transposed: dL/dB^T = alpha * A'^T @ grad, dL/dB = (dL/dB^T)^T
                 if (effectiveTransA != 0)
-                    gradB = alphaConst * (Tensor<T>)OnnxOp.MatMul(
+                    gradB = alphaConst * (ImmutableTensor<T>)OnnxOp.MatMul(
                         OnnxOp.Transpose(grad, perm: [1, 0]),
                         OnnxOp.Transpose(a, perm: [1, 0]));
                 else
-                    gradB = alphaConst * (Tensor<T>)OnnxOp.MatMul(
+                    gradB = alphaConst * (ImmutableTensor<T>)OnnxOp.MatMul(
                         OnnxOp.Transpose(grad, perm: [1, 0]),
                         a);
             }
@@ -73,9 +73,9 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             {
                 // B was not transposed: dL/dB = alpha * A'^T @ grad
                 if (effectiveTransA != 0)
-                    gradB = alphaConst * (Tensor<T>)OnnxOp.MatMul(a, grad);
+                    gradB = alphaConst * (ImmutableTensor<T>)OnnxOp.MatMul(a, grad);
                 else
-                    gradB = alphaConst * (Tensor<T>)OnnxOp.MatMul(
+                    gradB = alphaConst * (ImmutableTensor<T>)OnnxOp.MatMul(
                         OnnxOp.Transpose(a, perm: [1, 0]),
                         grad);
             }
@@ -84,7 +84,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             IVariable? gradC = null;
             if (c is not null)
             {
-                var betaConst = TypedConst(effectiveBeta, (Tensor<T>)grad);
+                var betaConst = TypedConst(effectiveBeta, (ImmutableTensor<T>)grad);
                 gradC = ReverseBroadcast(betaConst * grad, c.DShape);
             }
 
@@ -106,44 +106,44 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // Get input shape components
             var xShape = x.DShape;                                                    // [N, C, ...]
             var xRank = OnnxOp.Shape(xShape);                                         // [1] containing rank
-            var cVec = (Tensor<int64>)OnnxOp.Slice(xShape, Vector(1L), Vector(2L));   // [C]
+            var cVec = (ImmutableTensor<int64>)OnnxOp.Slice(xShape, Vector(1L), Vector(2L));   // [C]
 
             // Compute reduction axes for spatial dims: [2, 3, ..., rank-1]
             var xRankScalar = OnnxOp.Squeeze(xRank, Vector(0L));
             var spatialAxes = OnnxOp.Range(Scalar(2L), xRankScalar, Scalar(1L));
 
             // Compute mean and variance per instance per channel
-            var mean = (Tensor<T>)OnnxOp.ReduceMean(x, spatialAxes, keepdims: true);
+            var mean = (ImmutableTensor<T>)OnnxOp.ReduceMean(x, spatialAxes, keepdims: true);
             var xCentered = x - mean;
-            var variance = (Tensor<T>)OnnxOp.ReduceMean(xCentered * xCentered, spatialAxes, keepdims: true);
-            var invStd = (Tensor<T>)OnnxOp.Reciprocal((Tensor<T>)OnnxOp.Sqrt(variance + epsConst));
+            var variance = (ImmutableTensor<T>)OnnxOp.ReduceMean(xCentered * xCentered, spatialAxes, keepdims: true);
+            var invStd = (ImmutableTensor<T>)OnnxOp.Reciprocal((ImmutableTensor<T>)OnnxOp.Sqrt(variance + epsConst));
 
             // Normalized values
             var xHat = xCentered * invStd;
 
             // Build broadcast shape [1, C, 1, 1, ...] for scale/bias
-            var onesShape = (Tensor<int64>)OnnxOp.Expand(Scalar(1L), xRank);
-            var scatterIdx = (Tensor<int64>)OnnxOp.Reshape(Vector(1L), Vector(1L, 1L), allowZero: false);
-            var broadcastShape = (Tensor<int64>)OnnxOp.ScatterND(onesShape, scatterIdx, cVec);
-            var scaleBC = (Tensor<T>)OnnxOp.Reshape(scale, broadcastShape, allowZero: false);
+            var onesShape = (ImmutableTensor<int64>)OnnxOp.Expand(Scalar(1L), xRank);
+            var scatterIdx = (ImmutableTensor<int64>)OnnxOp.Reshape(Vector(1L), Vector(1L, 1L), allowZero: false);
+            var broadcastShape = (ImmutableTensor<int64>)OnnxOp.ScatterND(onesShape, scatterIdx, cVec);
+            var scaleBC = (ImmutableTensor<T>)OnnxOp.Reshape(scale, broadcastShape, allowZero: false);
 
             // Build reduce axes for dscale/dbias: [0, 2, 3, ..., rank-1] (all except channel dim 1)
             var allAxes = OnnxOp.Range(Scalar(0L), xRankScalar, Scalar(1L));
-            var axis0 = (Tensor<int64>)OnnxOp.Slice(allAxes, Vector(0L), Vector(1L));
-            var axesSuffix = (Tensor<int64>)OnnxOp.Slice(allAxes, Vector(2L), xRank);
-            var channelReduceAxes = (Tensor<int64>)OnnxOp.Concat([axis0, axesSuffix], axis: 0);
+            var axis0 = (ImmutableTensor<int64>)OnnxOp.Slice(allAxes, Vector(0L), Vector(1L));
+            var axesSuffix = (ImmutableTensor<int64>)OnnxOp.Slice(allAxes, Vector(2L), xRank);
+            var channelReduceAxes = (ImmutableTensor<int64>)OnnxOp.Concat([axis0, axesSuffix], axis: 0);
 
             // dscale = sum(grad * x_hat, axes=[0, 2, 3, ...]) → [C]
-            var gradScale = (Tensor<T>)OnnxOp.ReduceSum(grad * xHat, channelReduceAxes, keepdims: false);
+            var gradScale = (ImmutableTensor<T>)OnnxOp.ReduceSum(grad * xHat, channelReduceAxes, keepdims: false);
 
             // dbias = sum(grad, axes=[0, 2, 3, ...]) → [C]
-            var gradBias = (Tensor<T>)OnnxOp.ReduceSum(grad, channelReduceAxes, keepdims: false);
+            var gradBias = (ImmutableTensor<T>)OnnxOp.ReduceSum(grad, channelReduceAxes, keepdims: false);
 
             // dx: use instance normalization backward formula
             // dx = invStd * (grad_scaled - mean(grad_scaled) - x_centered * mean(grad_scaled * x_centered) * invStd²)
             var gradScaled = grad * scaleBC;
-            var meanGrad = (Tensor<T>)OnnxOp.ReduceMean(gradScaled, spatialAxes, keepdims: true);
-            var meanGradXc = (Tensor<T>)OnnxOp.ReduceMean(gradScaled * xCentered, spatialAxes, keepdims: true);
+            var meanGrad = (ImmutableTensor<T>)OnnxOp.ReduceMean(gradScaled, spatialAxes, keepdims: true);
+            var meanGradXc = (ImmutableTensor<T>)OnnxOp.ReduceMean(gradScaled * xCentered, spatialAxes, keepdims: true);
             var gradX = invStd * (gradScaled - meanGrad - xCentered * meanGradXc * invStd * invStd);
 
             return [gradX, gradScale, gradBias];
@@ -163,24 +163,24 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             // Get grad shape components: [N, C*r², H/r, W/r]
             var gradShape = grad.DShape;
-            var nVec = (Tensor<int64>)OnnxOp.Slice(gradShape, Vector(0L), Vector(1L));
-            var cr2Vec = (Tensor<int64>)OnnxOp.Slice(gradShape, Vector(1L), Vector(2L));
-            var hrVec = (Tensor<int64>)OnnxOp.Slice(gradShape, Vector(2L), Vector(3L));
-            var wrVec = (Tensor<int64>)OnnxOp.Slice(gradShape, Vector(3L), Vector(4L));
+            var nVec = (ImmutableTensor<int64>)OnnxOp.Slice(gradShape, Vector(0L), Vector(1L));
+            var cr2Vec = (ImmutableTensor<int64>)OnnxOp.Slice(gradShape, Vector(1L), Vector(2L));
+            var hrVec = (ImmutableTensor<int64>)OnnxOp.Slice(gradShape, Vector(2L), Vector(3L));
+            var wrVec = (ImmutableTensor<int64>)OnnxOp.Slice(gradShape, Vector(3L), Vector(4L));
             var rVec = Vector(r);
             var r2Vec = Vector(r * r);
             var cVec = cr2Vec / r2Vec;
 
             // Step 1: Reshape grad [N, C*r², H/r, W/r] → [N, r, r, C, H/r, W/r] (DCR mode)
-            var intermediateShape = (Tensor<int64>)OnnxOp.Concat(
+            var intermediateShape = (ImmutableTensor<int64>)OnnxOp.Concat(
                 [nVec, rVec, rVec, cVec, hrVec, wrVec], axis: 0);
-            var reshaped = (Tensor<T>)OnnxOp.Reshape(grad, intermediateShape, allowZero: false);
+            var reshaped = (ImmutableTensor<T>)OnnxOp.Reshape(grad, intermediateShape, allowZero: false);
 
             // Step 2: Transpose [N, r, r, C, H/r, W/r] → [N, C, H/r, r, W/r, r]
-            var transposed = (Tensor<T>)OnnxOp.Transpose(reshaped, perm: [0, 3, 4, 1, 5, 2]);
+            var transposed = (ImmutableTensor<T>)OnnxOp.Transpose(reshaped, perm: [0, 3, 4, 1, 5, 2]);
 
             // Step 3: Reshape to original input shape [N, C, H, W]
-            var result = (Tensor<T>)OnnxOp.Reshape(transposed, originalShape, allowZero: false);
+            var result = (ImmutableTensor<T>)OnnxOp.Reshape(transposed, originalShape, allowZero: false);
 
             return [result];
         }
@@ -225,11 +225,11 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             if (effectiveP == 2)
             {
                 // L2 normalization gradient
-                var norm = (Tensor<T>)OnnxOp.ReduceL2(input, axesTensor, keepdims: true);
+                var norm = (ImmutableTensor<T>)OnnxOp.ReduceL2(input, axesTensor, keepdims: true);
                 var epsConst = TypedConst(1e-12f, input);
-                var safeNorm = (Tensor<T>)OnnxOp.Max(norm, epsConst);
+                var safeNorm = (ImmutableTensor<T>)OnnxOp.Max(norm, epsConst);
                 var y = input / safeNorm;
-                var dotProduct = (Tensor<T>)OnnxOp.ReduceSum(grad * y, axesTensor, keepdims: true);
+                var dotProduct = (ImmutableTensor<T>)OnnxOp.ReduceSum(grad * y, axesTensor, keepdims: true);
                 var gradInput = (grad - y * dotProduct) / safeNorm;
                 return [gradInput];
             }
@@ -238,12 +238,12 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 // L1 normalization gradient
                 // y = x / ||x||_1, so dy_j/dx_i = (δ_ij - sign(x_i) * y_j) / ||x||_1
                 // dL/dx_i = sum_j(dL/dy_j * dy_j/dx_i) = (dL/dy_i - sign(x_i) * sum(dL/dy * y)) / ||x||_1
-                var norm = (Tensor<T>)OnnxOp.ReduceL1(input, axesTensor, keepdims: true);
+                var norm = (ImmutableTensor<T>)OnnxOp.ReduceL1(input, axesTensor, keepdims: true);
                 var epsConst = TypedConst(1e-12f, input);
-                var safeNorm = (Tensor<T>)OnnxOp.Max(norm, epsConst);
-                var signX = (Tensor<T>)OnnxOp.Sign(input);
+                var safeNorm = (ImmutableTensor<T>)OnnxOp.Max(norm, epsConst);
+                var signX = (ImmutableTensor<T>)OnnxOp.Sign(input);
                 var y = input / safeNorm;
-                var dotGradY = (Tensor<T>)OnnxOp.ReduceSum(grad * y, axesTensor, keepdims: true);
+                var dotGradY = (ImmutableTensor<T>)OnnxOp.ReduceSum(grad * y, axesTensor, keepdims: true);
                 var gradInput = (grad - signX * dotGradY) / safeNorm;
                 return [gradInput];
             }
@@ -602,13 +602,13 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 for (int d = 0; d < nDims; d++)
                 {
                     var idx = Globals.Scalar(2L + d);
-                    var outDim = (Tensor<int64>)OnnxOp.Gather(gradShapeSame, idx, axis: 0);
-                    var inDim = (Tensor<int64>)OnnxOp.Gather(xShapeSame, idx, axis: 0);
+                    var outDim = (ImmutableTensor<int64>)OnnxOp.Gather(gradShapeSame, idx, axis: 0);
+                    var inDim = (ImmutableTensor<int64>)OnnxOp.Gather(xShapeSame, idx, axis: 0);
                     var padTotalCandidate = (outDim - Globals.Scalar(1L)) * Globals.Scalar(strides[d])
                                           + Globals.Scalar((kernelShape[d] - 1) * dilations[d])
                                           + Globals.Scalar(1L) - inDim;
-                    var padTotal = (Tensor<int64>)OnnxOp.Max(
-                        (Tensor<int64>)(IVariable)Globals.Scalar(0L),
+                    var padTotal = (ImmutableTensor<int64>)OnnxOp.Max(
+                        (ImmutableTensor<int64>)(IVariable)Globals.Scalar(0L),
                         padTotalCandidate);
 
                     Tensor<int64> padBegin = sameLower
@@ -715,8 +715,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var axesArray = new long[nDims];
             for (int d = 0; d < nDims; d++)
             {
-                var xSizeD = (Tensor<int64>)OnnxOp.Gather(xShapeFinal, Globals.Scalar(2L + d), axis: 0);
-                var pb = (Tensor<int64>)padBeginVars![d];
+                var xSizeD = (ImmutableTensor<int64>)OnnxOp.Gather(xShapeFinal, Globals.Scalar(2L + d), axis: 0);
+                var pb = (ImmutableTensor<int64>)padBeginVars![d];
                 startsParts[d] = OnnxOp.Reshape(pb, Globals.Vector(1L), allowZero: false);
                 endsParts[d] = OnnxOp.Reshape(pb + xSizeD, Globals.Vector(1L), allowZero: false);
                 axesArray[d] = 2L + d;

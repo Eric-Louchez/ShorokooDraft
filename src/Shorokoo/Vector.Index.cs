@@ -86,7 +86,7 @@ namespace Shorokoo
         private VectorIndexerParam slice;
 
         /// <summary>The sliced/gathered vector (shorthand for the implicit conversion).</summary>
-        public Vector<TT> T => (Vector<TT>)this;
+        public Vector<TT> T => (ImmutableVector<TT>)this;
 
         internal VectorIndexerResult(Vector<TT> gatherFrom, VectorIndexerParam slice)
         {
@@ -163,7 +163,7 @@ namespace Shorokoo
         private Scalar<int64> index;
 
         /// <summary>The indexed element (shorthand for the implicit conversion).</summary>
-        public Scalar<TT> T => (Scalar<TT>)this;
+        public Scalar<TT> T => (ImmutableScalar<TT>)this;
 
         internal ScalarIndexerResult(Vector<TT> gatherFrom, long index)
         {

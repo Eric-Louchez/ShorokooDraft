@@ -197,7 +197,7 @@ namespace Shorokoo.Core.Nodes
 
         public int NumTrailingNullInputs { get; protected set; } = 0;
 
-        public IVariable?[] InputsWithTrailingNulls => [.. Inputs, .. Enumerable.Repeat((Variable<AnyLike>?)null, this.NumTrailingNullInputs)];
+        public IVariable?[] InputsWithTrailingNulls => [.. Inputs, .. Enumerable.Repeat((ImmutableVariable<AnyLike>?)null, this.NumTrailingNullInputs)];
 
         public string? StackTrace { get; protected set; }
 
@@ -263,7 +263,7 @@ namespace Shorokoo.Core.Nodes
 
             if (this.IsOpenNode)
             {
-                this.ConnectingTensor = new Tensor<invalid>(null, DType.Invalid, this, null, null, null);
+                this.ConnectingTensor = new ImmutableTensor<invalid>(null, DType.Invalid, this, null, null, null);
             }
 
             if (this.IsCloseNode && this.GraphOpenNode is not null)
@@ -326,7 +326,7 @@ namespace Shorokoo.Core.Nodes
             // Assign keys to connecting tensor first (uses index -1)
             if (this.IsOpenNode && this.ConnectingTensor != null)
             {
-                ((Variable<invalid>)this.ConnectingTensor).SetKey(TensorKey.ForConnectingTensor(this.Key));
+                ((ImmutableVariable<invalid>)this.ConnectingTensor).SetKey(TensorKey.ForConnectingTensor(this.Key));
             }
 
             // Assign keys to all outputs in order
@@ -337,7 +337,7 @@ namespace Shorokoo.Core.Nodes
                 {
                     if (output != null)
                     {
-                        // Get the base Variable<T> and set the key
+                        // Get the base ImmutableVariable<T> and set the key
                         var variable = output as dynamic;
                         variable.SetKey(new TensorKey(this.Key, outputIndex));
                     }

@@ -236,7 +236,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var rightHalf = effectiveSize - 1 - leftHalf;
 
             // Get the number of channels dynamically
-            var cDim = (Tensor<int64>)OnnxOp.Slice(OnnxOp.Shape(x), Vector(1L), Vector(2L));
+            var cDim = (ImmutableTensor<int64>)OnnxOp.Slice(OnnxOp.Shape(x), Vector(1L), Vector(2L));
 
             // Helper: Channel window sum (sliding window sum along channel axis 1)
             // Uses Pad + unrolled Slice-and-Add since size is a static attribute
@@ -244,16 +244,16 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             {
                 // Pad along channel dimension (axis 1) with zeros
                 var pads = Vector(leftHalf, rightHalf);
-                var padded = (Tensor<T>)OnnxOp.Pad(tensor, pads, null, axes: Vector(1L), mode: PadMode.Constant);
+                var padded = (ImmutableTensor<T>)OnnxOp.Pad(tensor, pads, null, axes: Vector(1L), mode: PadMode.Constant);
 
                 // Unrolled slice-and-add across the window
                 // First slice establishes the accumulator
-                var result = (Tensor<T>)OnnxOp.Slice(padded, Vector(0L), cDim, Vector(1L));
+                var result = (ImmutableTensor<T>)OnnxOp.Slice(padded, Vector(0L), cDim, Vector(1L));
                 for (long i = 1; i < effectiveSize; i++)
                 {
                     var start = Vector(i);
-                    var end = (Tensor<int64>)OnnxOp.Add(cDim, Vector(i));
-                    var sliced = (Tensor<T>)OnnxOp.Slice(padded, start, end, Vector(1L));
+                    var end = (ImmutableTensor<int64>)OnnxOp.Add(cDim, Vector(i));
+                    var sliced = (ImmutableTensor<T>)OnnxOp.Slice(padded, start, end, Vector(1L));
                     result = result + sliced;
                 }
 
@@ -269,12 +269,12 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             // Step 2: term1 = grad * pool^(-beta)
             var negBeta = TypedConst(-effectiveBeta, x);
-            var poolNegBeta = (Tensor<T>)OnnxOp.Pow(pool, negBeta);
+            var poolNegBeta = (ImmutableTensor<T>)OnnxOp.Pow(pool, negBeta);
             var term1 = grad * poolNegBeta;
 
             // Step 3: term2 = -2*alpha*beta/size * x * ChannelWindowSum(grad * x * pool^(-(beta+1)))
             var negBetaM1 = TypedConst(-(effectiveBeta + 1.0f), x);
-            var poolNegBetaM1 = (Tensor<T>)OnnxOp.Pow(pool, negBetaM1);
+            var poolNegBetaM1 = (ImmutableTensor<T>)OnnxOp.Pow(pool, negBetaM1);
             var inner = grad * x * poolNegBetaM1;
             var windowSumInner = ChannelWindowSum(inner);
             var coeff = TypedConst(-2.0f * effectiveAlpha * effectiveBeta / (float)effectiveSize, x);

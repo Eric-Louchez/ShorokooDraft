@@ -78,24 +78,24 @@ namespace Shorokoo
                 return CreateGenericScalar<T>(val);
             
             // Original non-generic logic
-            if (typeofT == typeof(bit)) return (Scalar<T>)(IScalar)Scalar(Convert.ToBoolean(val));
-            else if (typeofT == typeof(int8)) return (Scalar<T>)(IScalar)Scalar(Convert.ToSByte(val));
-            else if (typeofT == typeof(int16)) return (Scalar<T>)(IScalar)Scalar(Convert.ToInt16(val));
-            else if (typeofT == typeof(int32)) return (Scalar<T>)(IScalar)Scalar(Convert.ToInt32(val));
-            else if (typeofT == typeof(int64)) return (Scalar<T>)(IScalar)Scalar(Convert.ToInt64(val));
-            else if (typeofT == typeof(uint8)) return (Scalar<T>)(IScalar)Scalar(Convert.ToByte(val));
-            else if (typeofT == typeof(uint16)) return (Scalar<T>)(IScalar)Scalar(Convert.ToUInt16(val));
-            else if (typeofT == typeof(uint32)) return (Scalar<T>)(IScalar)Scalar(Convert.ToUInt32(val));
-            else if (typeofT == typeof(uint64)) return (Scalar<T>)(IScalar)Scalar(Convert.ToUInt64(val));
+            if (typeofT == typeof(bit)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToBoolean(val));
+            else if (typeofT == typeof(int8)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToSByte(val));
+            else if (typeofT == typeof(int16)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToInt16(val));
+            else if (typeofT == typeof(int32)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToInt32(val));
+            else if (typeofT == typeof(int64)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToInt64(val));
+            else if (typeofT == typeof(uint8)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToByte(val));
+            else if (typeofT == typeof(uint16)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToUInt16(val));
+            else if (typeofT == typeof(uint32)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToUInt32(val));
+            else if (typeofT == typeof(uint64)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToUInt64(val));
             // Use an already-half value directly; otherwise route any other numeric value
             // through float (every supported numeric primitive is IConvertible). A bare
             // (BFloat16)/(Float16) cast off `object` is an unbox that only succeeds when the
             // boxed value is already that exact half type, so it would throw for e.g. an int —
             // the path reached by `Scalar<bfloat16> x = 5;` via the implicit conversions.
-            else if (typeofT == typeof(bfloat16)) return (Scalar<T>)(IScalar)Scalar(val is BFloat16 bf ? bf : (BFloat16)Convert.ToSingle(val));
-            else if (typeofT == typeof(float16)) return (Scalar<T>)(IScalar)Scalar(val is Float16 f16 ? f16 : (Float16)Convert.ToSingle(val));
-            else if (typeofT == typeof(float32)) return (Scalar<T>)(IScalar)Scalar(Convert.ToSingle(val));
-            else if (typeofT == typeof(float64)) return (Scalar<T>)(IScalar)Scalar(Convert.ToDouble(val));
+            else if (typeofT == typeof(bfloat16)) return (ImmutableScalar<T>)(IScalar)Scalar(val is BFloat16 bf ? bf : (BFloat16)Convert.ToSingle(val));
+            else if (typeofT == typeof(float16)) return (ImmutableScalar<T>)(IScalar)Scalar(val is Float16 f16 ? f16 : (Float16)Convert.ToSingle(val));
+            else if (typeofT == typeof(float32)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToSingle(val));
+            else if (typeofT == typeof(float64)) return (ImmutableScalar<T>)(IScalar)Scalar(Convert.ToDouble(val));
             else 
                 throw new UnsupportedDTypeException(ErrorCodes.GC002, typeof(T).Name, "Scalar<T>", 
                     $"Type '{typeof(T).FullName}' is not supported for generic scalar creation. Supported IVarTypes: bit, int8, int16, int32, int64, uint8, uint16, uint32, uint64, bfloat16, float16, float32, float64");
@@ -111,52 +111,52 @@ namespace Shorokoo
             
             var genericDType = OnnxUtils.GetDType<T>() ?? throw new InvalidOperationException($"Cannot get DType for {typeof(T).Name}");
             
-            if (val is bool boolVal) return (Scalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { boolVal }), genericDType));
-            else if (val is sbyte sbyteVal) return (Scalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { sbyteVal }), genericDType));
-            else if (val is short shortVal) return (Scalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { shortVal }), genericDType));
-            else if (val is int intVal) return (Scalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { intVal }), genericDType));
-            else if (val is long longVal) return (Scalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { longVal }), genericDType));
-            else if (val is byte byteVal) return (Scalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { byteVal }), genericDType));
-            else if (val is ushort ushortVal) return (Scalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { ushortVal }), genericDType));
-            else if (val is uint uintVal) return (Scalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { uintVal }), genericDType));
-            else if (val is ulong ulongVal) return (Scalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { ulongVal }), genericDType));
-            else if (val is BFloat16 bfloat16Val) return (Scalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { bfloat16Val }), genericDType));
-            else if (val is Float16 float16Val) return (Scalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { float16Val }), genericDType));
-            else if (val is float floatVal) return (Scalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { floatVal }), genericDType));
-            else if (val is double doubleVal) return (Scalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { doubleVal }), genericDType));
+            if (val is bool boolVal) return (ImmutableScalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { boolVal }), genericDType));
+            else if (val is sbyte sbyteVal) return (ImmutableScalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { sbyteVal }), genericDType));
+            else if (val is short shortVal) return (ImmutableScalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { shortVal }), genericDType));
+            else if (val is int intVal) return (ImmutableScalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { intVal }), genericDType));
+            else if (val is long longVal) return (ImmutableScalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { longVal }), genericDType));
+            else if (val is byte byteVal) return (ImmutableScalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { byteVal }), genericDType));
+            else if (val is ushort ushortVal) return (ImmutableScalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { ushortVal }), genericDType));
+            else if (val is uint uintVal) return (ImmutableScalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { uintVal }), genericDType));
+            else if (val is ulong ulongVal) return (ImmutableScalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { ulongVal }), genericDType));
+            else if (val is BFloat16 bfloat16Val) return (ImmutableScalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { bfloat16Val }), genericDType));
+            else if (val is Float16 float16Val) return (ImmutableScalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { float16Val }), genericDType));
+            else if (val is float floatVal) return (ImmutableScalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { floatVal }), genericDType));
+            else if (val is double doubleVal) return (ImmutableScalar<T>)OnnxOp.Constant(new OnnxTensorData<T>(new Shape(), OnnxUtils.CreateTensorValue(Array.Empty<long>(), new[] { doubleVal }), genericDType));
             else throw new UnsupportedDTypeException(ErrorCodes.GC002, val?.GetType()?.Name ?? "null", "Scalar<T>",
                 $"Type '{val?.GetType()?.FullName ?? "null"}' is not supported for generic scalar creation with IGenericType. Supported types: bool, sbyte, short, int, long, byte, ushort, uint, ulong, BFloat16, Float16, float, double");
         }
 
         /// <summary>Creates a constant scalar holding the given value.</summary>
-        public static Scalar<bit> Scalar(bool val) => (Scalar<bit>)OnnxOp.Constant(TensorData([], val));
+        public static Scalar<bit> Scalar(bool val) => (ImmutableScalar<bit>)OnnxOp.Constant(TensorData([], val));
         /// <summary>Creates a constant scalar holding the given value.</summary>
-        public static Scalar<int8> Scalar(sbyte val) => (Scalar<int8>)OnnxOp.Constant(TensorData([], val));
+        public static Scalar<int8> Scalar(sbyte val) => (ImmutableScalar<int8>)OnnxOp.Constant(TensorData([], val));
         /// <summary>Creates a constant scalar holding the given value.</summary>
-        public static Scalar<int16> Scalar(short val) => (Scalar<int16>)OnnxOp.Constant(TensorData([], val));
+        public static Scalar<int16> Scalar(short val) => (ImmutableScalar<int16>)OnnxOp.Constant(TensorData([], val));
         /// <summary>Creates a constant scalar holding the given value.</summary>
-        public static Scalar<int32> Scalar(int val) => (Scalar<int32>)OnnxOp.Constant(TensorData([], val));
+        public static Scalar<int32> Scalar(int val) => (ImmutableScalar<int32>)OnnxOp.Constant(TensorData([], val));
         /// <summary>Creates a constant scalar holding the given value.</summary>
-        public static Scalar<int64> Scalar(long val) => (Scalar<int64>)OnnxOp.Constant(TensorData([], val));
+        public static Scalar<int64> Scalar(long val) => (ImmutableScalar<int64>)OnnxOp.Constant(TensorData([], val));
         /// <summary>Creates a constant scalar holding the given value.</summary>
-        public static Scalar<uint8> Scalar(byte val) => (Scalar<uint8>)OnnxOp.Constant(TensorData([], val));
+        public static Scalar<uint8> Scalar(byte val) => (ImmutableScalar<uint8>)OnnxOp.Constant(TensorData([], val));
         /// <summary>Creates a constant scalar holding the given value.</summary>
-        public static Scalar<uint16> Scalar(ushort val) => (Scalar<uint16>)OnnxOp.Constant(TensorData([], val));
+        public static Scalar<uint16> Scalar(ushort val) => (ImmutableScalar<uint16>)OnnxOp.Constant(TensorData([], val));
         /// <summary>Creates a constant scalar holding the given value.</summary>
-        public static Scalar<uint32> Scalar(uint val) => (Scalar<uint32>)OnnxOp.Constant(TensorData([], val));
+        public static Scalar<uint32> Scalar(uint val) => (ImmutableScalar<uint32>)OnnxOp.Constant(TensorData([], val));
         /// <summary>Creates a constant scalar holding the given value.</summary>
-        public static Scalar<uint64> Scalar(ulong val) => (Scalar<uint64>)OnnxOp.Constant(TensorData([], val));
+        public static Scalar<uint64> Scalar(ulong val) => (ImmutableScalar<uint64>)OnnxOp.Constant(TensorData([], val));
         /// <summary>Creates a constant scalar holding the given value.</summary>
-        public static Scalar<bfloat16> Scalar(BFloat16 val) => (Scalar<bfloat16>)OnnxOp.Constant(TensorData([], val));
+        public static Scalar<bfloat16> Scalar(BFloat16 val) => (ImmutableScalar<bfloat16>)OnnxOp.Constant(TensorData([], val));
         /// <summary>Creates a constant scalar holding the given value.</summary>
-        public static Scalar<float16> Scalar(Float16 val) => (Scalar<float16>)OnnxOp.Constant(TensorData([], val));
+        public static Scalar<float16> Scalar(Float16 val) => (ImmutableScalar<float16>)OnnxOp.Constant(TensorData([], val));
         /// <summary>Creates a constant scalar holding the given value.</summary>
-        public static Scalar<float32> Scalar(float val) => (Scalar<float32>)OnnxOp.Constant(TensorData([], val));
+        public static Scalar<float32> Scalar(float val) => (ImmutableScalar<float32>)OnnxOp.Constant(TensorData([], val));
         /// <summary>Creates a constant scalar holding the given value.</summary>
-        public static Scalar<float64> Scalar(double val) => (Scalar<float64>)OnnxOp.Constant(TensorData([], val));
+        public static Scalar<float64> Scalar(double val) => (ImmutableScalar<float64>)OnnxOp.Constant(TensorData([], val));
 
         /// <summary>Creates a constant scalar holding the default value of T (zero / false).</summary>
-        public static Scalar<T> DefaultScalar<T>() where T : IVarType => (Scalar<T>)OnnxOp.Constant(TensorDataWithDefaultVals(OnnxUtils.GetDType<T>(), []));
+        public static Scalar<T> DefaultScalar<T>() where T : IVarType => (ImmutableScalar<T>)OnnxOp.Constant(TensorDataWithDefaultVals(OnnxUtils.GetDType<T>(), []));
 
         #endregion
 
@@ -165,129 +165,129 @@ namespace Shorokoo
         /// <summary>Creates an empty (length-0) constant vector of element type T.</summary>
         public static Vector<T> EmptyVector<T>() where T : IVarType
         {
-            if (typeof(T) == typeof(bit)) return (Vector<T>)(object)Vector(new bool[0]);
-            if (typeof(T) == typeof(int8)) return (Vector<T>)(object)Vector(new sbyte[0]);
-            if (typeof(T) == typeof(int16)) return (Vector<T>)(object)Vector(new short[0]);
-            if (typeof(T) == typeof(int32)) return (Vector<T>)(object)Vector(new int[0]);
-            if (typeof(T) == typeof(int64)) return (Vector<T>)(object)Vector(new long[0]);
-            if (typeof(T) == typeof(uint8)) return (Vector<T>)(object)Vector(new byte[0]);
-            if (typeof(T) == typeof(uint16)) return (Vector<T>)(object)Vector(new ushort[0]);
-            if (typeof(T) == typeof(uint32)) return (Vector<T>)(object)Vector(new uint[0]);
-            if (typeof(T) == typeof(uint64)) return (Vector<T>)(object)Vector(new ulong[0]);
-            if (typeof(T) == typeof(float16)) return (Vector<T>)(object)Vector(new Float16[0]);
-            if (typeof(T) == typeof(bfloat16)) return (Vector<T>)(object)Vector(new BFloat16[0]);
-            if (typeof(T) == typeof(float32)) return (Vector<T>)(object)Vector(new float[0]);
+            if (typeof(T) == typeof(bit)) return (ImmutableVector<T>)(object)Vector(new bool[0]);
+            if (typeof(T) == typeof(int8)) return (ImmutableVector<T>)(object)Vector(new sbyte[0]);
+            if (typeof(T) == typeof(int16)) return (ImmutableVector<T>)(object)Vector(new short[0]);
+            if (typeof(T) == typeof(int32)) return (ImmutableVector<T>)(object)Vector(new int[0]);
+            if (typeof(T) == typeof(int64)) return (ImmutableVector<T>)(object)Vector(new long[0]);
+            if (typeof(T) == typeof(uint8)) return (ImmutableVector<T>)(object)Vector(new byte[0]);
+            if (typeof(T) == typeof(uint16)) return (ImmutableVector<T>)(object)Vector(new ushort[0]);
+            if (typeof(T) == typeof(uint32)) return (ImmutableVector<T>)(object)Vector(new uint[0]);
+            if (typeof(T) == typeof(uint64)) return (ImmutableVector<T>)(object)Vector(new ulong[0]);
+            if (typeof(T) == typeof(float16)) return (ImmutableVector<T>)(object)Vector(new Float16[0]);
+            if (typeof(T) == typeof(bfloat16)) return (ImmutableVector<T>)(object)Vector(new BFloat16[0]);
+            if (typeof(T) == typeof(float32)) return (ImmutableVector<T>)(object)Vector(new float[0]);
             throw new UnsupportedDTypeException(ErrorCodes.GC006, typeof(T).Name, "Vector<T>", 
                 $"Type '{typeof(T).FullName}' is not supported for generic empty vector creation");
         }
 
         /// <summary>Creates a constant vector from the given values.</summary>
-        public static Vector<bit> Vector(params bool[] val) => (Vector<bit>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
+        public static Vector<bit> Vector(params bool[] val) => (ImmutableVector<bit>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
         /// <summary>Creates a constant vector from the given values.</summary>
-        public static Vector<int8> Vector(params sbyte[] val) => (Vector<int8>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
+        public static Vector<int8> Vector(params sbyte[] val) => (ImmutableVector<int8>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
         /// <summary>Creates a constant vector from the given values.</summary>
-        public static Vector<int16> Vector(params short[] val) => (Vector<int16>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
+        public static Vector<int16> Vector(params short[] val) => (ImmutableVector<int16>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
         /// <summary>Creates a constant vector from the given values.</summary>
-        public static Vector<int32> Vector(params int[] val) => (Vector<int32>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
+        public static Vector<int32> Vector(params int[] val) => (ImmutableVector<int32>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
         /// <summary>Creates a constant vector from the given values.</summary>
-        public static Vector<int64> Vector(params long[] val) => (Vector<int64>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
+        public static Vector<int64> Vector(params long[] val) => (ImmutableVector<int64>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
         /// <summary>Creates a constant vector from the given values.</summary>
-        public static Vector<uint8> Vector(params byte[] val) => (Vector<uint8>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
+        public static Vector<uint8> Vector(params byte[] val) => (ImmutableVector<uint8>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
         /// <summary>Creates a constant vector from the given values.</summary>
-        public static Vector<uint16> Vector(params ushort[] val) => (Vector<uint16>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
+        public static Vector<uint16> Vector(params ushort[] val) => (ImmutableVector<uint16>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
         /// <summary>Creates a constant vector from the given values.</summary>
-        public static Vector<uint32> Vector(params uint[] val) => (Vector<uint32>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
+        public static Vector<uint32> Vector(params uint[] val) => (ImmutableVector<uint32>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
         /// <summary>Creates a constant vector from the given values.</summary>
-        public static Vector<uint64> Vector(params ulong[] val) => (Vector<uint64>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
+        public static Vector<uint64> Vector(params ulong[] val) => (ImmutableVector<uint64>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
         /// <summary>Creates a constant vector from the given values.</summary>
-        public static Vector<bfloat16> Vector(params BFloat16[] val) => (Vector<bfloat16>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
+        public static Vector<bfloat16> Vector(params BFloat16[] val) => (ImmutableVector<bfloat16>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
         /// <summary>Creates a constant vector from the given values.</summary>
-        public static Vector<float16> Vector(params Float16[] val) => (Vector<float16>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
+        public static Vector<float16> Vector(params Float16[] val) => (ImmutableVector<float16>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
         /// <summary>Creates a constant vector from the given values.</summary>
-        public static Vector<float32> Vector(params float[] val) => (Vector<float32>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
+        public static Vector<float32> Vector(params float[] val) => (ImmutableVector<float32>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
         /// <summary>Creates a constant vector from the given values.</summary>
-        public static Vector<float64> Vector(params double[] val) => (Vector<float64>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
+        public static Vector<float64> Vector(params double[] val) => (ImmutableVector<float64>)OnnxOp.Constant(OnnxTensorData(val.Length, val));
 
         /// <summary>Creates a constant-filled vector of the given length.</summary>
-        public static Vector<bit> VectorFill(long length, bool val) => (Vector<bit>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
+        public static Vector<bit> VectorFill(long length, bool val) => (ImmutableVector<bit>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector of the given length.</summary>
-        public static Vector<int8> VectorFill(long length, sbyte val) => (Vector<int8>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
+        public static Vector<int8> VectorFill(long length, sbyte val) => (ImmutableVector<int8>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector of the given length.</summary>
-        public static Vector<int16> VectorFill(long length, short val) => (Vector<int16>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
+        public static Vector<int16> VectorFill(long length, short val) => (ImmutableVector<int16>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector of the given length.</summary>
-        public static Vector<int32> VectorFill(long length, int val) => (Vector<int32>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
+        public static Vector<int32> VectorFill(long length, int val) => (ImmutableVector<int32>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector of the given length.</summary>
-        public static Vector<int64> VectorFill(long length, long val) => (Vector<int64>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
+        public static Vector<int64> VectorFill(long length, long val) => (ImmutableVector<int64>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector of the given length.</summary>
-        public static Vector<uint8> VectorFill(long length, byte val) => (Vector<uint8>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
+        public static Vector<uint8> VectorFill(long length, byte val) => (ImmutableVector<uint8>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector of the given length.</summary>
-        public static Vector<uint16> VectorFill(long length, ushort val) => (Vector<uint16>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
+        public static Vector<uint16> VectorFill(long length, ushort val) => (ImmutableVector<uint16>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector of the given length.</summary>
-        public static Vector<uint32> VectorFill(long length, uint val) => (Vector<uint32>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
+        public static Vector<uint32> VectorFill(long length, uint val) => (ImmutableVector<uint32>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector of the given length.</summary>
-        public static Vector<uint64> VectorFill(long length, ulong val) => (Vector<uint64>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
+        public static Vector<uint64> VectorFill(long length, ulong val) => (ImmutableVector<uint64>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector of the given length.</summary>
-        public static Vector<bfloat16> VectorFill(long length, BFloat16 val) => (Vector<bfloat16>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
+        public static Vector<bfloat16> VectorFill(long length, BFloat16 val) => (ImmutableVector<bfloat16>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector of the given length.</summary>
-        public static Vector<float16> VectorFill(long length, Float16 val) => (Vector<float16>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
+        public static Vector<float16> VectorFill(long length, Float16 val) => (ImmutableVector<float16>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector of the given length.</summary>
-        public static Vector<float32> VectorFill(long length, float val) => (Vector<float32>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
+        public static Vector<float32> VectorFill(long length, float val) => (ImmutableVector<float32>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector of the given length.</summary>
-        public static Vector<float64> VectorFill(long length, double val) => (Vector<float64>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
+        public static Vector<float64> VectorFill(long length, double val) => (ImmutableVector<float64>)OnnxOp.ConstantOfShape(Vector(length), OnnxTensorData(1, val), rank: 1);
 
         /// <summary>Creates a constant-filled vector whose length is given by a runtime scalar.</summary>
-        public static Vector<bit> VectorFill(Scalar<int64> shape, bool val) => (Vector<bit>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
+        public static Vector<bit> VectorFill(Scalar<int64> shape, bool val) => (ImmutableVector<bit>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime scalar.</summary>
-        public static Vector<int8> VectorFill(Scalar<int64> shape, sbyte val) => (Vector<int8>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
+        public static Vector<int8> VectorFill(Scalar<int64> shape, sbyte val) => (ImmutableVector<int8>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime scalar.</summary>
-        public static Vector<int16> VectorFill(Scalar<int64> shape, short val) => (Vector<int16>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
+        public static Vector<int16> VectorFill(Scalar<int64> shape, short val) => (ImmutableVector<int16>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime scalar.</summary>
-        public static Vector<int32> VectorFill(Scalar<int64> shape, int val) => (Vector<int32>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
+        public static Vector<int32> VectorFill(Scalar<int64> shape, int val) => (ImmutableVector<int32>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime scalar.</summary>
-        public static Vector<int64> VectorFill(Scalar<int64> shape, long val) => (Vector<int64>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
+        public static Vector<int64> VectorFill(Scalar<int64> shape, long val) => (ImmutableVector<int64>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime scalar.</summary>
-        public static Vector<uint8> VectorFill(Scalar<int64> shape, byte val) => (Vector<uint8>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
+        public static Vector<uint8> VectorFill(Scalar<int64> shape, byte val) => (ImmutableVector<uint8>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime scalar.</summary>
-        public static Vector<uint16> VectorFill(Scalar<int64> shape, ushort val) => (Vector<uint16>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
+        public static Vector<uint16> VectorFill(Scalar<int64> shape, ushort val) => (ImmutableVector<uint16>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime scalar.</summary>
-        public static Vector<uint32> VectorFill(Scalar<int64> shape, uint val) => (Vector<uint32>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
+        public static Vector<uint32> VectorFill(Scalar<int64> shape, uint val) => (ImmutableVector<uint32>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime scalar.</summary>
-        public static Vector<uint64> VectorFill(Scalar<int64> shape, ulong val) => (Vector<uint64>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
+        public static Vector<uint64> VectorFill(Scalar<int64> shape, ulong val) => (ImmutableVector<uint64>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime scalar.</summary>
-        public static Vector<bfloat16> VectorFill(Scalar<int64> shape, BFloat16 val) => (Vector<bfloat16>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
+        public static Vector<bfloat16> VectorFill(Scalar<int64> shape, BFloat16 val) => (ImmutableVector<bfloat16>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime scalar.</summary>
-        public static Vector<float16> VectorFill(Scalar<int64> shape, Float16 val) => (Vector<float16>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
+        public static Vector<float16> VectorFill(Scalar<int64> shape, Float16 val) => (ImmutableVector<float16>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime scalar.</summary>
-        public static Vector<float32> VectorFill(Scalar<int64> shape, float val) => (Vector<float32>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
+        public static Vector<float32> VectorFill(Scalar<int64> shape, float val) => (ImmutableVector<float32>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime scalar.</summary>
-        public static Vector<float64> VectorFill(Scalar<int64> shape, double val) => (Vector<float64>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
+        public static Vector<float64> VectorFill(Scalar<int64> shape, double val) => (ImmutableVector<float64>)OnnxOp.ConstantOfShape(shape.Unsqueeze(), OnnxTensorData(1, val), rank: 1);
 
         /// <summary>Creates a constant-filled vector whose length is given by a runtime one-element shape vector.</summary>
-        public static Vector<bit> VectorFill(Vector<int64> shape, bool val) => (Vector<bit>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
+        public static Vector<bit> VectorFill(Vector<int64> shape, bool val) => (ImmutableVector<bit>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime one-element shape vector.</summary>
-        public static Vector<int8> VectorFill(Vector<int64> shape, sbyte val) => (Vector<int8>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
+        public static Vector<int8> VectorFill(Vector<int64> shape, sbyte val) => (ImmutableVector<int8>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime one-element shape vector.</summary>
-        public static Vector<int16> VectorFill(Vector<int64> shape, short val) => (Vector<int16>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
+        public static Vector<int16> VectorFill(Vector<int64> shape, short val) => (ImmutableVector<int16>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime one-element shape vector.</summary>
-        public static Vector<int32> VectorFill(Vector<int64> shape, int val) => (Vector<int32>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
+        public static Vector<int32> VectorFill(Vector<int64> shape, int val) => (ImmutableVector<int32>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime one-element shape vector.</summary>
-        public static Vector<int64> VectorFill(Vector<int64> shape, long val) => (Vector<int64>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
+        public static Vector<int64> VectorFill(Vector<int64> shape, long val) => (ImmutableVector<int64>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime one-element shape vector.</summary>
-        public static Vector<uint8> VectorFill(Vector<int64> shape, byte val) => (Vector<uint8>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
+        public static Vector<uint8> VectorFill(Vector<int64> shape, byte val) => (ImmutableVector<uint8>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime one-element shape vector.</summary>
-        public static Vector<uint16> VectorFill(Vector<int64> shape, ushort val) => (Vector<uint16>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
+        public static Vector<uint16> VectorFill(Vector<int64> shape, ushort val) => (ImmutableVector<uint16>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime one-element shape vector.</summary>
-        public static Vector<uint32> VectorFill(Vector<int64> shape, uint val) => (Vector<uint32>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
+        public static Vector<uint32> VectorFill(Vector<int64> shape, uint val) => (ImmutableVector<uint32>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime one-element shape vector.</summary>
-        public static Vector<uint64> VectorFill(Vector<int64> shape, ulong val) => (Vector<uint64>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
+        public static Vector<uint64> VectorFill(Vector<int64> shape, ulong val) => (ImmutableVector<uint64>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime one-element shape vector.</summary>
-        public static Vector<bfloat16> VectorFill(Vector<int64> shape, BFloat16 val) => (Vector<bfloat16>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
+        public static Vector<bfloat16> VectorFill(Vector<int64> shape, BFloat16 val) => (ImmutableVector<bfloat16>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime one-element shape vector.</summary>
-        public static Vector<float16> VectorFill(Vector<int64> shape, Float16 val) => (Vector<float16>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
+        public static Vector<float16> VectorFill(Vector<int64> shape, Float16 val) => (ImmutableVector<float16>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime one-element shape vector.</summary>
-        public static Vector<float32> VectorFill(Vector<int64> shape, float val) => (Vector<float32>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
+        public static Vector<float32> VectorFill(Vector<int64> shape, float val) => (ImmutableVector<float32>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
         /// <summary>Creates a constant-filled vector whose length is given by a runtime one-element shape vector.</summary>
-        public static Vector<float64> VectorFill(Vector<int64> shape, double val) => (Vector<float64>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
+        public static Vector<float64> VectorFill(Vector<int64> shape, double val) => (ImmutableVector<float64>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val), rank: 1);
 
         /// <summary>Creates a single-element constant vector.</summary>
         public static Vector<bit> Vector(bool val) => Vector([val]);
@@ -338,57 +338,57 @@ namespace Shorokoo
         public static Vector<uint64> VectorRange(ulong start, ulong limit, ulong delta) => OnnxOp.Range(Scalar(start).Cast<int64>(), Scalar(limit).Cast<int64>(), Scalar(delta).Cast<int64>()).uint64().Vec();
 
         /// <summary>Creates a constant vector of the given length filled with the default value of T.</summary>
-        public static Vector<T> DefaultVector<T>(long length) where T : IVarType => (Vector<T>)OnnxOp.Constant(TensorDataWithDefaultVals(OnnxUtils.GetDType<T>(), [length]));
+        public static Vector<T> DefaultVector<T>(long length) where T : IVarType => (ImmutableVector<T>)OnnxOp.Constant(TensorDataWithDefaultVals(OnnxUtils.GetDType<T>(), [length]));
 
         #endregion
 
         #region Tensor constants constructors
 
         /// <summary>Creates a constant tensor with the given dims from the flat values.</summary>
-        public static Tensor<bit> Tensor(long[] dims, params bool[] val) => (Tensor<bit>)OnnxOp.Constant(TensorData(dims, val));
+        public static Tensor<bit> Tensor(long[] dims, params bool[] val) => (ImmutableTensor<bit>)OnnxOp.Constant(TensorData(dims, val));
         /// <summary>Creates a constant tensor with the given dims from the flat values.</summary>
-        public static Tensor<int8> Tensor(long[] dims, params sbyte[] val) => (Tensor<int8>)OnnxOp.Constant(TensorData(dims, val));
+        public static Tensor<int8> Tensor(long[] dims, params sbyte[] val) => (ImmutableTensor<int8>)OnnxOp.Constant(TensorData(dims, val));
         /// <summary>Creates a constant tensor with the given dims from the flat values.</summary>
-        public static Tensor<int16> Tensor(long[] dims, params short[] val) => (Tensor<int16>)OnnxOp.Constant(TensorData(dims, val));
+        public static Tensor<int16> Tensor(long[] dims, params short[] val) => (ImmutableTensor<int16>)OnnxOp.Constant(TensorData(dims, val));
         /// <summary>Creates a constant tensor with the given dims from the flat values.</summary>
-        public static Tensor<int32> Tensor(long[] dims, params int[] val) => (Tensor<int32>)OnnxOp.Constant(TensorData(dims, val));
+        public static Tensor<int32> Tensor(long[] dims, params int[] val) => (ImmutableTensor<int32>)OnnxOp.Constant(TensorData(dims, val));
         /// <summary>Creates a constant tensor with the given dims from the flat values.</summary>
-        public static Tensor<int64> Tensor(long[] dims, params long[] val) => (Tensor<int64>)OnnxOp.Constant(TensorData(dims, val));
+        public static Tensor<int64> Tensor(long[] dims, params long[] val) => (ImmutableTensor<int64>)OnnxOp.Constant(TensorData(dims, val));
         /// <summary>Creates a constant tensor with the given dims from the flat values.</summary>
-        public static Tensor<uint8> Tensor(long[] dims, params byte[] val) => (Tensor<uint8>)OnnxOp.Constant(TensorData(dims, val));
+        public static Tensor<uint8> Tensor(long[] dims, params byte[] val) => (ImmutableTensor<uint8>)OnnxOp.Constant(TensorData(dims, val));
         /// <summary>Creates a constant tensor with the given dims from the flat values.</summary>
-        public static Tensor<uint16> Tensor(long[] dims, params ushort[] val) => (Tensor<uint16>)OnnxOp.Constant(TensorData(dims, val));
+        public static Tensor<uint16> Tensor(long[] dims, params ushort[] val) => (ImmutableTensor<uint16>)OnnxOp.Constant(TensorData(dims, val));
         /// <summary>Creates a constant tensor with the given dims from the flat values.</summary>
-        public static Tensor<uint32> Tensor(long[] dims, params uint[] val) => (Tensor<uint32>)OnnxOp.Constant(TensorData(dims, val));
+        public static Tensor<uint32> Tensor(long[] dims, params uint[] val) => (ImmutableTensor<uint32>)OnnxOp.Constant(TensorData(dims, val));
         /// <summary>Creates a constant tensor with the given dims from the flat values.</summary>
-        public static Tensor<uint64> Tensor(long[] dims, params ulong[] val) => (Tensor<uint64>)OnnxOp.Constant(TensorData(dims, val));
+        public static Tensor<uint64> Tensor(long[] dims, params ulong[] val) => (ImmutableTensor<uint64>)OnnxOp.Constant(TensorData(dims, val));
         /// <summary>Creates a constant tensor with the given dims from the flat values.</summary>
-        public static Tensor<bfloat16> Tensor(long[] dims, params BFloat16[] val) => (Tensor<bfloat16>)OnnxOp.Constant(TensorData(dims, val));
+        public static Tensor<bfloat16> Tensor(long[] dims, params BFloat16[] val) => (ImmutableTensor<bfloat16>)OnnxOp.Constant(TensorData(dims, val));
         /// <summary>Creates a constant tensor with the given dims from the flat values.</summary>
-        public static Tensor<float16> Tensor(long[] dims, params Float16[] val) => (Tensor<float16>)OnnxOp.Constant(TensorData(dims, val));
+        public static Tensor<float16> Tensor(long[] dims, params Float16[] val) => (ImmutableTensor<float16>)OnnxOp.Constant(TensorData(dims, val));
         /// <summary>Creates a constant tensor with the given dims from the flat values.</summary>
-        public static Tensor<float32> Tensor(long[] dims, params float[] val) => (Tensor<float32>)OnnxOp.Constant(TensorData(dims, val));
+        public static Tensor<float32> Tensor(long[] dims, params float[] val) => (ImmutableTensor<float32>)OnnxOp.Constant(TensorData(dims, val));
         /// <summary>Creates a constant tensor with the given dims from the flat values.</summary>
-        public static Tensor<float64> Tensor(long[] dims, params double[] val) => (Tensor<float64>)OnnxOp.Constant(TensorData(dims, val));
+        public static Tensor<float64> Tensor(long[] dims, params double[] val) => (ImmutableTensor<float64>)OnnxOp.Constant(TensorData(dims, val));
 
 
         /// <summary>Creates a constant <see cref="Tensor{T}"/> from base64-encoded raw IR element data.</summary>
         public static Tensor<T> MakeTensor<T>(long[] dims, string base64IREncodedData) where T : IVarType
-            => (Tensor<T>)Tensor(OnnxUtils.GetDType<T>(), dims, base64IREncodedData);
+            => (ImmutableTensor<T>)Tensor(OnnxUtils.GetDType<T>(), dims, base64IREncodedData);
 
         /// <summary>Creates a constant tensor of the given dtype from base64-encoded raw IR element data.</summary>
         public static ITensor Tensor(DType dtype, long[] dims, string base64IREncodedData) => (ITensor)OnnxOp.Constant(TensorData(dtype, dims, base64IREncodedData));
 
         /// <summary>Wraps existing typed TensorData in a constant tensor node.</summary>
         public static Tensor<T> MakeTensor<T>(TensorData<T> data) where T : IVarType
-            => (Tensor<T>)OnnxOp.Constant(data);
+            => (ImmutableTensor<T>)OnnxOp.Constant(data);
 
         /// <summary>Wraps existing TensorData in a constant tensor node.</summary>
         public static ITensor Tensor(TensorData data)
             => (ITensor)OnnxOp.Constant(data);
 
         /// <summary>Creates a constant tensor with the given dims filled with the element type's default value.</summary>
-        public static Tensor<T> DefaultTensor<T>(long[] dims) where T : IVarType => (Tensor<T>)DefaultTensor(OnnxUtils.GetDType<T>(), dims);
+        public static Tensor<T> DefaultTensor<T>(long[] dims) where T : IVarType => (ImmutableTensor<T>)DefaultTensor(OnnxUtils.GetDType<T>(), dims);
         /// <summary>Creates a constant tensor with the given dims filled with the dtype's default value.</summary>
         public static ITensor DefaultTensor(DType dtype, long[] dims) => (ITensor)OnnxOp.Constant(TensorDataWithDefaultVals(dtype, dims));
 
@@ -484,33 +484,33 @@ namespace Shorokoo
         public static TensorData<@string> TensorData(long dims, params string[] val) => new OnnxTensorData<@string>(dims, OnnxUtils.CreateTensorValue(dims, val));
 
         /// <summary>Creates a tensor of the given runtime shape filled with the value (ONNX ConstantOfShape).</summary>
-        public static Tensor<bit> TensorFill(Vector<int64> shape, bool val) => (Tensor<bit>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
+        public static Tensor<bit> TensorFill(Vector<int64> shape, bool val) => (ImmutableTensor<bit>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
         /// <summary>Creates a tensor of the given runtime shape filled with the value (ONNX ConstantOfShape).</summary>
-        public static Tensor<int8> TensorFill(Vector<int64> shape, sbyte val) => (Tensor<int8>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
+        public static Tensor<int8> TensorFill(Vector<int64> shape, sbyte val) => (ImmutableTensor<int8>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
         /// <summary>Creates a tensor of the given runtime shape filled with the value (ONNX ConstantOfShape).</summary>
-        public static Tensor<int16> TensorFill(Vector<int64> shape, short val) => (Tensor<int16>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
+        public static Tensor<int16> TensorFill(Vector<int64> shape, short val) => (ImmutableTensor<int16>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
         /// <summary>Creates a tensor of the given runtime shape filled with the value (ONNX ConstantOfShape).</summary>
-        public static Tensor<int32> TensorFill(Vector<int64> shape, int val) => (Tensor<int32>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
+        public static Tensor<int32> TensorFill(Vector<int64> shape, int val) => (ImmutableTensor<int32>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
         /// <summary>Creates a tensor of the given runtime shape filled with the value (ONNX ConstantOfShape).</summary>
-        public static Tensor<int64> TensorFill(Vector<int64> shape, long val) => (Tensor<int64>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
+        public static Tensor<int64> TensorFill(Vector<int64> shape, long val) => (ImmutableTensor<int64>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
         /// <summary>Creates a tensor of the given runtime shape filled with the value (ONNX ConstantOfShape).</summary>
-        public static Tensor<uint8> TensorFill(Vector<int64> shape, byte val) => (Tensor<uint8>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
+        public static Tensor<uint8> TensorFill(Vector<int64> shape, byte val) => (ImmutableTensor<uint8>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
         /// <summary>Creates a tensor of the given runtime shape filled with the value (ONNX ConstantOfShape).</summary>
-        public static Tensor<uint16> TensorFill(Vector<int64> shape, ushort val) => (Tensor<uint16>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
+        public static Tensor<uint16> TensorFill(Vector<int64> shape, ushort val) => (ImmutableTensor<uint16>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
         /// <summary>Creates a tensor of the given runtime shape filled with the value (ONNX ConstantOfShape).</summary>
-        public static Tensor<uint32> TensorFill(Vector<int64> shape, uint val) => (Tensor<uint32>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
+        public static Tensor<uint32> TensorFill(Vector<int64> shape, uint val) => (ImmutableTensor<uint32>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
         /// <summary>Creates a tensor of the given runtime shape filled with the value (ONNX ConstantOfShape).</summary>
-        public static Tensor<uint64> TensorFill(Vector<int64> shape, ulong val) => (Tensor<uint64>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
+        public static Tensor<uint64> TensorFill(Vector<int64> shape, ulong val) => (ImmutableTensor<uint64>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
         /// <summary>Creates a tensor of the given runtime shape filled with the value (ONNX ConstantOfShape).</summary>
-        public static Tensor<bfloat16> TensorFill(Vector<int64> shape, BFloat16 val) => (Tensor<bfloat16>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
+        public static Tensor<bfloat16> TensorFill(Vector<int64> shape, BFloat16 val) => (ImmutableTensor<bfloat16>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
         /// <summary>Creates a tensor of the given runtime shape filled with the value (ONNX ConstantOfShape).</summary>
-        public static Tensor<float16> TensorFill(Vector<int64> shape, Float16 val) => (Tensor<float16>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
+        public static Tensor<float16> TensorFill(Vector<int64> shape, Float16 val) => (ImmutableTensor<float16>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
         /// <summary>Creates a tensor of the given runtime shape filled with the value (ONNX ConstantOfShape).</summary>
-        public static Tensor<float32> TensorFill(Vector<int64> shape, float val) => (Tensor<float32>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
+        public static Tensor<float32> TensorFill(Vector<int64> shape, float val) => (ImmutableTensor<float32>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
         /// <summary>Creates a tensor of the given runtime shape filled with the value (ONNX ConstantOfShape).</summary>
-        public static Tensor<float64> TensorFill(Vector<int64> shape, double val) => (Tensor<float64>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
+        public static Tensor<float64> TensorFill(Vector<int64> shape, double val) => (ImmutableTensor<float64>)OnnxOp.ConstantOfShape(shape, OnnxTensorData(1, val));
         /// <summary>Creates a tensor of the given runtime shape filled with the value (ONNX ConstantOfShape).</summary>
-        public static Tensor<T> TensorFill<T>(Vector<int64> shape, TensorData<T> val) where T : IVarType => (Tensor<T>)OnnxOp.ConstantOfShape(shape, val);
+        public static Tensor<T> TensorFill<T>(Vector<int64> shape, TensorData<T> val) where T : IVarType => (ImmutableTensor<T>)OnnxOp.ConstantOfShape(shape, val);
 
         /// <summary>
         /// Creates a tensor filled with a constant value using generic type T.
@@ -530,19 +530,19 @@ namespace Shorokoo
                 return CreateGenericTensorFill<T>(shape, val);
             
             // Original non-generic logic
-            if (typeofT == typeof(bit)) return (Tensor<T>)(ITensor)TensorFill(shape, Convert.ToBoolean(val));
-            else if (typeofT == typeof(int8)) return (Tensor<T>)(ITensor)TensorFill(shape, Convert.ToSByte(val));
-            else if (typeofT == typeof(int16)) return (Tensor<T>)(ITensor)TensorFill(shape, Convert.ToInt16(val));
-            else if (typeofT == typeof(int32)) return (Tensor<T>)(ITensor)TensorFill(shape, Convert.ToInt32(val));
-            else if (typeofT == typeof(int64)) return (Tensor<T>)(ITensor)TensorFill(shape, Convert.ToInt64(val));
-            else if (typeofT == typeof(uint8)) return (Tensor<T>)(ITensor)TensorFill(shape, Convert.ToByte(val));
-            else if (typeofT == typeof(uint16)) return (Tensor<T>)(ITensor)TensorFill(shape, Convert.ToUInt16(val));
-            else if (typeofT == typeof(uint32)) return (Tensor<T>)(ITensor)TensorFill(shape, Convert.ToUInt32(val));
-            else if (typeofT == typeof(uint64)) return (Tensor<T>)(ITensor)TensorFill(shape, Convert.ToUInt64(val));
-            else if (typeofT == typeof(bfloat16)) return (Tensor<T>)(ITensor)TensorFill(shape, (BFloat16)val);
-            else if (typeofT == typeof(float16)) return (Tensor<T>)(ITensor)TensorFill(shape, (Float16)val);
-            else if (typeofT == typeof(float32)) return (Tensor<T>)(ITensor)TensorFill(shape, Convert.ToSingle(val));
-            else if (typeofT == typeof(float64)) return (Tensor<T>)(ITensor)TensorFill(shape, Convert.ToDouble(val));
+            if (typeofT == typeof(bit)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToBoolean(val));
+            else if (typeofT == typeof(int8)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToSByte(val));
+            else if (typeofT == typeof(int16)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToInt16(val));
+            else if (typeofT == typeof(int32)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToInt32(val));
+            else if (typeofT == typeof(int64)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToInt64(val));
+            else if (typeofT == typeof(uint8)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToByte(val));
+            else if (typeofT == typeof(uint16)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToUInt16(val));
+            else if (typeofT == typeof(uint32)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToUInt32(val));
+            else if (typeofT == typeof(uint64)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToUInt64(val));
+            else if (typeofT == typeof(bfloat16)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, (BFloat16)val);
+            else if (typeofT == typeof(float16)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, (Float16)val);
+            else if (typeofT == typeof(float32)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToSingle(val));
+            else if (typeofT == typeof(float64)) return (ImmutableTensor<T>)(ITensor)TensorFill(shape, Convert.ToDouble(val));
             else 
                 throw new UnsupportedDTypeException(ErrorCodes.GC003, typeof(T).Name, "TensorFill<T>", 
                     $"Type '{typeof(T).FullName}' is not supported for generic tensor fill creation. Supported IVarTypes: bit, int8, int16, int32, int64, uint8, uint16, uint32, uint64, bfloat16, float16, float32, float64");
@@ -576,7 +576,7 @@ namespace Shorokoo
             else throw new UnsupportedDTypeException(ErrorCodes.GC003, val?.GetType()?.Name ?? "null", "TensorFill<T>",
                 $"Type '{val?.GetType()?.FullName ?? "null"}' is not supported for generic tensor fill creation with IGenericType. Supported types: bool, sbyte, short, int, long, byte, ushort, uint, ulong, BFloat16, Float16, float, double");
             
-            return (Tensor<T>)OnnxOp.ConstantOfShape(shape, fillValueData);
+            return (ImmutableTensor<T>)OnnxOp.ConstantOfShape(shape, fillValueData);
         }
 
 
@@ -585,14 +585,14 @@ namespace Shorokoo
         /// Takes shape as a dynamic tensor input. Lowered to ONNX RandomUniformLike before execution.
         /// </summary>
         public static Tensor<float32> RandomUniform(Vector<int64> shape, float low = 0.0f, float high = 1.0f, float? seed = null)
-            => (Tensor<float32>)InternalOp.RandomUniform(shape, high: high, low: low, seed: seed);
+            => (ImmutableTensor<float32>)InternalOp.RandomUniform(shape, high: high, low: low, seed: seed);
 
         /// <summary>
         /// Creates a tensor filled with random values from a normal distribution with given mean and scale (std dev).
         /// Takes shape as a dynamic tensor input. Lowered to ONNX RandomNormalLike before execution.
         /// </summary>
         public static Tensor<float32> RandomNormal(Vector<int64> shape, float mean = 0.0f, float scale = 1.0f, float? seed = null)
-            => (Tensor<float32>)InternalOp.RandomNormal(shape, mean: mean, scale: scale, seed: seed);
+            => (ImmutableTensor<float32>)InternalOp.RandomNormal(shape, mean: mean, scale: scale, seed: seed);
 
         /// <summary>Creates TensorData of the given dtype from boxed values.</summary>
         public static TensorData TensorData(DType type, long[] dims, params object[] vals)
@@ -870,7 +870,7 @@ namespace Shorokoo
                 throw new InvalidTensorOperationException(ErrorCodes.GC008, "InputTensor", typeof(T).Name, 
                     "Module function cannot be null when T is IModelVarType or IModel");
 
-            return (Tensor<T>)InternalOp.RuntimeInput(OnnxUtils.GetDType<T>(), rank ?? dims?.Length, defaultName, moduleFn);
+            return (ImmutableTensor<T>)InternalOp.RuntimeInput(OnnxUtils.GetDType<T>(), rank ?? dims?.Length, defaultName, moduleFn);
         }
 
         /// <summary>Creates a runtime (graph) input tensor with optional name and rank/dims.</summary>
@@ -976,7 +976,7 @@ namespace Shorokoo
 
         /// <summary>Creates a trainable parameter tensor initialized from the given data.</summary>
         public static Tensor<T> TrainableTensor<T>(TensorData<T> data, string? defaultName = null) where T : IVarType
-            => (Tensor<T>)TrainableTensor((TensorData)data, defaultName);
+            => (ImmutableTensor<T>)TrainableTensor((TensorData)data, defaultName);
         
         #endregion
     }

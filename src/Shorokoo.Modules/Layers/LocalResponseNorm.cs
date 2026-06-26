@@ -39,7 +39,7 @@ public static class LRNHelper
     /// </summary>
     public static Tensor<T> Lrn<T>(Tensor<T> x, long size = 5,
         float alpha = 1e-4f, float beta = 0.75f, float k = 1.0f) where T : FloatLike
-        => (Tensor<T>)OnnxOp.Lrn(x, alpha, beta, bias: k, size: size);   // k → ONNX 'bias'
+        => (ImmutableTensor<T>)OnnxOp.Lrn(x, alpha, beta, bias: k, size: size);   // k → ONNX 'bias'
 }
 
 /// <summary>
@@ -96,7 +96,7 @@ public partial class LocalResponseNorm
         const long rightHalf = size - 1 - leftHalf;
 
         // Channel count C (axis 1 of the shape) for the per-window slice bounds.
-        var cDim = (Tensor<int64>)OnnxOp.Slice(OnnxOp.Shape(x), Vector(1L), Vector(2L));
+        var cDim = (ImmutableTensor<int64>)OnnxOp.Slice(OnnxOp.Shape(x), Vector(1L), Vector(2L));
 
         // ChannelWindowSum: zero-pad along the channel axis, then accumulate the
         // `size` shifted channel windows (Pad + unrolled Slice-and-Add — the same
@@ -105,14 +105,14 @@ public partial class LocalResponseNorm
         Tensor<float32> ChannelWindowSum(Tensor<float32> t)
         {
             var pads = Vector(leftHalf, rightHalf);
-            var padded = (Tensor<float32>)OnnxOp.Pad(t, pads, null, axes: Vector(1L), mode: PadMode.Constant);
+            var padded = (ImmutableTensor<float32>)OnnxOp.Pad(t, pads, null, axes: Vector(1L), mode: PadMode.Constant);
 
-            var result = (Tensor<float32>)OnnxOp.Slice(padded, Vector(0L), cDim, Vector(1L));
+            var result = (ImmutableTensor<float32>)OnnxOp.Slice(padded, Vector(0L), cDim, Vector(1L));
             for (long i = 1; i < size; i++)
             {
                 var start = Vector(i);
-                var end = (Tensor<int64>)OnnxOp.Add(cDim, Vector(i));
-                result = result + (Tensor<float32>)OnnxOp.Slice(padded, start, end, Vector(1L));
+                var end = (ImmutableTensor<int64>)OnnxOp.Add(cDim, Vector(i));
+                result = result + (ImmutableTensor<float32>)OnnxOp.Slice(padded, start, end, Vector(1L));
             }
             return result;
         }
@@ -122,6 +122,6 @@ public partial class LocalResponseNorm
         var pool = k + (alpha / Scalar((float)size)) * windowSumSq;
 
         // y = x · pool^(−β).
-        return x * (Tensor<float32>)OnnxOp.Pow(pool, -beta);
+        return x * (ImmutableTensor<float32>)OnnxOp.Pow(pool, -beta);
     }
 }

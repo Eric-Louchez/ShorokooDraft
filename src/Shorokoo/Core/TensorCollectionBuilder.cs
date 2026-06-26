@@ -37,7 +37,7 @@ namespace Shorokoo.Core
 
         internal VectorExpressionHelper(Vector<T> vector)
         {
-            if (vector is Scalar<T> scalar)
+            if (vector is ImmutableScalar<T> scalar)
                 this.scalar = scalar;
             else
                 this.vector = vector;

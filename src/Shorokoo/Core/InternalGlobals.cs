@@ -76,19 +76,19 @@ namespace Shorokoo.Core
             => (ITensor)OnnxUtils.CallGeneric(dtype.ToIVarType(), typeof(InternalGlobals), nameof(CreateTensorWithShapeFn), [shapeFn, dtype, owningNode, moduleFn, name, rank]);
 
         private static Tensor<T> CreateTensorWithShapeFn<T>(Func<Vector<int64>>? shapeFn, DType dtype, Node owningNode, Function? moduleFn, string? name, int? rank) where T : IVarType
-            => new Tensor<T>(shapeFn, dtype, owningNode, moduleFn, name, rank: rank);
+            => new ImmutableTensor<T>(shapeFn, dtype, owningNode, moduleFn, name, rank: rank);
 
         internal static ITensor Vector(Func<Vector<int64>>? shapeFn, DType dtype, Node owningNode, Function? moduleFn, string? name = null)
             => (ITensor)OnnxUtils.CallGeneric(dtype.ToIVarType(), typeof(InternalGlobals), nameof(CreateVectorWithShapeFn), [shapeFn, dtype, owningNode, moduleFn, name]);
 
         private static Vector<T> CreateVectorWithShapeFn<T>(Func<Vector<int64>>? shapeFn, DType dtype, Node owningNode, Function? moduleFn, string? name) where T : IVarType
-            => new Vector<T>(shapeFn, dtype, owningNode, moduleFn, name);
+            => new ImmutableVector<T>(shapeFn, dtype, owningNode, moduleFn, name);
 
         internal static IScalar Scalar(DType dtype, Node? owningNode, Function? moduleFn = null, string? name = null)
             => (IScalar)OnnxUtils.CallGeneric(dtype.ToIVarType(), typeof(InternalGlobals), nameof(CreateScalar), [owningNode, dtype, moduleFn, name]);
 
         private static Scalar<T> CreateScalar<T>(Node owningNode, DType dtype, Function? moduleFn, string? name = null) where T : IVarType
-            => new Scalar<T>(owningNode, dtype, moduleFn, name);
+            => new ImmutableScalar<T>(owningNode, dtype, moduleFn, name);
 
         private static Scalar<T> CreateScalarValForObj<T>(object val) where T : IVarType
             => Shorokoo.Globals.Scalar<T>(val);

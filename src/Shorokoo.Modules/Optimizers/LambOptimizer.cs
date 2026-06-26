@@ -78,8 +78,8 @@ public partial class LambOptimizer
         // Adam moments + bias correction (eps OUTSIDE the sqrt, like AdamOptimizer).
         var newM = beta1 * m + (one - beta1) * grad;
         var newV = beta2 * v + (one - beta2) * grad * grad;
-        var mHat = newM / (one - (Tensor<float32>)OnnxOp.Pow(beta1, newStep));
-        var vHat = newV / (one - (Tensor<float32>)OnnxOp.Pow(beta2, newStep));
+        var mHat = newM / (one - (ImmutableTensor<float32>)OnnxOp.Pow(beta1, newStep));
+        var vHat = newV / (one - (ImmutableTensor<float32>)OnnxOp.Pow(beta2, newStep));
         var r = mHat / (vHat.Sqrt() + epsilon);             // Adam direction
 
         // Decoupled weight decay added INSIDE the update (the LAMB-defining placement).

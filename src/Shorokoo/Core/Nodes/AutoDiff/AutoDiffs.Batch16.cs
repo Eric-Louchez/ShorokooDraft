@@ -57,18 +57,18 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 padArray[totalRank + 2 + d] = effectivePads[d + nDims]; // end pad for spatial dim d
             }
             var padTensor = Vector(padArray);
-            var paddedGrad = (Tensor<T1>)OnnxOp.Pad(grad, padTensor, null, axes: null, mode: null);
+            var paddedGrad = (ImmutableTensor<T1>)OnnxOp.Pad(grad, padTensor, null, axes: null, mode: null);
 
             // Step 2: Get N, C from grad shape and compute spatial stride factors
             var gradShape = OnnxOp.Shape(grad);
-            var N_s = (Tensor<int64>)OnnxOp.Gather(gradShape, Scalar(0L), axis: 0);
-            var C_s = (Tensor<int64>)OnnxOp.Gather(gradShape, Scalar(1L), axis: 0);
+            var N_s = (ImmutableTensor<int64>)OnnxOp.Gather(gradShape, Scalar(0L), axis: 0);
+            var C_s = (ImmutableTensor<int64>)OnnxOp.Gather(gradShape, Scalar(1L), axis: 0);
 
             // Compute padded spatial dimensions
             var paddedDims = new IVariable[nDims];
             for (int d = 0; d < nDims; d++)
             {
-                var imageDimD = (Tensor<int64>)OnnxOp.Gather(imageShape, Scalar((long)d), axis: 0);
+                var imageDimD = (ImmutableTensor<int64>)OnnxOp.Gather(imageShape, Scalar((long)d), axis: 0);
                 paddedDims[d] = imageDimD + Scalar(effectivePads[d] + effectivePads[d + nDims]);
             }
 
@@ -77,7 +77,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var spatialStrides = new IVariable[nDims];
             spatialStrides[nDims - 1] = Scalar(1L);
             for (int d = nDims - 2; d >= 0; d--)
-                spatialStrides[d] = (Tensor<int64>)(((Tensor<int64>)spatialStrides[d + 1]) * ((Tensor<int64>)paddedDims[d + 1]));
+                spatialStrides[d] = (ImmutableTensor<int64>)(((ImmutableTensor<int64>)spatialStrides[d + 1]) * ((ImmutableTensor<int64>)paddedDims[d + 1]));
 
             // Step 3: Build flat index tensor
             // For each spatial dimension d, we have:
@@ -92,15 +92,15 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             for (int d = 0; d < nDims; d++)
             {
-                var kd = (Tensor<int64>)OnnxOp.Gather(blockShape, Scalar((long)d), axis: 0);
+                var kd = (ImmutableTensor<int64>)OnnxOp.Gather(blockShape, Scalar((long)d), axis: 0);
 
                 // Compute output dimension for this spatial dim:
                 // od = (paddedDims[d] - dilations[d] * (kd - 1) - 1) / strides[d] + 1
-                var od = ((Tensor<int64>)paddedDims[d] - Scalar(effectiveDilations[d]) * (kd - Scalar(1L)) - Scalar(1L)) / Scalar(effectiveStrides[d]) + Scalar(1L);
+                var od = ((ImmutableTensor<int64>)paddedDims[d] - Scalar(effectiveDilations[d]) * (kd - Scalar(1L)) - Scalar(1L)) / Scalar(effectiveStrides[d]) + Scalar(1L);
 
                 // Create range tensors
-                var khRange = (Tensor<int64>)OnnxOp.Range(Scalar(0L), kd, Scalar(1L)); // [kd]
-                var ohRange = (Tensor<int64>)OnnxOp.Range(Scalar(0L), od, Scalar(1L)); // [od]
+                var khRange = (ImmutableTensor<int64>)OnnxOp.Range(Scalar(0L), kd, Scalar(1L)); // [kd]
+                var ohRange = (ImmutableTensor<int64>)OnnxOp.Range(Scalar(0L), od, Scalar(1L)); // [od]
 
                 // Scale by dilation/stride
                 var khOffsets = khRange * Scalar(effectiveDilations[d]); // [kd]
@@ -115,17 +115,17 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 Array.Fill(ohShape, 1L);
                 ohShape[2 * d + 1] = -1;
 
-                var khReshaped = (Tensor<int64>)OnnxOp.Reshape(khOffsets, Vector(khShape), allowZero: false);
-                var ohReshaped = (Tensor<int64>)OnnxOp.Reshape(ohStarts, Vector(ohShape), allowZero: false);
+                var khReshaped = (ImmutableTensor<int64>)OnnxOp.Reshape(khOffsets, Vector(khShape), allowZero: false);
+                var ohReshaped = (ImmutableTensor<int64>)OnnxOp.Reshape(ohStarts, Vector(ohShape), allowZero: false);
 
                 // source_d = kh_offset + oh_start (broadcast to [..., kd, od, ...])
                 var sourceD = khReshaped + ohReshaped;
 
                 // Multiply by spatial stride and accumulate
-                var contribution = sourceD * (Tensor<int64>)spatialStrides[d];
+                var contribution = sourceD * (ImmutableTensor<int64>)spatialStrides[d];
                 flatIdx = flatIdx is null
                     ? (IVariable)contribution
-                    : (IVariable)((Tensor<int64>)flatIdx + contribution);
+                    : (IVariable)((ImmutableTensor<int64>)flatIdx + contribution);
             }
 
             // flatIdx shape: [k0, o0, k1, o1, ..., k_{n-1}, o_{n-1}]
@@ -137,18 +137,18 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 perm[d] = 2 * d;           // k dims first
                 perm[nDims + d] = 2 * d + 1; // o dims after
             }
-            flatIdx = (Tensor<int64>)OnnxOp.Transpose(flatIdx!, perm);
+            flatIdx = (ImmutableTensor<int64>)OnnxOp.Transpose(flatIdx!, perm);
 
             // Reshape to [block_size, L]
-            var blockSize = (Tensor<int64>)OnnxOp.ReduceProd(blockShape, keepdims: false);
+            var blockSize = (ImmutableTensor<int64>)OnnxOp.ReduceProd(blockShape, keepdims: false);
             var inputShapeT = OnnxOp.Shape(input);
-            var L = (Tensor<int64>)OnnxOp.Gather(inputShapeT, Scalar(2L), axis: 0);
+            var L = (ImmutableTensor<int64>)OnnxOp.Gather(inputShapeT, Scalar(2L), axis: 0);
 
-            var indexShape2D = (Tensor<int64>)OnnxOp.Concat([
-                (Tensor<int64>)OnnxOp.Reshape(blockSize, Vector(1L), allowZero: false),
-                (Tensor<int64>)OnnxOp.Reshape(L, Vector(1L), allowZero: false)
+            var indexShape2D = (ImmutableTensor<int64>)OnnxOp.Concat([
+                (ImmutableTensor<int64>)OnnxOp.Reshape(blockSize, Vector(1L), allowZero: false),
+                (ImmutableTensor<int64>)OnnxOp.Reshape(L, Vector(1L), allowZero: false)
             ], axis: 0);
-            flatIdx = (Tensor<int64>)OnnxOp.Reshape(flatIdx, indexShape2D, allowZero: false);
+            flatIdx = (ImmutableTensor<int64>)OnnxOp.Reshape(flatIdx, indexShape2D, allowZero: false);
             // flatIdx: [block_size, L]
 
             // Step 4: Gather from padded gradient
@@ -156,42 +156,42 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // Reshape to [N*C, spatial_flat]
             var NC = N_s * C_s;
             var paddedGradShape = OnnxOp.Shape(paddedGrad);
-            var spatialShape = (Tensor<int64>)OnnxOp.Slice(paddedGradShape, Vector(2L), Vector((long)(2 + nDims)));
-            var spatialFlat = (Tensor<int64>)OnnxOp.ReduceProd(spatialShape, keepdims: false);
+            var spatialShape = (ImmutableTensor<int64>)OnnxOp.Slice(paddedGradShape, Vector(2L), Vector((long)(2 + nDims)));
+            var spatialFlat = (ImmutableTensor<int64>)OnnxOp.ReduceProd(spatialShape, keepdims: false);
 
-            var reshapeTo2D = (Tensor<int64>)OnnxOp.Concat([
-                (Tensor<int64>)OnnxOp.Reshape(NC, Vector(1L), allowZero: false),
-                (Tensor<int64>)OnnxOp.Reshape(spatialFlat, Vector(1L), allowZero: false)
+            var reshapeTo2D = (ImmutableTensor<int64>)OnnxOp.Concat([
+                (ImmutableTensor<int64>)OnnxOp.Reshape(NC, Vector(1L), allowZero: false),
+                (ImmutableTensor<int64>)OnnxOp.Reshape(spatialFlat, Vector(1L), allowZero: false)
             ], axis: 0);
-            var paddedFlat = (Tensor<T1>)OnnxOp.Reshape(paddedGrad, reshapeTo2D, allowZero: false);
+            var paddedFlat = (ImmutableTensor<T1>)OnnxOp.Reshape(paddedGrad, reshapeTo2D, allowZero: false);
             // paddedFlat: [N*C, spatial_flat]
 
             // Flatten index tensor to 1D: [block_size * L]
-            var flatIdxFlat = (Tensor<int64>)OnnxOp.Reshape(flatIdx, Vector(-1L), allowZero: false);
+            var flatIdxFlat = (ImmutableTensor<int64>)OnnxOp.Reshape(flatIdx, Vector(-1L), allowZero: false);
 
             // Expand indices to [N*C, block_size * L] for GatherElements
             var blockTimesL = blockSize * L;
-            var expandShape = (Tensor<int64>)OnnxOp.Concat([
-                (Tensor<int64>)OnnxOp.Reshape(NC, Vector(1L), allowZero: false),
-                (Tensor<int64>)OnnxOp.Reshape(blockTimesL, Vector(1L), allowZero: false)
+            var expandShape = (ImmutableTensor<int64>)OnnxOp.Concat([
+                (ImmutableTensor<int64>)OnnxOp.Reshape(NC, Vector(1L), allowZero: false),
+                (ImmutableTensor<int64>)OnnxOp.Reshape(blockTimesL, Vector(1L), allowZero: false)
             ], axis: 0);
-            var flatIdxExpanded = (Tensor<int64>)OnnxOp.Expand(
-                (Tensor<int64>)OnnxOp.Unsqueeze(flatIdxFlat, Vector(0L)),
+            var flatIdxExpanded = (ImmutableTensor<int64>)OnnxOp.Expand(
+                (ImmutableTensor<int64>)OnnxOp.Unsqueeze(flatIdxFlat, Vector(0L)),
                 expandShape);
             // flatIdxExpanded: [N*C, block_size * L]
 
             // GatherElements axis=1: output[i,j] = paddedFlat[i, flatIdxExpanded[i,j]]
-            var gathered = (Tensor<T1>)OnnxOp.GatherElements(paddedFlat, flatIdxExpanded, axis: 1);
+            var gathered = (ImmutableTensor<T1>)OnnxOp.GatherElements(paddedFlat, flatIdxExpanded, axis: 1);
             // gathered: [N*C, block_size * L]
 
             // Step 5: Reshape to [N, C * block_size, L] to match input shape
             var CTimesB = C_s * blockSize;
-            var outputShape = (Tensor<int64>)OnnxOp.Concat([
-                (Tensor<int64>)OnnxOp.Reshape(N_s, Vector(1L), allowZero: false),
-                (Tensor<int64>)OnnxOp.Reshape(CTimesB, Vector(1L), allowZero: false),
-                (Tensor<int64>)OnnxOp.Reshape(L, Vector(1L), allowZero: false)
+            var outputShape = (ImmutableTensor<int64>)OnnxOp.Concat([
+                (ImmutableTensor<int64>)OnnxOp.Reshape(N_s, Vector(1L), allowZero: false),
+                (ImmutableTensor<int64>)OnnxOp.Reshape(CTimesB, Vector(1L), allowZero: false),
+                (ImmutableTensor<int64>)OnnxOp.Reshape(L, Vector(1L), allowZero: false)
             ], axis: 0);
-            var dInput = (Tensor<T1>)OnnxOp.Reshape(gathered, outputShape, allowZero: false);
+            var dInput = (ImmutableTensor<T1>)OnnxOp.Reshape(gathered, outputShape, allowZero: false);
 
             return [dInput, null, null];
         }

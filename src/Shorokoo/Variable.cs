@@ -116,7 +116,7 @@ namespace Shorokoo
     public interface DTypeStruct : IStruct;
 
     public interface IVariable<out T> : IVariable where T : IVarType;
-    public abstract class Variable<T> : IVariable<T> where T : IVarType
+    public abstract class ImmutableVariable<T> : IVariable<T> where T : IVarType
     {
         public Node OwningNode { get; private set; }
 
@@ -134,7 +134,7 @@ namespace Shorokoo
 
         private string? uniqueName;
 
-        public Variable(DType type, Node owningNode, Function? moduleFn, string? name)
+        public ImmutableVariable(DType type, Node owningNode, Function? moduleFn, string? name)
         {
             this.OwningNode = owningNode;
             this.Type = type;
@@ -160,7 +160,7 @@ namespace Shorokoo
             this.uniqueName = name;
         }
 
-        public Tensor<T> Tensor() => (Tensor<T>)this;
+        public Tensor<T> Tensor() => (ImmutableTensor<T>)this;
         public Vector<T> Vec() => this.Tensor().Vec();
         public Scalar<T> Scalar() => this.Tensor().Scalar();
         public TensorSequence<T> Sequence() => (ImmutableTensorSequence<T>)this;
@@ -184,13 +184,13 @@ namespace Shorokoo
         [Obsolete("FriendlyName is deprecated. Use UniqueName for ONNX names or Key.ToString() for stable identifiers.")]
         public string? FriendlyName => this.uniqueName;
 
-        Variable<V> IVariable.As<V>()
+        ImmutableVariable<V> IVariable.As<V>()
         {
             if (typeof(V) == typeof(T))
-                return (Variable<V>)(object)this;
+                return (ImmutableVariable<V>)(object)this;
 
             throw new InvalidTensorOperationException(ErrorCodes.CR006, "As<V>", $"from {typeof(T).Name} to {typeof(V).Name}", 
-                $"Cannot cast Variable<{typeof(T).Name}> to Variable<{typeof(V).Name}> - types are not compatible");
+                $"Cannot cast ImmutableVariable<{typeof(T).Name}> to ImmutableVariable<{typeof(V).Name}> - types are not compatible");
         }
 
         public override string ToString()

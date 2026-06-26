@@ -75,7 +75,7 @@ namespace Shorokoo.Modules
             {
                 var modelVariable = base.modelSequenceVariable[index].Scalar();
                 var type = typeof(T);
-                return (T)type.GetConstructor([typeof(Scalar<IModelVarType>)]).AssertNotNull().Invoke([modelVariable]);
+                return (T)type.GetConstructor([typeof(ImmutableScalar<IModelVarType>)]).AssertNotNull().Invoke([modelVariable]);
             }
         }
 

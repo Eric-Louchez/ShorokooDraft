@@ -294,7 +294,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // automatically. The flat (cond, else..., then...) layout from the autograd
             // engines is preserved by splitting inputs[0] from inputs[1..] here.
             retval[IF_CLOSE] = (inputs, outputGrads, attrs) =>
-                IfCloseGradient((Scalar<bit>)inputs[0]!, inputs.Skip(1).ToArray(), outputGrads, attrs);
+                IfCloseGradient((ImmutableScalar<bit>)inputs[0]!, inputs.Skip(1).ToArray(), outputGrads, attrs);
 
             // Sequence operations
             retval[SEQUENCE_CONSTRUCT] = SequenceConstructGradient;
@@ -571,8 +571,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 if (masks[i] is null) continue;
                 var normalizedMask = OnnxOp.Div(masks[i]!, totalMask!);
                 result[i] = ReverseBroadcast(
-                    (Tensor<float32>)(OnnxOp.Mul(normalizedMask, grad)),
-                    ((Tensor<float32>)inputs[i]!).DShape);
+                    (ImmutableTensor<float32>)(OnnxOp.Mul(normalizedMask, grad)),
+                    ((ImmutableTensor<float32>)inputs[i]!).DShape);
             }
 
             return result;
@@ -612,8 +612,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 if (masks[i] is null) continue;
                 var normalizedMask = OnnxOp.Div(masks[i]!, totalMask!);
                 result[i] = ReverseBroadcast(
-                    (Tensor<float32>)(OnnxOp.Mul(normalizedMask, grad)),
-                    ((Tensor<float32>)inputs[i]!).DShape);
+                    (ImmutableTensor<float32>)(OnnxOp.Mul(normalizedMask, grad)),
+                    ((ImmutableTensor<float32>)inputs[i]!).DShape);
             }
 
             return result;
@@ -632,8 +632,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             {
                 if (inputs[i] is null) continue;
                 result[i] = ReverseBroadcast(
-                    (Tensor<float32>)grad,
-                    ((Tensor<float32>)inputs[i]!).DShape);
+                    (ImmutableTensor<float32>)grad,
+                    ((ImmutableTensor<float32>)inputs[i]!).DShape);
             }
 
             return result;
@@ -659,8 +659,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             {
                 if (inputs[i] is null) continue;
                 result[i] = ReverseBroadcast(
-                    (Tensor<float32>)scaledGrad,
-                    ((Tensor<float32>)inputs[i]!).DShape);
+                    (ImmutableTensor<float32>)scaledGrad,
+                    ((ImmutableTensor<float32>)inputs[i]!).DShape);
             }
 
             return result;

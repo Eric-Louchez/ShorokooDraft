@@ -18,7 +18,7 @@ namespace Shorokoo.Core.Nodes
     {
         public static A IfElse<A>(Scalar<bit> condition, A aWhenTrue, A aWhenFalse) where A : IVariable
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
+            var ifOpen = OnnxOp.IfOpen((ImmutableScalar<bit>)condition);
             return (A)OnnxOp.IfClose([aWhenTrue], [aWhenFalse], ifOpen)[0];
         }
 
@@ -31,7 +31,7 @@ namespace Shorokoo.Core.Nodes
         /// </summary>
         public static A IfElse<A>(Scalar<bit> condition, System.Func<A> whenTrue, System.Func<A> whenFalse) where A : IVariable
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
+            var ifOpen = OnnxOp.IfOpen((ImmutableScalar<bit>)condition);
             var t = whenTrue();
             var f = whenFalse();
             return (A)OnnxOp.IfClose([t], [f], ifOpen)[0];
@@ -41,7 +41,7 @@ namespace Shorokoo.Core.Nodes
             where A : IVariable
             where B : IVariable
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
+            var ifOpen = OnnxOp.IfOpen((ImmutableScalar<bit>)condition);
             var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b], [whenFalse.a, whenFalse.b], ifOpen);
 
             return ((A)retval[0], (B)retval[1]);
@@ -52,7 +52,7 @@ namespace Shorokoo.Core.Nodes
             where B : IVariable
             where C : IVariable
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
+            var ifOpen = OnnxOp.IfOpen((ImmutableScalar<bit>)condition);
             var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c], [whenFalse.a, whenFalse.b, whenFalse.c], ifOpen);
 
             return ((A)retval[0], (B)retval[1], (C)retval[2]);
@@ -64,7 +64,7 @@ namespace Shorokoo.Core.Nodes
             where C : IVariable
             where D : IVariable
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
+            var ifOpen = OnnxOp.IfOpen((ImmutableScalar<bit>)condition);
             var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c, whenTrue.d], [whenFalse.a, whenFalse.b, whenFalse.c, whenFalse.d], ifOpen);
 
             return ((A)retval[0], (B)retval[1], (C)retval[2], (D)retval[3]);
@@ -77,7 +77,7 @@ namespace Shorokoo.Core.Nodes
             where D : IVariable
             where E : IVariable
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
+            var ifOpen = OnnxOp.IfOpen((ImmutableScalar<bit>)condition);
             var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c, whenTrue.d, whenTrue.e], [whenFalse.a, whenFalse.b, whenFalse.c, whenFalse.d, whenFalse.e], ifOpen);
 
             return ((A)retval[0], (B)retval[1], (C)retval[2], (D)retval[3], (E)retval[4]);
@@ -91,7 +91,7 @@ namespace Shorokoo.Core.Nodes
             where E : IVariable
             where F : IVariable
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
+            var ifOpen = OnnxOp.IfOpen((ImmutableScalar<bit>)condition);
             var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c, whenTrue.d, whenTrue.e, whenTrue.f], [whenFalse.a, whenFalse.b, whenFalse.c, whenFalse.d, whenFalse.e, whenFalse.f], ifOpen);
 
             return ((A)retval[0], (B)retval[1], (C)retval[2], (D)retval[3], (E)retval[4], (F)retval[5]);
@@ -106,7 +106,7 @@ namespace Shorokoo.Core.Nodes
             where F : IVariable
             where G : IVariable
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
+            var ifOpen = OnnxOp.IfOpen((ImmutableScalar<bit>)condition);
             var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c, whenTrue.d, whenTrue.e, whenTrue.f, whenTrue.g], [whenFalse.a, whenFalse.b, whenFalse.c, whenFalse.d, whenFalse.e, whenFalse.f, whenFalse.g], ifOpen);
 
             return ((A)retval[0], (B)retval[1], (C)retval[2], (D)retval[3], (E)retval[4], (F)retval[5], (G)retval[6]);
@@ -122,7 +122,7 @@ namespace Shorokoo.Core.Nodes
             where G : IVariable
             where H : IVariable
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
+            var ifOpen = OnnxOp.IfOpen((ImmutableScalar<bit>)condition);
             var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c, whenTrue.d, whenTrue.e, whenTrue.f, whenTrue.g, whenTrue.h], [whenFalse.a, whenFalse.b, whenFalse.c, whenFalse.d, whenFalse.e, whenFalse.f, whenFalse.g, whenFalse.h], ifOpen);
 
             return ((A)retval[0], (B)retval[1], (C)retval[2], (D)retval[3], (E)retval[4], (F)retval[5], (G)retval[6], (H)retval[7]);
@@ -130,29 +130,29 @@ namespace Shorokoo.Core.Nodes
 
         public static ITensor[] IfElse(Scalar<bit> condition, ITensor[] whenTrue, ITensor[] whenFalse)
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
+            var ifOpen = OnnxOp.IfOpen((ImmutableScalar<bit>)condition);
             return (ITensor[])OnnxOp.IfClose(whenTrue, whenFalse, ifOpen);
         }
 
         public static IVariable[] IfElse(Scalar<bit> condition, IVariable[] whenTrue, IVariable[] whenFalse)
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
+            var ifOpen = OnnxOp.IfOpen((ImmutableScalar<bit>)condition);
             return (IVariable[])OnnxOp.IfClose(whenTrue, whenFalse, ifOpen);
         }
 
         public static Tensor<T> IfElse<T>(Scalar<bit> condition, Tensor<T>[] whenTrue, Tensor<T>[] whenFalse)
             where T : IVarType
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
+            var ifOpen = OnnxOp.IfOpen((ImmutableScalar<bit>)condition);
             var results = OnnxOp.IfClose(whenTrue, whenFalse, ifOpen);
 
-            return (Tensor<T>)results[0];
+            return (ImmutableTensor<T>)results[0];
         }
 
         public static IVariable<T> IfElse<T>(Scalar<bit> condition, IVariable<T>[] whenTrue, IVariable<T>[] whenFalse)
             where T : IVarType
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
+            var ifOpen = OnnxOp.IfOpen((ImmutableScalar<bit>)condition);
             var results = OnnxOp.IfClose(whenTrue, whenFalse, ifOpen);
 
             return (IVariable<T>)results[0];

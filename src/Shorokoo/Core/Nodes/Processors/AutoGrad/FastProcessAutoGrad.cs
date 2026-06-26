@@ -550,8 +550,8 @@ namespace Shorokoo.Core.Nodes.Processors.AutoGrad
                 if (args.Length >= 1 && dtypeByIVarType.TryGetValue(args[0], out var dt))
                 {
                     var def = paramType.GetGenericTypeDefinition();
-                    int? rank = def == typeof(Scalar<>) ? 0
-                              : def == typeof(Vector<>) ? 1
+                    int? rank = def == typeof(ImmutableScalar<>) ? 0
+                              : def == typeof(ImmutableVector<>) ? 1
                               : (int?)null;
                     return (dt, rank);
                 }
