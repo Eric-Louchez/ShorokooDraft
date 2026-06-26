@@ -54,7 +54,7 @@ namespace Shorokoo
     /// <summary>
     /// A symbolic tensor of element type <typeparamref name="T"/> - the main user-facing tensor type.
     /// Operations do not compute values; they add ONNX-style nodes to the computation graph, which is
-    /// executed on demand via <see cref="Eval()"/>.
+    /// executed on demand via <c>Eval()</c>.
     /// </summary>
     /// <summary>
     /// Immutable (class) graph node for a tensor — the value the graph stores (Node outputs are

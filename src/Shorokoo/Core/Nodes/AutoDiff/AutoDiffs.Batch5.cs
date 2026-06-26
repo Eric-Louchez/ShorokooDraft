@@ -608,13 +608,14 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                                           + Globals.Scalar((kernelShape[d] - 1) * dilations[d])
                                           + Globals.Scalar(1L) - inDim;
                     Tensor<int64> padTotal = (ImmutableTensor<int64>)OnnxOp.Max(
-                        (ImmutableTensor<int64>)(IVariable)Globals.Scalar(0L),
+                        (ImmutableScalar<int64>)Globals.Scalar(0L),
                         padTotalCandidate);
 
                     Tensor<int64> padBegin = sameLower
                         ? (padTotal + Globals.Scalar(1L)) / Globals.Scalar(2L)
                         : padTotal / Globals.Scalar(2L);
-                    padBeginVars[d] = padBegin;
+                    // Store the Immutable* graph value so later reads can downcast it.
+                    padBeginVars[d] = (ImmutableTensor<int64>)padBegin;
 
                     imageShapeParts[d] = OnnxOp.Reshape(
                         inDim + padTotal,

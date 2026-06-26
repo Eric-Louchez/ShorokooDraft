@@ -140,7 +140,7 @@ namespace Shorokoo.Core.Nodes.Processors.AutoGrad
 
             // Initialize loss gradient: a Scalar<float32> = 1.0. We hardcode float32 here;
             // see class doc for the rationale.
-            gradByKey[lossKey] = Globals.Scalar(1.0f);
+            gradByKey[lossKey] = (ImmutableScalar<float32>)Globals.Scalar(1.0f);
 
             for (int i = topoOrder.Count - 1; i >= 0; i--)
             {
@@ -414,10 +414,14 @@ namespace Shorokoo.Core.Nodes.Processors.AutoGrad
                 if (inputs[i] is not FastTensorKey k) continue;
                 if (inputGrads[i] is null) continue;
 
+                // Gradient ops return value-struct handles; store the backing Immutable* graph value
+                // so downstream gradient ops that read these as IVariable see an immutable.
+                var grad = Shorokoo.Core.VariableHandle.Normalize(inputGrads[i]!)!;
+
                 if (gradByKey.TryGetValue(k, out var existing))
-                    gradByKey[k] = AutoDiffEngine.AccumulateGradients(existing, inputGrads[i]!);
+                    gradByKey[k] = Shorokoo.Core.VariableHandle.Normalize(AutoDiffEngine.AccumulateGradients(existing, grad))!;
                 else
-                    gradByKey[k] = inputGrads[i]!;
+                    gradByKey[k] = grad;
             }
         }
 

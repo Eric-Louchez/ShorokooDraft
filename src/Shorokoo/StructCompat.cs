@@ -49,14 +49,14 @@ namespace Shorokoo
         /// former <c>Scalar : Tensor</c>; the struct cannot declare a same-named member).</summary>
         public static Scalar<T> Scalar<T>(this Scalar<T> self) where T : IVarType => self;
 
-        /// <summary>Reinterpret a handle as a <see cref="Tensor{T}"/> (the inherited <c>Variable.Tensor()</c>;
+        /// <summary>Reinterpret a handle as a <c>Tensor</c> (the inherited <c>Variable.Tensor()</c>;
         /// a struct named <c>Tensor</c> cannot declare a same-named member, so it is an extension).</summary>
         public static Tensor<T> Tensor<T>(this Tensor<T> self) where T : IVarType => self;
         public static Tensor<T> Tensor<T>(this Vector<T> self) where T : IVarType => self;
         public static Tensor<T> Tensor<T>(this Scalar<T> self) where T : IVarType => self;
 
         /// <summary>Element-wise select driven by a scalar condition (the <c>Where</c> extension requires a
-        /// <see cref="Tensor{bit}"/> receiver; a <see cref="Scalar{bit}"/> reaches it via this overload).</summary>
+        /// <c>Tensor&lt;bit&gt;</c> receiver; a <see cref="Scalar{bit}"/> reaches it via this overload).</summary>
         public static Tensor<V> Where<V>(this Scalar<bit> cond, Tensor<V> whenTrue, Tensor<V> whenFalse)
             where V : IVarType
             => ((Tensor<bit>)cond).Where(whenTrue, whenFalse);

@@ -366,8 +366,8 @@ namespace Shorokoo
         {
             var retval = OnnxOp.LayerNormalization(x, scale, b, axis, epsilon, stashType);
             return ((ImmutableTensor<T>)retval.y,
-                    retval.mean is null ? null : (ImmutableTensor<T>)retval.mean,
-                    retval.invStdDev is null ? null : (ImmutableTensor<T>)retval.invStdDev);
+                    retval.mean is null ? null : (Tensor<T>?)(ImmutableTensor<T>)retval.mean,
+                    retval.invStdDev is null ? null : (Tensor<T>?)(ImmutableTensor<T>)retval.invStdDev);
         }
 
         /// <summary>Builds the weight matrix mapping linear DFT bins to mel-frequency bins (ONNX MelWeightMatrix).</summary>
@@ -441,7 +441,7 @@ namespace Shorokoo
             where T : FloatLike where TInd : IndexLike
         {
             var retval = OnnxOp.SoftmaxCrossEntropyLoss(scores, labels, weights, ignoreIndex, reduction);
-            return ((ImmutableTensor<T>)retval.output, retval.logProb is null ? null : (ImmutableTensor<T>)retval.logProb);
+            return ((ImmutableTensor<T>)retval.output, retval.logProb is null ? null : (Tensor<T>?)(ImmutableTensor<T>)retval.logProb);
         }
 
         /// <summary>Splits a tensor along an axis into a sequence of tensors (ONNX SplitToSequence).</summary>

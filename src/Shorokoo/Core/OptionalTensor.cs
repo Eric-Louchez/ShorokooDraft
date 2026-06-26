@@ -73,7 +73,7 @@ namespace Shorokoo.Core
         /// otherwise the element is taken via <see cref="TensorValue"/>.
         /// </summary>
         public static implicit operator Tensor<T>?(OptionalTensor<T> optional)
-            => optional.inner is null ? null : optional.TensorValue();
+            => optional.inner is null ? default(Tensor<T>?) : optional.TensorValue();
 
         // ── User-facing API (the optional surface lives here, not on the immutable) ──
         public IVariable Value() => OnnxOp.OptionalGetElement(Imm);

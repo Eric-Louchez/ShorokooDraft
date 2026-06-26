@@ -69,15 +69,17 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             for (int d = 0; d < nDims; d++)
             {
                 Tensor<int64> imageDimD = (ImmutableTensor<int64>)OnnxOp.Gather(imageShape, Scalar((long)d), axis: 0);
-                paddedDims[d] = imageDimD + Scalar(effectivePads[d] + effectivePads[d + nDims]);
+                // Store the Immutable* graph value (not the boxed struct handle) so later reads can
+                // downcast it back to ImmutableTensor.
+                paddedDims[d] = (ImmutableTensor<int64>)(imageDimD + Scalar(effectivePads[d] + effectivePads[d + nDims]));
             }
 
             // Compute spatial strides for flat indexing into padded gradient
             // spatialStrides[d] = ∏_{j > d} paddedDims[j]
             var spatialStrides = new IVariable[nDims];
-            spatialStrides[nDims - 1] = Scalar(1L);
+            spatialStrides[nDims - 1] = (ImmutableScalar<int64>)Scalar(1L);
             for (int d = nDims - 2; d >= 0; d--)
-                spatialStrides[d] = (Tensor<int64>)(((Tensor<int64>)(ImmutableTensor<int64>)spatialStrides[d + 1]) * ((Tensor<int64>)(ImmutableTensor<int64>)paddedDims[d + 1]));
+                spatialStrides[d] = (ImmutableTensor<int64>)(((Tensor<int64>)(ImmutableTensor<int64>)spatialStrides[d + 1]) * ((Tensor<int64>)(ImmutableTensor<int64>)paddedDims[d + 1]));
 
             // Step 3: Build flat index tensor
             // For each spatial dimension d, we have:
@@ -124,8 +126,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 // Multiply by spatial stride and accumulate
                 var contribution = sourceD * (ImmutableTensor<int64>)spatialStrides[d];
                 flatIdx = flatIdx is null
-                    ? (IVariable)contribution
-                    : (IVariable)((Tensor<int64>)(ImmutableTensor<int64>)flatIdx + contribution);
+                    ? (ImmutableTensor<int64>)contribution
+                    : (ImmutableTensor<int64>)((Tensor<int64>)(ImmutableTensor<int64>)flatIdx + contribution);
             }
 
             // flatIdx shape: [k0, o0, k1, o1, ..., k_{n-1}, o_{n-1}]

@@ -11,7 +11,8 @@ namespace Shorokoo.Core
     /// </summary>
     internal interface IValueHandle
     {
-        IVariable Immutable { get; }
+        // The backing Immutable* graph value, or null for a defaulted/absent handle.
+        IVariable? Immutable { get; }
     }
 
     /// <summary>
@@ -26,8 +27,9 @@ namespace Shorokoo.Core
     {
         private static readonly ConcurrentDictionary<Type, MethodInfo[]> wrappers = new();
 
-        /// <summary>The backing <c>Immutable*</c> graph value: a struct handle unwrapped, an immutable as-is.</summary>
-        public static IVariable Normalize(IVariable value)
+        /// <summary>The backing <c>Immutable*</c> graph value: a struct handle unwrapped, an immutable
+        /// as-is, or null for a defaulted/absent struct handle.</summary>
+        public static IVariable? Normalize(IVariable? value)
             => value is IValueHandle h ? h.Immutable : value;
 
         /// <summary>Reinterpret <paramref name="value"/> as the handle type <typeparamref name="A"/>.</summary>
@@ -40,6 +42,8 @@ namespace Shorokoo.Core
                 return default!;
 
             var imm = Normalize(value);
+            if (imm is null)
+                return default!;
             if (imm is A immA)
                 return immA;
 
@@ -62,6 +66,10 @@ namespace Shorokoo.Core
                 return value;
 
             var imm = Normalize(value);
+            if (imm is null)
+                // A defaulted/absent struct handle: hand back the value as-is (it already matches a
+                // struct-typed parameter; reflection boxes it).
+                return value;
 
             // Parameter wants an immutable / interface — hand it the unwrapped graph value.
             if (paramType.IsInstanceOfType(imm))

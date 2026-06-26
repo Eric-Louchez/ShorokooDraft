@@ -430,7 +430,7 @@ public static class Pooling
     /// <summary>
     /// Max pooling that also returns the flat spatial indices of the selected
     /// elements (the ONNX MaxPool 2nd output), for feeding a later
-    /// <see cref="MaxUnpool{T}(Tensor{T}, Tensor{int64}, long[], long[], long[], Vector{int64})"/>.
+    /// <c>MaxUnpool</c>.
     /// The spatial rank is inferred as <c>kernelSize.Length</c>;
     /// <paramref name="stride"/> defaults to <paramref name="kernelSize"/>.
     /// </summary>
@@ -444,7 +444,7 @@ public static class Pooling
     /// <remarks>
     /// The companion indices-returning pool omits the <c>dilations</c> and
     /// <c>storage_order</c> attributes (kernel/pads/strides only) — sufficient for
-    /// the <see cref="MaxUnpool{T}(Tensor{T}, Tensor{int64}, long[], long[], long[], Vector{int64})"/>
+    /// the <c>MaxUnpool</c>
     /// round-trip, whose geometry is kernel/pads/strides.
     /// </remarks>
     public static (Tensor<T> values, Tensor<int64> indices) MaxPoolWithIndices<T>(
@@ -556,7 +556,7 @@ public static class Pooling
             outputShape: outputShape);
     }
 
-    /// <summary>1-D <see cref="MaxUnpool{T}(Tensor{T}, Tensor{int64}, long[], long[], long[], Vector{int64})"/>. <paramref name="kernelSize"/> must have length 1.</summary>
+    /// <summary>1-D <c>MaxUnpool</c>. <paramref name="kernelSize"/> must have length 1.</summary>
     public static Tensor<T> MaxUnpool1d<T>(
         Tensor<T> values, Tensor<int64> indices, long[] kernelSize,
         long[]? stride = null, long[]? padding = null,
@@ -567,7 +567,7 @@ public static class Pooling
         return MaxUnpool(values, indices, kernelSize, stride, padding, outputShape);
     }
 
-    /// <summary>2-D <see cref="MaxUnpool{T}(Tensor{T}, Tensor{int64}, long[], long[], long[], Vector{int64})"/>. <paramref name="kernelSize"/> must have length 2.</summary>
+    /// <summary>2-D <c>MaxUnpool</c>. <paramref name="kernelSize"/> must have length 2.</summary>
     public static Tensor<T> MaxUnpool2d<T>(
         Tensor<T> values, Tensor<int64> indices, long[] kernelSize,
         long[]? stride = null, long[]? padding = null,
@@ -578,7 +578,7 @@ public static class Pooling
         return MaxUnpool(values, indices, kernelSize, stride, padding, outputShape);
     }
 
-    /// <summary>3-D <see cref="MaxUnpool{T}(Tensor{T}, Tensor{int64}, long[], long[], long[], Vector{int64})"/>. <paramref name="kernelSize"/> must have length 3.</summary>
+    /// <summary>3-D <c>MaxUnpool</c>. <paramref name="kernelSize"/> must have length 3.</summary>
     public static Tensor<T> MaxUnpool3d<T>(
         Tensor<T> values, Tensor<int64> indices, long[] kernelSize,
         long[]? stride = null, long[]? padding = null,

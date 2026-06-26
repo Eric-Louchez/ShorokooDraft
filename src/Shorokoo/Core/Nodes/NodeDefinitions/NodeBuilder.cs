@@ -1168,6 +1168,7 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions
             {
                 var input = inputs[i];
                 if (input is null) continue;
+                // A defaulted struct handle normalises to null (an absent optional input).
                 var imm = Shorokoo.Core.VariableHandle.Normalize(input);
                 if (!ReferenceEquals(imm, input))
                 {
