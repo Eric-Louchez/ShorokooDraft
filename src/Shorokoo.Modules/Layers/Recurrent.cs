@@ -189,7 +189,7 @@ public static class Recurrent
                 // Single owned bias [D, H]; fed as B = concat(bias, zeros) on axis 1
                 // ([D, 2H]) so Wb = bias and Rb = 0.
                 var biasParam = RecurrentUniform.Init([dScalar, hScalar], hScalar);    // [D, H]
-                var rbZeros = TensorFill((ImmutableVector<int64>)[dScalar, hScalar], 0.0f);
+                var rbZeros = TensorFill((Vector<int64>)[dScalar, hScalar], 0.0f);
                 b = biasParam.Concat(1L, rbZeros);                            // [D, 2H]
             }
 
@@ -204,7 +204,7 @@ public static class Recurrent
             var lScalar = yLayer.DimTensor(0);
             var nScalar = yLayer.DimTensor(2);
             var yLNDH = yLayer.Transpose(0L, 2L, 1L, 3L);  // [L, N, D, H]
-            curX = yLNDH.Reshape((ImmutableVector<int64>)[lScalar, nScalar, dScalar * hScalar]); // [L, N, D*H]
+            curX = yLNDH.Reshape((Vector<int64>)[lScalar, nScalar, dScalar * hScalar]); // [L, N, D*H]
             y = curX;
 
             // Collect Y_h, concatenating on the leading axis -> [D*numLayers, N, H].
@@ -349,7 +349,7 @@ public static class Recurrent
                 // Single owned bias [D, 4H]; fed as B = concat(bias, zeros) on axis 1
                 // ([D, 8H]) so Wb = bias and Rb = 0.
                 var biasParam = RecurrentUniform.Init([dScalar, fourH], hScalar);    // [D, 4H]
-                var rbZeros = TensorFill((ImmutableVector<int64>)[dScalar, fourH], 0.0f);
+                var rbZeros = TensorFill((Vector<int64>)[dScalar, fourH], 0.0f);
                 b = biasParam.Concat(1L, rbZeros);                                   // [D, 8H]
             }
 
@@ -368,7 +368,7 @@ public static class Recurrent
             var lScalar = yLayer.DimTensor(0);
             var nScalar = yLayer.DimTensor(2);
             var yLNDH = yLayer.Transpose(0L, 2L, 1L, 3L);  // [L, N, D, H]
-            curX = yLNDH.Reshape((ImmutableVector<int64>)[lScalar, nScalar, dScalar * hScalar]); // [L, N, D*H]
+            curX = yLNDH.Reshape((Vector<int64>)[lScalar, nScalar, dScalar * hScalar]); // [L, N, D*H]
             y = curX;
 
             // Collect Y_h / Y_c, concatenating on the leading axis -> [D*numLayers, N, H].
@@ -538,7 +538,7 @@ public static class Recurrent
                 // Single owned bias [D, 3H]; fed as B = concat(bias, zeros) on axis 1
                 // ([D, 6H]) so Wb = bias and Rb = 0.
                 var biasParam = RecurrentUniform.Init([dScalar, threeH], hScalar);    // [D, 3H]
-                var rbZeros = TensorFill((ImmutableVector<int64>)[dScalar, threeH], 0.0f);
+                var rbZeros = TensorFill((Vector<int64>)[dScalar, threeH], 0.0f);
                 b = biasParam.Concat(1L, rbZeros);                                    // [D, 6H]
             }
 
@@ -557,7 +557,7 @@ public static class Recurrent
             var lScalar = yLayer.DimTensor(0);
             var nScalar = yLayer.DimTensor(2);
             var yLNDH = yLayer.Transpose(0L, 2L, 1L, 3L);  // [L, N, D, H]
-            curX = yLNDH.Reshape((ImmutableVector<int64>)[lScalar, nScalar, dScalar * hScalar]); // [L, N, D*H]
+            curX = yLNDH.Reshape((Vector<int64>)[lScalar, nScalar, dScalar * hScalar]); // [L, N, D*H]
             y = curX;
 
             // Collect Y_h, concatenating on the leading axis -> [D*numLayers, N, H].
@@ -641,7 +641,7 @@ public static class Recurrent
             // Single owned bias [1, H]; fed as B = concat(bias, zeros) on axis 1
             // ([1, 2H]) so Wb = bias and Rb = 0.
             var biasParam = RecurrentUniform.Init([dScalar, hScalar], hScalar);    // [1, H]
-            var rbZeros = TensorFill((ImmutableVector<int64>)[dScalar, hScalar], 0.0f);
+            var rbZeros = TensorFill((Vector<int64>)[dScalar, hScalar], 0.0f);
             b = biasParam.Concat(1L, rbZeros);                            // [1, 2H]
         }
 
@@ -720,7 +720,7 @@ public static class Recurrent
             // Single owned bias [1, 4H]; fed as B = concat(bias, zeros) on axis 1
             // ([1, 8H]) so Wb = bias and Rb = 0.
             var biasParam = RecurrentUniform.Init([dScalar, fourH], hScalar);    // [1, 4H]
-            var rbZeros = TensorFill((ImmutableVector<int64>)[dScalar, fourH], 0.0f);
+            var rbZeros = TensorFill((Vector<int64>)[dScalar, fourH], 0.0f);
             b = biasParam.Concat(1L, rbZeros);                                   // [1, 8H]
         }
 
@@ -810,7 +810,7 @@ public static class Recurrent
             // Single owned bias [1, 3H]; fed as B = concat(bias, zeros) on axis 1
             // ([1, 6H]) so Wb = bias and Rb = 0.
             var biasParam = RecurrentUniform.Init([dScalar, threeH], hScalar);    // [1, 3H]
-            var rbZeros = TensorFill((ImmutableVector<int64>)[dScalar, threeH], 0.0f);
+            var rbZeros = TensorFill((Vector<int64>)[dScalar, threeH], 0.0f);
             b = biasParam.Concat(1L, rbZeros);                                    // [1, 6H]
         }
 

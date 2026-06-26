@@ -166,7 +166,7 @@ namespace Shorokoo
 
         /// <summary>Pads using separate begin (<paramref name="outerPads"/>) and end (<paramref name="innerPads"/>) pad counts per axis.</summary>
         public Tensor<T> Pad(PadMode mode, Vector<int64> outerPads, Vector<int64> innerPads, Scalar<T>? val = null, Vector<int64>? axes = null)
-            => (ImmutableTensor<T>)OnnxOp.Pad(this, (ImmutableVector<int64>)[.. outerPads, .. innerPads], val, axes, mode);
+            => (ImmutableTensor<T>)OnnxOp.Pad(this, (Vector<int64>)[.. outerPads, .. innerPads], val, axes, mode);
 
         /// <summary>Pads using an ONNX-style pads vector (begin counts for all axes, then end counts).</summary>
         public Tensor<T> Pad(PadMode mode, Vector<int64> pads, Scalar<T>? val = null, Vector<int64>? axes = null)

@@ -56,7 +56,6 @@ namespace Shorokoo
     /// Operations do not compute values; they add ONNX-style nodes to the computation graph, which is
     /// executed on demand via <see cref="Eval()"/>.
     /// </summary>
-    [CollectionBuilder(typeof(Shorokoo.Core.TensorCollectionBuilder), nameof(Shorokoo.Core.TensorCollectionBuilder.Create))]
     /// <summary>
     /// Immutable (class) graph node for a tensor — the value the graph stores (Node outputs are
     /// IVariable). Holds shape state and the minimal ITensor contract; the full user-facing op
@@ -147,6 +146,7 @@ namespace Shorokoo
     /// carries the full op/operator surface. This pass only makes mutation possible — behaviour is
     /// unchanged (de-facto immutable). A defaulted handle materialises an empty rank-1 vector.
     /// </summary>
+    [CollectionBuilder(typeof(Shorokoo.Core.TensorCollectionBuilder), nameof(Shorokoo.Core.TensorCollectionBuilder.Create))]
     public partial struct Tensor<T> : ITensor, System.Collections.Generic.IEnumerable<Shorokoo.Core.TensorExpressionHelper<T>> where T : IVarType
     {
         private ImmutableTensor<T>? inner;
@@ -725,7 +725,7 @@ namespace Shorokoo
 
         /// <summary>Pads using separate begin (<paramref name="outerPads"/>) and end (<paramref name="innerPads"/>) pad counts per axis.</summary>
         public Tensor<T> Pad(PadMode mode, Vector<int64> outerPads, Vector<int64> innerPads, Scalar<T>? val = null, Vector<int64>? axes = null)
-            => (ImmutableTensor<T>)OnnxOp.Pad(this, (ImmutableVector<int64>)[.. outerPads, .. innerPads], val, axes, mode);
+            => (ImmutableTensor<T>)OnnxOp.Pad(this, (Vector<int64>)[.. outerPads, .. innerPads], val, axes, mode);
 
         /// <summary>Pads using an ONNX-style pads vector (begin counts for all axes, then end counts).</summary>
         public Tensor<T> Pad(PadMode mode, Vector<int64> pads, Scalar<T>? val = null, Vector<int64>? axes = null)

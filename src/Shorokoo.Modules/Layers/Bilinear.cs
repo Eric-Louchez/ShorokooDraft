@@ -53,6 +53,6 @@ public partial class Bilinear
         yf = useBias.IfElse(yf + b, yf);
 
         // Restore the original leading dims with out as the last axis.
-        return yf.Reshape((ImmutableVector<int64>)[.. lead, outFeatures]);                  // [..., out]
+        return yf.Reshape((Vector<int64>)[.. lead, outFeatures]);                  // [..., out]
     }
 }

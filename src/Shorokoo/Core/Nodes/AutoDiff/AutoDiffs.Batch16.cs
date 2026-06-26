@@ -125,7 +125,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 var contribution = sourceD * (ImmutableTensor<int64>)spatialStrides[d];
                 flatIdx = flatIdx is null
                     ? (IVariable)contribution
-                    : (IVariable)((ImmutableTensor<int64>)flatIdx + contribution);
+                    : (IVariable)((Tensor<int64>)flatIdx + contribution);
             }
 
             // flatIdx shape: [k0, o0, k1, o1, ..., k_{n-1}, o_{n-1}]

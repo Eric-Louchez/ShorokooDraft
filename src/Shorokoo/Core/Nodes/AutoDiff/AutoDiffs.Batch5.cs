@@ -27,7 +27,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var effectiveTransA = transA ?? 0;
             var effectiveTransB = transB ?? 0;
 
-            var alphaConst = TypedConst(effectiveAlpha, (ImmutableTensor<T>)grad);
+            var alphaConst = TypedConst(effectiveAlpha, (Tensor<T>)grad);
 
             // Compute gradient w.r.t. A
             Tensor<T> gradA;
@@ -84,7 +84,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             IVariable? gradC = null;
             if (c is not null)
             {
-                var betaConst = TypedConst(effectiveBeta, (ImmutableTensor<T>)grad);
+                var betaConst = TypedConst(effectiveBeta, (Tensor<T>)grad);
                 gradC = ReverseBroadcast(betaConst * grad, c.DShape);
             }
 
@@ -716,7 +716,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             for (int d = 0; d < nDims; d++)
             {
                 Tensor<int64> xSizeD = (ImmutableTensor<int64>)OnnxOp.Gather(xShapeFinal, Globals.Scalar(2L + d), axis: 0);
-                Tensor<int64> pb = (ImmutableTensor<int64>)padBeginVars![d];
+                Tensor<int64> pb = (Tensor<int64>)padBeginVars![d];
                 startsParts[d] = OnnxOp.Reshape(pb, Globals.Vector(1L), allowZero: false);
                 endsParts[d] = OnnxOp.Reshape(pb + xSizeD, Globals.Vector(1L), allowZero: false);
                 axesArray[d] = 2L + d;
