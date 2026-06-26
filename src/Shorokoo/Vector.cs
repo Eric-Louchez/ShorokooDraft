@@ -402,7 +402,7 @@ namespace Shorokoo
             => ((Tensor<T>)this).GatherND(indices,batchDims).Vec();
 
         /// <summary>Casts the element type to <typeparamref name="V"/>, preserving rank 1.</summary>
-        public ImmutableVector<V> Cast<V>(bool saturate = true) where V : IVarType
+        public Vector<V> Cast<V>(bool saturate = true) where V : IVarType
             => ((Tensor<T>)this).Cast<V>(saturate).Vec();
 
         /// <summary>Reduces the whole vector to a scalar (e.g. sum, mean, max).</summary>

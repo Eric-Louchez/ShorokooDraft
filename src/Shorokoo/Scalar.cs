@@ -221,7 +221,7 @@ namespace Shorokoo
             => ((Tensor<T>)left != (Tensor<T>)right).Scalar();
 
         /// <summary>Casts the element type to <typeparamref name="V"/>, preserving rank 0.</summary>
-        public ImmutableScalar<V> Cast<V>(bool saturate = true) where V : IVarType
+        public Scalar<V> Cast<V>(bool saturate = true) where V : IVarType
             => ((Tensor<T>)this).Cast<V>(saturate).Scalar();
 
         /// <summary>Minimum of this scalar and <paramref name="others"/>.</summary>

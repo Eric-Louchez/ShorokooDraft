@@ -31,7 +31,7 @@ public partial class RMSNorm
         var start = rank - normalizedDims;
 
         // axes = [rank - normalizedDims, ..., rank - 1]
-        var axes = ((ImmutableTensor<int64>)OnnxOp.Range(start, rank, Scalar(1L))).Vec();
+        var axes = ((Tensor<int64>)OnnxOp.Range(start, rank, Scalar(1L))).Vec();
 
         var ms = (x * x).Reduce(ReduceKind.Mean, axes, keepDims: true);
         var xHat = x / (ms + epsilon).Sqrt();

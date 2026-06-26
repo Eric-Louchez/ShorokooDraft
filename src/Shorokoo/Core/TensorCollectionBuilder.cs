@@ -22,6 +22,8 @@ namespace Shorokoo.Core
         }
 
         public static implicit operator TensorExpressionHelper<T>(Tensor<T> element) { return new TensorExpressionHelper<T>(element, isEnumerated: false); }
+        public static implicit operator TensorExpressionHelper<T>(Scalar<T> element) { return new TensorExpressionHelper<T>(element, isEnumerated: false); }
+        public static implicit operator TensorExpressionHelper<T>(Vector<T> element) { return new TensorExpressionHelper<T>(element, isEnumerated: false); }
     }
 
     public class VectorExpressionHelper<T>

@@ -71,8 +71,8 @@ public partial class NAdamOptimizer
         var newStep = step + one;                          // t
 
         // Momentum schedule: mu_t (current step) and mu_next (look-ahead).
-        var muT = beta1 * (one - half * (ImmutableScalar<float32>)OnnxOp.Pow(base96, newStep * momentumDecay));
-        var muNext = beta1 * (one - half * (ImmutableScalar<float32>)OnnxOp.Pow(base96, (newStep + one) * momentumDecay));
+        var muT = beta1 * (one - half * (Scalar<float32>)OnnxOp.Pow(base96, newStep * momentumDecay));
+        var muNext = beta1 * (one - half * (Scalar<float32>)OnnxOp.Pow(base96, (newStep + one) * momentumDecay));
 
         // Running product ∏ mu_i (current) and the look-ahead product (derived, not stored).
         var newMuProduct = muProduct * muT;                // ∏_{i=1}^{t} mu_i
@@ -83,7 +83,7 @@ public partial class NAdamOptimizer
         var newV = beta2 * v + (one - beta2) * grad * grad;
 
         // v bias correction: sqrt(v / (1 - beta2^t)) + eps (divide BEFORE sqrt, per PyTorch).
-        var vHat = newV / (one - (ImmutableTensor<float32>)OnnxOp.Pow(beta2, newStep));
+        var vHat = newV / (one - (Tensor<float32>)OnnxOp.Pow(beta2, newStep));
         var denom = vHat.Sqrt() + epsilon;
 
         // Nesterov-blended numerator over the shared denominator.
