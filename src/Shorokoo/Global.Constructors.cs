@@ -415,7 +415,7 @@ namespace Shorokoo
         /// <summary>Creates an optional tensor wrapping the given tensor, or an empty optional when null.</summary>
         public static OptionalTensor<T> OptionalTensor<T>(Tensor<T>? tensor = null)
             where T : IVarType
-            => (OptionalTensor<T>)OnnxOp.Optional(tensor, DataStructure.Tensor, OnnxUtils.GetDType<T>());
+            => (ImmutableOptionalTensor<T>)OnnxOp.Optional(tensor, DataStructure.Tensor, OnnxUtils.GetDType<T>());
 
         /// <summary>Creates an optional tensor wrapping the given tensor, or an empty optional when null.</summary>
         public static IOptionalTensor OptionalTensor(DType dtype, ITensor? tensor = null)

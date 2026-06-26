@@ -231,4 +231,35 @@ public class NullableParamTests
             ComputeContext.Default.Execute(concrete, x, OptionalTensorData.None(DType.Float32)));
         Assert.Contains("QuickExecutionEngine", ex.Message);
     }
+
+    // ───────────────────────── value-struct handle (OptionalTensor) ─────────────────────────
+    // OptionalTensor<T> is now a value-type handle wrapping an ImmutableOptionalTensor<T>; these
+    // pin the conversion web, graph-identity preservation under boxing, and default materialisation.
+
+    [Fact]
+    public void OptionalTensorHandle_IsValueType()
+        => Assert.True(typeof(OptionalTensor<float32>).IsValueType);
+
+    /// <summary>Unwrapping the handle to its immutable and re-wrapping returns the same graph value
+    /// (same <see cref="IVariable.Key"/>); boxing the handle as <see cref="IVariable"/> keeps that identity.</summary>
+    [Fact]
+    public void OptionalTensorHandle_WrapUnwrap_PreservesGraphIdentity()
+    {
+        OptionalTensor<float32> handle = OptionalTensor<float32>(Vector(1f, 2f, 3f));
+        Shorokoo.Core.ImmutableOptionalTensor<float32> imm = handle;   // unwrap (implicit)
+        OptionalTensor<float32> rewrapped = imm;                       // wrap (implicit)
+        Assert.Equal(imm.Key, ((IVariable)rewrapped).Key);
+        Assert.Equal(imm.Key, ((IVariable)handle).Key);                // boxing keeps Key
+    }
+
+    /// <summary>A defaulted handle (<c>inner == null</c>) reports as an optional and lazily
+    /// materialises an absent optional graph value on first member access.</summary>
+    [Fact]
+    public void OptionalTensorHandle_Default_MaterialisesAbsentOptional()
+    {
+        OptionalTensor<float32> defaulted = default;
+        var asVar = (IVariable)defaulted;
+        Assert.Equal(DataStructure.Optional, asVar.Structure());
+        Assert.NotNull(asVar.OwningNode);                              // forces default materialisation
+    }
 }

@@ -401,7 +401,7 @@ namespace Shorokoo.Core
                 }
                 else
                 {
-                    invokeArgs[i] = inputs[i];
+                    invokeArgs[i] = WrapForValueStructParam(inputs[i], paramType);
                 }
             }
             
@@ -414,6 +414,32 @@ namespace Shorokoo.Core
                 binder: null,
                 parameters: invokeArgs,
                 culture: null));
+        }
+
+        /// <summary>
+        /// Boxes a graph value into a value-struct handle parameter when needed. The user-facing
+        /// variable types (e.g. <see cref="OptionalTensor{T}"/>) are now <see langword="struct"/>s
+        /// that wrap an <c>Immutable*</c> graph value via an implicit conversion. Reflective
+        /// invocation (<c>MethodInfo.Invoke</c>) does not apply user-defined
+        /// conversions, so a graph value flowing into a struct-typed parameter must be wrapped
+        /// explicitly here by invoking the struct's <c>op_Implicit</c>. Non-struct parameters and
+        /// already-matching values pass through unchanged.
+        /// </summary>
+        private static object? WrapForValueStructParam(IModuleParam input, Type paramType)
+        {
+            if (input is null
+                || !paramType.IsValueType
+                || !typeof(IVariable).IsAssignableFrom(paramType)
+                || paramType.IsInstanceOfType(input))
+                return input;
+
+            var conv = paramType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .FirstOrDefault(m => m.Name == "op_Implicit"
+                    && m.ReturnType == paramType
+                    && m.GetParameters() is [var p]
+                    && p.ParameterType.IsInstanceOfType(input));
+
+            return conv is not null ? conv.Invoke(null, [input]) : input;
         }
 
         /// <summary>
