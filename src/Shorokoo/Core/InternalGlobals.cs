@@ -93,13 +93,13 @@ namespace Shorokoo.Core
         private static Scalar<T> CreateScalarValForObj<T>(object val) where T : IVarType
             => Shorokoo.Globals.Scalar<T>(val);
 
-        internal static TensorSequence<T> TensorSequence<T>(Node owningNode, DType dtype, Function? moduleFn, string? name) where T : IVarType
-            => new TensorSequence<T>(dtype, owningNode, moduleFn, name);
+        internal static ImmutableTensorSequence<T> TensorSequence<T>(Node owningNode, DType dtype, Function? moduleFn, string? name) where T : IVarType
+            => new ImmutableTensorSequence<T>(dtype, owningNode, moduleFn, name);
 
         internal static ITensorSequence TensorSequence(DType dtype, Node owningNode, Function? moduleFn, string? name = null)
             => (ITensorSequence)OnnxUtils.CallGeneric(dtype.ToIVarType(), typeof(InternalGlobals), nameof(CreateTensorSequence), [owningNode, dtype, moduleFn, name]);
 
-        private static TensorSequence<T> CreateTensorSequence<T>(Node owningNode, DType dtype, Function? moduleFn, string? name) where T : IVarType
+        private static ImmutableTensorSequence<T> CreateTensorSequence<T>(Node owningNode, DType dtype, Function? moduleFn, string? name) where T : IVarType
             => TensorSequence<T>(owningNode, dtype, moduleFn, name);
 
         internal static ImmutableOptionalTensor<T> OptionalTensor<T>(Node owningNode, DType dtype, Function? moduleFn, string? name = null) where T : IVarType

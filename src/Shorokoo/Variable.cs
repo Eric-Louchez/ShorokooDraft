@@ -163,7 +163,7 @@ namespace Shorokoo
         public Tensor<T> Tensor() => (Tensor<T>)this;
         public Vector<T> Vec() => this.Tensor().Vec();
         public Scalar<T> Scalar() => this.Tensor().Scalar();
-        public TensorSequence<T> Sequence() => (TensorSequence<T>)this;
+        public TensorSequence<T> Sequence() => (ImmutableTensorSequence<T>)this;
         public OptionalTensor<T> Optional() => (ImmutableOptionalTensor<T>)this;
 
         /// <summary>

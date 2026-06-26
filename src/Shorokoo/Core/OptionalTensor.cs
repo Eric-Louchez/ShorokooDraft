@@ -26,41 +26,29 @@ namespace Shorokoo.Core
     }
 
     /// <summary>
-    /// Immutable (class) graph node for an optional tensor. This is the value the graph
-    /// actually stores (<see cref="Shorokoo.Core.Nodes.Node"/> outputs are <see cref="IVariable"/>).
-    /// User code traffics in the value-type handle <see cref="OptionalTensor{T}"/>, which wraps one
-    /// of these; see that struct for the value-semantics rationale.
+    /// Immutable (class) graph node for an optional tensor — the value the graph actually stores
+    /// (<see cref="Shorokoo.Core.Nodes.Node"/> outputs are <see cref="IVariable"/>). This type is
+    /// deliberately minimal: the user-facing API lives on the value-type handle
+    /// <see cref="OptionalTensor{T}"/>, which wraps one of these.
     /// </summary>
     public class ImmutableOptionalTensor<T> : Variable<T>, IOptionalTensor where T : IVarType
     {
         public ImmutableOptionalTensor(DType type, Node owningNode, Function? moduleFn, string? name) : base(type, owningNode, moduleFn, name) {}
-
-        public IVariable Value()
-            => OnnxOp.OptionalGetElement(this);
-
-        public Tensor<T> TensorValue()
-            => (Tensor<T>)Value();
-
-        public Tensor<T> SequenceValue()
-            => (Tensor<T>)Value();
-
-        public Scalar<bit> HasValue()
-            => (Scalar<bit>)OnnxOp.OptionalHasElement(this);
     }
 
     /// <summary>
     /// Value-type handle for an optional tensor. The original <c>OptionalTensor&lt;T&gt;</c> name now
     /// denotes this <see langword="struct"/>; the reference type was renamed
-    /// <see cref="ImmutableOptionalTensor{T}"/>.
+    /// <see cref="ImmutableOptionalTensor{T}"/>. This struct carries the full user-facing surface.
     /// <para>
-    /// The struct holds the immutable <b>directly</b> in a field (no shared box) so that copying a
-    /// handle copies the reference field by value — giving the Module DSL true value-type semantics:
-    /// a callee mutating its parameter does not affect the caller. This pass only makes mutation
+    /// The struct holds the immutable <b>directly</b> in a field (no shared box) so copying a handle
+    /// copies the reference field by value — giving the Module DSL value-type semantics: a callee
+    /// mutating its parameter does not affect the caller. This pass only makes mutation
     /// <i>possible</i>; nothing mutates yet, so behaviour is unchanged (de-facto immutable).
     /// </para>
     /// <para>
     /// A zero-initialised handle (<c>default</c>, <c>inner == null</c>) lazily materialises an
-    /// <b>absent</b> optional on first use, matching the documented <c>default</c> table.
+    /// <b>absent</b> optional on first use.
     /// </para>
     /// </summary>
     public struct OptionalTensor<T> : IOptionalTensor where T : IVarType
@@ -80,15 +68,16 @@ namespace Shorokoo.Core
         /// <summary>
         /// Implicitly unwraps an optional to a nullable tensor (<c>Tensor&lt;T&gt;?</c>) by reading
         /// its element. An absent handle (defaulted, <c>inner == null</c>) maps to <c>null</c>;
-        /// otherwise the element is taken via <see cref="ImmutableOptionalTensor{T}.TensorValue"/>.
+        /// otherwise the element is taken via <see cref="TensorValue"/>.
         /// </summary>
         public static implicit operator Tensor<T>?(OptionalTensor<T> optional)
-            => optional.inner is null ? null : optional.Imm.TensorValue();
+            => optional.inner is null ? null : optional.TensorValue();
 
-        public IVariable Value() => Imm.Value();
-        public Tensor<T> TensorValue() => Imm.TensorValue();
-        public Tensor<T> SequenceValue() => Imm.SequenceValue();
-        public Scalar<bit> HasValue() => Imm.HasValue();
+        // ── User-facing API (the optional surface lives here, not on the immutable) ──
+        public IVariable Value() => OnnxOp.OptionalGetElement(Imm);
+        public Tensor<T> TensorValue() => (Tensor<T>)Value();
+        public Tensor<T> SequenceValue() => (Tensor<T>)Value();
+        public Scalar<bit> HasValue() => (Scalar<bit>)OnnxOp.OptionalHasElement(Imm);
 
         // IVariable surface — forward to the wrapped immutable.
         public Node OwningNode => Imm.OwningNode;
