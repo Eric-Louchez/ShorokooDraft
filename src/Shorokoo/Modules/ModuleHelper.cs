@@ -472,12 +472,16 @@ namespace Shorokoo.Core
                         $"Cannot construct {structType.Name}: constructor parameter '{paramName}' does not match any field in TensorStructDef. " +
                         $"Available fields: {string.Join(", ", def.Fields.Select(f => f.Name))}");
 
-                args[i] = InternalOp.TensorStructGetField(
-                    (IVariable)tensorStruct,
-                    fieldDef.Name,
-                    fieldDef.ElementType,
-                    fieldDef.Rank,
-                    fieldDef.Structure);
+                // The record ctor parameters are value-struct handles; wrap the immutable field
+                // value so reflective Invoke can bind it (it does not apply the implicit conversion).
+                args[i] = Shorokoo.Core.VariableHandle.WrapForParam(
+                    InternalOp.TensorStructGetField(
+                        (IVariable)tensorStruct,
+                        fieldDef.Name,
+                        fieldDef.ElementType,
+                        fieldDef.Rank,
+                        fieldDef.Structure),
+                    ctorParams[i].ParameterType)!;
             }
 
             return ctor.Invoke(args);

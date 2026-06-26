@@ -105,7 +105,9 @@ namespace Shorokoo
         public Tensor<T> Scan<T>(Vector<T> v) where T : IVarType => Scan<T>((Tensor<T>)v);
         public Tensor<T> Scan<T>(Tensor<T> toScan) where T : IVarType
         {
-            Tensor<T> retVal = (ImmutableTensor<T>)OnnxOp.LoopScanZombie(toScan);
+            // Key the loop-variable dictionaries by the Immutable* graph value (they are populated
+            // with node outputs, which are immutables); a struct handle would not match.
+            ImmutableTensor<T> retVal = (ImmutableTensor<T>)OnnxOp.LoopScanZombie(toScan);
 
             if (this.CurrentPass == 1)
             {
@@ -907,7 +909,8 @@ namespace Shorokoo
         {
             Debug.Assert(!this.IsLocalScanVariable);
             Debug.Assert(this.ScanInput is null);
-            this.ScanInput = scanInput;
+            // Store the Immutable* graph value (these are matched against node outputs elsewhere).
+            this.ScanInput = Shorokoo.Core.VariableHandle.Normalize(scanInput);
             this.IsLocalScanVariable = true;
         }
 
@@ -1011,7 +1014,7 @@ namespace Shorokoo
         public void SetLocalScanVariableInput<T>(Tensor<T> toScan) where T : IVarType
         {
             Debug.Assert(this.IsLocalScanVariable && this.ScanVariableThirdPassInput is null);
-            this.ScanVariableThirdPassInput = toScan;
+            this.ScanVariableThirdPassInput = Shorokoo.Core.VariableHandle.Normalize(toScan);
         }
 
         public void SetInvalidFourthPassOutput(IVariable fourthPassOutput)

@@ -860,9 +860,9 @@ namespace Shorokoo.Tests.Modules
                 var second = (Scalar<float32>)(ImmutableScalar<float32>)InternalOp.TensorStructGetField(
                     pair, "Second", DType.Float32, 0, DataStructure.Tensor);
                 pair = InternalOp.TensorStructCreate(dtype, [first + Scalar(1.0f), second + Scalar(2.0f)]);
-                scanned = ctx.Scan(first + second);
+                scanned = (ImmutableVector<float32>)ctx.Scan(first + second);
             }
-            return (Tensor<float32>)scanned!;
+            return (Tensor<float32>)(ImmutableTensor<float32>)scanned!;
         }
     }
 
@@ -909,9 +909,9 @@ namespace Shorokoo.Tests.Modules
             foreach (var ctx in LoopAPI.Iterate(Scalar(3L)))
             {
                 acc = acc + Scalar(1.0f);
-                scanned = ctx.Scan(acc);
+                scanned = (ImmutableVector<float32>)ctx.Scan(acc);
             }
-            return (Tensor<float32>)scanned!;
+            return (Tensor<float32>)(ImmutableTensor<float32>)scanned!;
         }
     }
 
