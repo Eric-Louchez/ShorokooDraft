@@ -13,6 +13,7 @@ using Shorokoo.Core.Nodes.AutoDiff;
 using Shorokoo.Core.Training;
 using Shorokoo.Modules;
 using static Shorokoo.Globals;
+using E = System.Linq.Expressions.Expression;
 using Shorokoo.Core.Nodes.NodeDefinitions;
 
 namespace Shorokoo.Core
@@ -553,42 +554,89 @@ namespace Shorokoo.Core
 
         internal static T Reformat<T>(Variable[] vars)
         {
-            var tType = typeof(T);
+            // ValueTuple outputs need exactly one graph output per slot — guard with a clear error rather
+            // than letting the compiled converter throw IndexOutOfRange on a mismatch.
+            if (ReformatImpl<T>.TupleArity is int n && vars.Length != n)
+                throw new InvalidTensorOperationException(ErrorCodes.FW002, "Type Reformat",
+                    $"variables count: {vars.Length}, type arguments: {n}", "Variable count must match generic type argument count");
+            return ReformatImpl<T>.Run(vars);
+        }
 
-            if (tType.IsAssignableTo(typeof(IValue)))
-                // Single-output handle: the same node→handle wrap the tuple/array branches below do
-                // per element (a plain (T)vars[0] cast can't reach the op_Implicit through the
-                // statically-unconstrained T, so go through the reflective wrapper).
-                return (T)Shorokoo.Core.VariableHandle.WrapForParam(vars[0], typeof(T))!;
+        // Variable → targetType via the handle's op_Implicit(Variable), lifting through Nullable&lt;&gt;
+        // for a nullable handle slot (e.g. a Tensor&lt;float32&gt;? tuple element). Building block for the
+        // compiled converters in ReformatImpl&lt;T&gt;.
+        private static E NodeToHandle(E node, Type targetType)
+        {
+            var underlying = Nullable.GetUnderlyingType(targetType);
+            return underlying is null
+                ? E.Convert(node, targetType)
+                : E.Convert(E.Convert(node, underlying), targetType);
+        }
 
-            if (IsValueTuple<T>())
+        /// <summary>
+        /// Per-<typeparamref name="T"/> compiled converter from a module's raw graph outputs
+        /// (<see cref="Variable"/>[]) to its declared return type — a single value handle, a ValueTuple
+        /// of handles, or an array of handles. The delegate is built once (the static initializer of the
+        /// closed generic runs on first use) from an expression tree that emits the handles'
+        /// <c>op_Implicit(Variable)</c> directly, so every later call is a plain delegate invocation with
+        /// no per-call reflection.
+        /// </summary>
+        private static class ReformatImpl<T>
+        {
+            internal static readonly Func<Variable[], T> Run = Build();
+
+            /// <summary>The required graph-output count for a ValueTuple return type (one per slot), or
+            /// null when no fixed count applies (single handle / array).</summary>
+            internal static readonly int? TupleArity =
+                IsValueTuple<T>() ? typeof(T).GetConstructors().First().GetParameters().Length : null;
+
+            private static Func<Variable[], T> Build()
             {
-                if (vars.Length > 8)
-                    throw new UnsupportedDTypeException(ErrorCodes.FW002, "tuple type", "Reformat", $"Tuple types with more than 8 elements are not supported. Received: {vars.Length} elements");
+                var tType = typeof(T);
+                var vars = E.Parameter(typeof(Variable[]), "vars");
 
-                if (vars.Length != tType.GenericTypeArguments.Length)
-                    throw new InvalidTensorOperationException(ErrorCodes.FW002, "Type Reformat", $"variables count: {vars.Length}, type arguments: {tType.GenericTypeArguments.Length}", "Variable count must match generic type argument count");
+                // Single value handle: (T)vars[0].
+                if (tType.IsAssignableTo(typeof(IValue)))
+                    return E.Lambda<Func<Variable[], T>>(
+                        NodeToHandle(E.ArrayIndex(vars, E.Constant(0)), tType), vars).Compile();
 
-                var constructor = tType.GetConstructors().First();
-                var ctorParams = constructor.GetParameters();
-                var ctorArgs = new object?[vars.Length];
-                for (int i = 0; i < vars.Length; i++)
-                    ctorArgs[i] = Shorokoo.Core.VariableHandle.WrapForParam(vars[i], ctorParams[i].ParameterType);
-                return (T)constructor.Invoke(ctorArgs);
+                // ValueTuple of handles: new (T1,…,Tn)((T1)vars[0], …, (Tn)vars[n-1]).
+                if (IsValueTuple<T>())
+                {
+                    var ctor = tType.GetConstructors().First();
+                    var args = ctor.GetParameters()
+                        .Select((p, i) => NodeToHandle(E.ArrayIndex(vars, E.Constant(i)), p.ParameterType));
+                    return E.Lambda<Func<Variable[], T>>(E.New(ctor, args), vars).Compile();
+                }
+
+                // Array of handles: arr = new Elem[vars.Length]; for (i…) arr[i] = (Elem)vars[i].
+                if (tType.IsArray)
+                {
+                    var elemType = tType.GetElementType().AssertNotNull();
+                    var len = E.Variable(typeof(int), "len");
+                    var arr = E.Variable(elemType.MakeArrayType(), "arr");
+                    var i = E.Variable(typeof(int), "i");
+                    var done = E.Label("done");
+                    var body = E.Block(
+                        [len, arr, i],
+                        E.Assign(len, E.ArrayLength(vars)),
+                        E.Assign(arr, E.NewArrayBounds(elemType, len)),
+                        E.Assign(i, E.Constant(0)),
+                        E.Loop(
+                            E.IfThenElse(
+                                E.LessThan(i, len),
+                                E.Block(
+                                    E.Assign(E.ArrayAccess(arr, i), NodeToHandle(E.ArrayIndex(vars, i), elemType)),
+                                    E.PostIncrementAssign(i)),
+                                E.Break(done)),
+                            done),
+                        arr);
+                    return E.Lambda<Func<Variable[], T>>(body, vars).Compile();
+                }
+
+                return _ => throw new UnsupportedDTypeException(ErrorCodes.FW002, tType.Name, "Reformat",
+                    $"Unsupported target type for reformatting. Expected array, ValueTuple, or assignable to IValue. Received: {tType.Name}");
             }
-
-            if (tType.IsArray)
-            {
-                var elementType = tType.GetElementType().AssertNotNull();
-                var convertedArray = Array.CreateInstance(elementType, vars.Length);
-
-                for (int i = 0; i < vars.Length; i++)
-                    convertedArray.SetValue(Shorokoo.Core.VariableHandle.WrapForParam(vars[i], elementType), i);
-
-                return (T)(object)convertedArray;
-            }
-
-            throw new UnsupportedDTypeException(ErrorCodes.FW002, tType.Name, "Reformat", $"Unsupported target type for reformatting. Expected array, ValueTuple, or assignable to ITuple. Received: {tType.Name}");
         }
 
         internal static (DataStructure[] structures, DType[] varTypes, int[] ranks) InfosFromTouts<Touts>()

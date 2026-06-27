@@ -103,7 +103,7 @@ namespace Shorokoo.Core
         }
 
         /// <summary>
-        /// Reflection core of <see cref="Variable.Cast{A}"/>: wrap <paramref name="node"/> into the value
+        /// Reflection core of <see cref="Variable.Cast{A}()"/>: wrap <paramref name="node"/> into the value
         /// handle <paramref name="handleType"/> by invoking that handle's <c>op_Implicit(Variable)</c>
         /// (which validates structure/dtype/rank). Constraint-free so it also serves call sites whose
         /// target type is statically unconstrained (e.g. <c>ModuleHelper.Reformat&lt;T&gt;</c>). When no
