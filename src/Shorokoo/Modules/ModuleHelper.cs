@@ -556,8 +556,10 @@ namespace Shorokoo.Core
             var tType = typeof(T);
 
             if (tType.IsAssignableTo(typeof(IValue)))
-                // T may be a value-struct handle; a plain unbox of the immutable would throw.
-                return (T)Shorokoo.Core.VariableHandle.WrapAsHandle(vars[0], typeof(T));
+                // Single-output handle: the same node→handle wrap the tuple/array branches below do
+                // per element (a plain (T)vars[0] cast can't reach the op_Implicit through the
+                // statically-unconstrained T, so go through the reflective wrapper).
+                return (T)Shorokoo.Core.VariableHandle.WrapForParam(vars[0], typeof(T))!;
 
             if (IsValueTuple<T>())
             {
