@@ -500,7 +500,7 @@ namespace Shorokoo.Tests.Modules
             var tensorStruct = InternalOp.TensorStructCreate(dtype, [inputF32]);
 
             // Extract the field back out
-            var extracted = (Tensor<float32>)(Variable)InternalOp.TensorStructGetField(tensorStruct, "Data", DType.Float32, null, DataStructure.Tensor);
+            var extracted = (Tensor<float32>)InternalOp.TensorStructGetField(tensorStruct, "Data", DType.Float32, null, DataStructure.Tensor);
 
             // Cast back to generic type T
             return extracted.Cast<T>();
@@ -770,7 +770,7 @@ namespace Shorokoo.Tests.Modules
             }
 
             var picked = OnnxOp.SequenceAt(seq, Scalar(0L));
-            var first = (Scalar<float32>)(Variable)InternalOp.TensorStructGetField(picked, "First", DType.Float32, 0, DataStructure.Tensor);
+            var first = (Scalar<float32>)InternalOp.TensorStructGetField(picked, "First", DType.Float32, 0, DataStructure.Tensor);
             return first;
         }
     }
@@ -797,7 +797,7 @@ namespace Shorokoo.Tests.Modules
 
             Variable picked = Shorokoo.Core.Nodes.Ops.IfElse(cond, thenSeq, elseSeq);
             var firstStruct = OnnxOp.SequenceAt(picked, Scalar(0L));
-            var first = (Scalar<float32>)(Variable)InternalOp.TensorStructGetField(firstStruct, "First", DType.Float32, 0, DataStructure.Tensor);
+            var first = (Scalar<float32>)InternalOp.TensorStructGetField(firstStruct, "First", DType.Float32, 0, DataStructure.Tensor);
             return first;
         }
     }
@@ -827,7 +827,7 @@ namespace Shorokoo.Tests.Modules
                 (thenStruct, thenPlain),
                 (elseStruct, elsePlain));
 
-            var pickedFirst = (Scalar<float32>)(Variable)InternalOp.TensorStructGetField(
+            var pickedFirst = (Scalar<float32>)InternalOp.TensorStructGetField(
                 pickedStruct, "First", DType.Float32, 0, DataStructure.Tensor);
             return pickedFirst + pickedPlain;
         }
@@ -856,14 +856,14 @@ namespace Shorokoo.Tests.Modules
             Variable? scanned = null;
             foreach (var ctx in LoopAPI.Iterate(Scalar(3L)))
             {
-                var first = (Scalar<float32>)(Variable)InternalOp.TensorStructGetField(
+                var first = (Scalar<float32>)InternalOp.TensorStructGetField(
                     pair, "First", DType.Float32, 0, DataStructure.Tensor);
-                var second = (Scalar<float32>)(Variable)InternalOp.TensorStructGetField(
+                var second = (Scalar<float32>)InternalOp.TensorStructGetField(
                     pair, "Second", DType.Float32, 0, DataStructure.Tensor);
                 pair = InternalOp.TensorStructCreate(dtype, [first + Scalar(1.0f), second + Scalar(2.0f)]);
                 scanned = (Variable)ctx.Scan(first + second);
             }
-            return (Tensor<float32>)(Variable)scanned!;
+            return (Tensor<float32>)scanned!;
         }
     }
 
@@ -912,7 +912,7 @@ namespace Shorokoo.Tests.Modules
                 acc = acc + Scalar(1.0f);
                 scanned = (Variable)ctx.Scan(acc);
             }
-            return (Tensor<float32>)(Variable)scanned!;
+            return (Tensor<float32>)scanned!;
         }
     }
 

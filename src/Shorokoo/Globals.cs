@@ -118,7 +118,7 @@ namespace Shorokoo
             // The result is Variable but we know it's a tensor with the specified dtype.
             // Cast through Variable first (the interface), then to the concrete Tensor<T>.
             // This cast succeeds because TrainableParamRef creates a Variable with the correct dtype.
-            return (Variable)(Variable)result;
+            return (Variable)result;
         }
 
         /// <summary>

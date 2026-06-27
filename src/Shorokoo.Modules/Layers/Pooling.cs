@@ -209,7 +209,7 @@ public static class Pooling
         long[] dilations = Convolution.BroadcastAxes(dilation, 1L, spatialRank, nameof(dilation));
         long[]? pads = autoPad == AutoPad.NotSet ? Convolution.ResolvePads(padding, spatialRank) : null;
 
-        return (Tensor<T>)(Variable)OnnxOp.AveragePool(x, autoPad,
+        return (Tensor<T>)OnnxOp.AveragePool(x, autoPad,
             ceilMode ? true : null,
             countIncludePad ? true : null,
             dilations: dilations,
@@ -289,7 +289,7 @@ public static class Pooling
         where T : FloatLike
     {
         long s = stride ?? kernelSize;
-        return (Tensor<T>)(Variable)OnnxOp.AveragePool(x, AutoPad.NotSet,
+        return (Tensor<T>)OnnxOp.AveragePool(x, AutoPad.NotSet,
             ceilMode ? true : null,
             countIncludePad ? true : null,
             dilations: null,
@@ -336,7 +336,7 @@ public static class Pooling
         long[] dilations = Convolution.BroadcastAxes(dilation, 1L, spatialRank, nameof(dilation));
         long[]? pads = autoPad == AutoPad.NotSet ? Convolution.ResolvePads(padding, spatialRank) : null;
 
-        return (Tensor<T>)(Variable)OnnxOp.LpPool(x, autoPad,
+        return (Tensor<T>)OnnxOp.LpPool(x, autoPad,
             ceilMode ? true : null,
             dilations: dilations,
             kernelShape: kernelSize,
@@ -549,7 +549,7 @@ public static class Pooling
         long[] strides = Convolution.BroadcastAxes(stride ?? kernelSize, 1L, spatialRank, nameof(stride));
         long[] pads = Convolution.ResolvePads(padding, spatialRank);
 
-        return (Tensor<T>)(Variable)OnnxOp.MaxUnpool(values, indices,
+        return (Tensor<T>)OnnxOp.MaxUnpool(values, indices,
             kernelShape: kernelSize,
             pads: pads,
             strides: strides,

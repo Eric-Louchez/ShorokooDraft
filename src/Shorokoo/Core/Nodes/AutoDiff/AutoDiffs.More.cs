@@ -332,7 +332,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 var scattered = OnnxOp.ScatterND(
                     zerosFlat, scatterIndices, gradFlat, ScatterNDReduction.Add);
                 var gradData = OnnxOp.Reshape(scattered, inputShape, allowZero: false);
-                return [(Tensor<T1>)(Variable)gradData, null, null, null, null];
+                return [(Tensor<T1>)gradData, null, null, null, null];
             }
 
             if (!axes.HasValue)

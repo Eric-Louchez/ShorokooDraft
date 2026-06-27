@@ -27,7 +27,7 @@ public partial class ScalarMultiplyAndSliceModel
     {
         var weight = InitScalarWeight.Init(Vector(1L));
         var scaled = input * weight;
-        return (Tensor<float32>)(Variable)OnnxOp.Slice(scaled, Vector(1L), Vector(5L));
+        return (Tensor<float32>)OnnxOp.Slice(scaled, Vector(1L), Vector(5L));
     }
 }
 
@@ -39,7 +39,7 @@ public partial class ScalarMultiplyAndTileModel
     {
         var weight = InitScalarWeight.Init(Vector(1L));
         var scaled = input * weight;
-        return (Tensor<float32>)(Variable)OnnxOp.Tile(scaled, Vector(2L));
+        return (Tensor<float32>)OnnxOp.Tile(scaled, Vector(2L));
     }
 }
 
@@ -51,7 +51,7 @@ public partial class ScalarMultiplyAndClipModel
     {
         var weight = InitScalarWeight.Init(Vector(1L));
         var scaled = input * weight;
-        return (Tensor<float32>)(Variable)OnnxOp.Clip(scaled, Scalar(-1f), Scalar(1f));
+        return (Tensor<float32>)OnnxOp.Clip(scaled, Scalar(-1f), Scalar(1f));
     }
 }
 
@@ -68,7 +68,7 @@ public partial class ScalarMultiplyAndExpandNoOpModel
     {
         var weight = InitScalarWeight.Init(Vector(1L));
         var scaled = input * weight;
-        return (Tensor<float32>)(Variable)OnnxOp.Expand(scaled, Vector(8L));
+        return (Tensor<float32>)OnnxOp.Expand(scaled, Vector(8L));
     }
 }
 
@@ -84,9 +84,9 @@ public partial class ScalarMultiplyAndScatterModel
     {
         var weight = InitScalarWeight.Init(Vector(1L));
         var scaled = input * weight;
-        var updates = (Tensor<float32>)(Variable)OnnxOp.Slice(scaled, Vector(0L), Vector(1L));
+        var updates = (Tensor<float32>)OnnxOp.Slice(scaled, Vector(0L), Vector(1L));
         var indices = Vector(1L);
-        return (Tensor<float32>)(Variable)OnnxOp.ScatterElements(
+        return (Tensor<float32>)OnnxOp.ScatterElements(
             scaled, indices, updates,
             axis: 0, reduction: null);
     }
@@ -145,7 +145,7 @@ public partial class ScalarMultiplyWithOrtOnlyLoopIterCountModel
         var weight = InitScalarWeight.Init(Vector(1L));
         var scaled = input * weight;
         var identity = Tensor(new long[] { 2L, 2L }, 1f, 0f, 0f, 1f);
-        var det = (Scalar<float32>)(Variable)OnnxOp.Det(identity);
+        var det = (Scalar<float32>)OnnxOp.Det(identity);
         var iter = det.Cast<int64>();
         foreach (var ctx in LoopAPI.Iterate(iter))
         {
@@ -174,10 +174,10 @@ public partial class BatchedMatmulModel
 
         var q = input.MatMul(InitXavier.Init([embed, embed]));        // (B,S,E)@(E,E) -> (B,S,E)
         var scores = q.MatMul(q.Transpose(0, 2, 1));                  // (B,S,E)@(B,E,S) -> (B,S,S) batched
-        var attn = (Tensor<float32>)(Variable)OnnxOp.Softmax(scores, axis: 2);
+        var attn = (Tensor<float32>)OnnxOp.Softmax(scores, axis: 2);
         var ctx = attn.MatMul(q);                                     // (B,S,S)@(B,S,E) -> (B,S,E) batched
         var pooled = ctx.Reduce(ReduceKind.Mean, Vector(1L), keepDims: false); // (B,E)
-        return (Tensor<float32>)(Variable)OnnxOp.Softmax(pooled.MatMul(InitXavier.Init([embed, classes])), axis: 1);
+        return (Tensor<float32>)OnnxOp.Softmax(pooled.MatMul(InitXavier.Init([embed, classes])), axis: 1);
     }
 }
 
@@ -1002,7 +1002,7 @@ public class TrainingRigCoverageTests
         // ExtractFastGraphFromDelegate rejects non-module delegates (lambda's
         // Method.Name is not "Inline").
         Func<Tensor<float32>, Tensor<float32>, Scalar<float32>> notAModule =
-            (pred, targ) => ((Tensor<float32>)(Variable)OnnxOp.ReduceSum(pred - targ, keepdims: false)).Scalar();
+            (pred, targ) => ((Tensor<float32>)OnnxOp.ReduceSum(pred - targ, keepdims: false)).Scalar();
         Assert.Throws<ArgumentException>(() =>
             TrainingGraphBuilder.PrepareForTrainingAsFast(modelGraph, notAModule));
     }

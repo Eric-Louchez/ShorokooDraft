@@ -317,7 +317,7 @@ public class CSharpModelBuilderCoverageTests
     [Fact]
     public void TestLoopCarryRankMismatchInitializer()
     {
-        var unrankedScalarInit = (Scalar<float32>)(Variable)OnnxOp.Identity(Scalar(1.0f), rank: null);
+        var unrankedScalarInit = (Scalar<float32>)OnnxOp.Identity(Scalar(1.0f), rank: null);
         Scalar<float32> accum = unrankedScalarInit;
         foreach (var ctx in LoopAPI.Iterate(Scalar(2L)))
         {
@@ -437,7 +437,7 @@ public class CSharpModelBuilderCoverageTests
         // SEQUENCE_AT(IDENTITY(ERASE(IDENTITY(SEQUENCE_CONSTRUCT(unrankedElem))), 0))
         // — both ERASE and IDENTITY arms recurse and the SEQUENCE_CONSTRUCT
         // bottom-out returns null because the element is unranked.
-        var unrankedElem = (Tensor<float32>)(Variable)OnnxOp.Identity(
+        var unrankedElem = (Tensor<float32>)OnnxOp.Identity(
             InputTensor<float32>("eltIn", rank: 2), rank: null);
 
         var s0 = OnnxOp.SequenceConstruct(unrankedElem);

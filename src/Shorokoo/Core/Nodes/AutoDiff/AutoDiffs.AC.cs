@@ -596,7 +596,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             {
                 if (masks[i] is null) continue;
                 var normalizedMask = OnnxOp.Div(masks[i]!, totalMask!);
-                result[i] = ReverseBroadcast((Tensor<float32>)(Variable)(OnnxOp.Mul(normalizedMask, grad)),
+                result[i] = ReverseBroadcast((Tensor<float32>)(OnnxOp.Mul(normalizedMask, grad)),
                     ((Variable)inputs[i]!).DShape);
             }
 
@@ -636,7 +636,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             {
                 if (masks[i] is null) continue;
                 var normalizedMask = OnnxOp.Div(masks[i]!, totalMask!);
-                result[i] = ReverseBroadcast((Tensor<float32>)(Variable)(OnnxOp.Mul(normalizedMask, grad)),
+                result[i] = ReverseBroadcast((Tensor<float32>)(OnnxOp.Mul(normalizedMask, grad)),
                     ((Variable)inputs[i]!).DShape);
             }
 
@@ -656,7 +656,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             {
                 if (inputs[i] is null) continue;
                 result[i] = ReverseBroadcast(
-                    (Tensor<float32>)(Variable)grad,
+                    (Tensor<float32>)grad,
                     ((Variable)inputs[i]!).DShape);
             }
 
@@ -683,7 +683,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             {
                 if (inputs[i] is null) continue;
                 result[i] = ReverseBroadcast(
-                    (Tensor<float32>)(Variable)scaledGrad,
+                    (Tensor<float32>)scaledGrad,
                     ((Variable)inputs[i]!).DShape);
             }
 

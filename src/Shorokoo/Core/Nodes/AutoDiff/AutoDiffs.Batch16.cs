@@ -79,7 +79,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var spatialStrides = new Variable[nDims];
             spatialStrides[nDims - 1] = (Variable)Scalar(1L);
             for (int d = nDims - 2; d >= 0; d--)
-                spatialStrides[d] = (Variable)(((Tensor<int64>)(Variable)spatialStrides[d + 1]) * ((Tensor<int64>)(Variable)paddedDims[d + 1]));
+                spatialStrides[d] = (Variable)(((Tensor<int64>)spatialStrides[d + 1]) * ((Tensor<int64>)paddedDims[d + 1]));
 
             // Step 3: Build flat index tensor
             // For each spatial dimension d, we have:
@@ -127,7 +127,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 var contribution = sourceD * (Variable)spatialStrides[d];
                 flatIdx = flatIdx is null
                     ? (Variable)contribution
-                    : (Variable)((Tensor<int64>)(Variable)flatIdx + contribution);
+                    : (Variable)((Tensor<int64>)flatIdx + contribution);
             }
 
             // flatIdx shape: [k0, o0, k1, o1, ..., k_{n-1}, o_{n-1}]
