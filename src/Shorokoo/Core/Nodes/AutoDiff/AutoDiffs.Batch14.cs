@@ -40,8 +40,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var inputShape = input.DShape;
 
             // Find positions where condition is True
-            Tensor<int64> truePositions = (Variable)OnnxOp.NonZero(condition); // [1, K]
-            Tensor<int64> indices = (Variable)OnnxOp.Reshape(truePositions, Vector(-1L), allowZero: false); // [K]
+            Tensor<int64> truePositions = OnnxOp.NonZero(condition); // [1, K]
+            Tensor<int64> indices = OnnxOp.Reshape(truePositions, Vector(-1L), allowZero: false); // [K]
 
             var zero = TypedConst(0f, input);
 
@@ -49,15 +49,15 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             {
                 // No-axis case: input was flattened, grad is 1D [K]
                 // Create 1D zeros of flattened input size
-                Tensor<int64> flatSize = (Variable)OnnxOp.ReduceProd(inputShape, keepdims: false);
-                Tensor<int64> flatShape = (Variable)OnnxOp.Reshape(flatSize, Vector(1L), allowZero: false);
-                Tensor<T1> zeros = (Variable)OnnxOp.Expand(zero, flatShape);
+                Tensor<int64> flatSize = OnnxOp.ReduceProd(inputShape, keepdims: false);
+                Tensor<int64> flatShape = OnnxOp.Reshape(flatSize, Vector(1L), allowZero: false);
+                Tensor<T1> zeros = OnnxOp.Expand(zero, flatShape);
 
                 // Scatter gradient at true positions
-                Tensor<T1> dFlat = (Variable)OnnxOp.ScatterElements(zeros, indices, grad, axis: 0);
+                Tensor<T1> dFlat = OnnxOp.ScatterElements(zeros, indices, grad, axis: 0);
 
                 // Reshape back to input shape
-                Tensor<T1> dInput = (Variable)OnnxOp.Reshape(dFlat, inputShape, allowZero: false);
+                Tensor<T1> dInput = OnnxOp.Reshape(dFlat, inputShape, allowZero: false);
                 return [dInput, null];
             }
             else
@@ -66,20 +66,20 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 var effectiveAxis = axis.Value;
 
                 // Build reshape target [1,...,-1,...,1] with -1 at axis position
-                Tensor<int64> rank = (Variable)OnnxOp.Shape(inputShape); // [rank_value]
-                Tensor<int64> ones = (Variable)OnnxOp.Expand(Scalar(1L), rank);
-                Tensor<int64> axisIdx = (Variable)OnnxOp.Reshape(Scalar(effectiveAxis), Vector(1L), allowZero: false);
-                Tensor<int64> negOne = (Variable)OnnxOp.Reshape(Scalar(-1L), Vector(1L), allowZero: false);
-                Tensor<int64> reshapeTarget = (Variable)OnnxOp.ScatterElements(ones, axisIdx, negOne, axis: 0);
+                Tensor<int64> rank = OnnxOp.Shape(inputShape); // [rank_value]
+                Tensor<int64> ones = OnnxOp.Expand(Scalar(1L), rank);
+                Tensor<int64> axisIdx = OnnxOp.Reshape(Scalar(effectiveAxis), Vector(1L), allowZero: false);
+                Tensor<int64> negOne = OnnxOp.Reshape(Scalar(-1L), Vector(1L), allowZero: false);
+                Tensor<int64> reshapeTarget = OnnxOp.ScatterElements(ones, axisIdx, negOne, axis: 0);
 
                 // Reshape indices to [1,...,K,...,1] and expand to grad shape
-                Tensor<int64> indicesReshaped = (Variable)OnnxOp.Reshape(indices, reshapeTarget, allowZero: false);
+                Tensor<int64> indicesReshaped = OnnxOp.Reshape(indices, reshapeTarget, allowZero: false);
                 var gradShape = grad.DShape;
-                Tensor<int64> indicesExpanded = (Variable)OnnxOp.Expand(indicesReshaped, gradShape);
+                Tensor<int64> indicesExpanded = OnnxOp.Expand(indicesReshaped, gradShape);
 
                 // Create zeros of input shape and scatter grad back
-                Tensor<T1> zeros = (Variable)OnnxOp.Expand(zero, inputShape);
-                Tensor<T1> dInput = (Variable)OnnxOp.ScatterElements(zeros, indicesExpanded, grad, axis: effectiveAxis);
+                Tensor<T1> zeros = OnnxOp.Expand(zero, inputShape);
+                Tensor<T1> dInput = OnnxOp.ScatterElements(zeros, indicesExpanded, grad, axis: effectiveAxis);
 
                 return [dInput, null];
             }

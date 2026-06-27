@@ -537,7 +537,7 @@ namespace Shorokoo
 
         /// <summary>Concatenates this vector with <paramref name="others"/>.</summary>
         public Vector<T> Concat(params Vector<T>[] others)
-            =>  (Variable)((Variable)OnnxOp.Concat([this, .. others], 0)).Vec();
+            =>  (Variable)(OnnxOp.Concat([this, .. others], 0)).Vec();
 
         /// <summary>Pads with <paramref name="padLeft"/> elements before and <paramref name="padRight"/> elements after the vector.</summary>
         public Vector<T> Pad(PadMode mode, Scalar<int64> padLeft, Scalar<int64> padRight, Scalar<T> val)
@@ -599,7 +599,7 @@ namespace Shorokoo
 
         /// <summary>Selects elements where <paramref name="condition"/> is true.</summary>
         public Vector<T> Compress(Vector<bit> condition, long axis)
-            => (Variable)OnnxOp.Compress(this, condition, axis);
+            => OnnxOp.Compress(this, condition, axis);
 
         /// <summary>Element-wise exponential.</summary>
         public Vector<T> Exp()

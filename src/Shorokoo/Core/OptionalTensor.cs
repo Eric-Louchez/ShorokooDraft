@@ -48,7 +48,7 @@ namespace Shorokoo.Core
 
         /// <summary>The wrapped immutable, materialising an absent optional for a defaulted handle.</summary>
         internal Variable Imm
-            => inner ??= (Variable)OnnxOp.Optional(null, DataStructure.Tensor, OnnxUtils.GetDType<T>());
+            => inner ??= OnnxOp.Optional(null, DataStructure.Tensor, OnnxUtils.GetDType<T>());
 
         // Wrap / unwrap between the handle and its immutable.
         public static implicit operator OptionalTensor<T>(Variable imm)
@@ -68,7 +68,7 @@ namespace Shorokoo.Core
         public Variable Value() => OnnxOp.OptionalGetElement(Imm);
         public Tensor<T> TensorValue() => (Variable)Value();
         public Tensor<T> SequenceValue() => (Variable)Value();
-        public Scalar<bit> HasValue() => (Variable)OnnxOp.OptionalHasElement(Imm);
+        public Scalar<bit> HasValue() => OnnxOp.OptionalHasElement(Imm);
 
         // IValue surface — forward to the wrapped immutable.
         public Node OwningNode => Imm.OwningNode;

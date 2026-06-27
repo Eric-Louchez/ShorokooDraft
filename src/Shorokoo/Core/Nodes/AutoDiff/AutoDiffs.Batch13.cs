@@ -36,15 +36,15 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             if (axes is null)
             {
                 // No axes specified: shape covers all dimensions
-                Tensor<T1> dInput = (Variable)OnnxOp.CenterCropPad(grad, inputShape, axes: null);
+                Tensor<T1> dInput = OnnxOp.CenterCropPad(grad, inputShape, axes: null);
                 return [dInput, null];
             }
             else
             {
                 // Axes specified: extract only the sizes for those axes from the original shape
                 var axesTensor = Vector(axes);
-                Tensor<int64> originalAxesSizes = (Variable)OnnxOp.Gather(inputShape, axesTensor, axis: 0);
-                Tensor<T1> dInput = (Variable)OnnxOp.CenterCropPad(grad, originalAxesSizes, axes);
+                Tensor<int64> originalAxesSizes = OnnxOp.Gather(inputShape, axesTensor, axis: 0);
+                Tensor<T1> dInput = OnnxOp.CenterCropPad(grad, originalAxesSizes, axes);
                 return [dInput, null];
             }
         }

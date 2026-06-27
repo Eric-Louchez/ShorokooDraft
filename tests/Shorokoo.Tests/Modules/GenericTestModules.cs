@@ -728,13 +728,13 @@ namespace Shorokoo.Tests.Modules
             var dtype = sAVar.Type;
 
             // EMPTY + INSERT path: empty struct sequence, append sA, read it back.
-            var empty = (Variable)OnnxOp.SequenceEmpty(dtype);
-            var seq1 = (Variable)OnnxOp.SequenceInsert(empty, sAVar, null);
+            var empty = OnnxOp.SequenceEmpty(dtype);
+            var seq1 = OnnxOp.SequenceInsert(empty, sAVar, null);
             var picked1 = AsTensorStruct<GenericPairStruct>(seq1.At(Scalar(0L)));
 
             // CONSTRUCT + ERASE + LENGTH + AT path: build two-element seq, drop the
             // head, query length and read the survivor.
-            var seq2 = (Variable)OnnxOp.SequenceConstruct([sAVar, sBVar]);
+            var seq2 = OnnxOp.SequenceConstruct([sAVar, sBVar]);
             var erased = seq2.RemoveAt(Scalar(0L));
             var len = erased.Count.Cast<float32>();
             var picked2 = AsTensorStruct<GenericPairStruct>(erased.At(Scalar(0L)));

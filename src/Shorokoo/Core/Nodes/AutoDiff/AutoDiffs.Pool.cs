@@ -19,11 +19,11 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var inputShape = x.DShape;
 
             // Compute spatial size = product of dims from index 2 onwards (H * W * ...)
-            Tensor<int64> spatialShape = (Variable)OnnxOp.Shape(x, start: 2);
-            Tensor<int64> spatialSize = (Variable)OnnxOp.ReduceProd(spatialShape, keepdims: false);
-            Tensor<T> spatialSizeT = (Variable)OnnxOp.Cast(spatialSize, saturate: null, to: x.Type);
+            Tensor<int64> spatialShape = OnnxOp.Shape(x, start: 2);
+            Tensor<int64> spatialSize = OnnxOp.ReduceProd(spatialShape, keepdims: false);
+            Tensor<T> spatialSizeT = OnnxOp.Cast(spatialSize, saturate: null, to: x.Type);
 
-            Tensor<T> expandedGrad = (Variable)OnnxOp.Expand(grad, inputShape);
+            Tensor<T> expandedGrad = OnnxOp.Expand(grad, inputShape);
             return [expandedGrad / spatialSizeT];
         }
 
@@ -37,22 +37,22 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var inputShape = x.DShape;
 
             // Recompute the max values [N, C, 1, 1, ...]
-            Tensor<T> maxVal = (Variable)OnnxOp.GlobalMaxPool(x);
-            Tensor<T> expandedMax = (Variable)OnnxOp.Expand(maxVal, inputShape);
+            Tensor<T> maxVal = OnnxOp.GlobalMaxPool(x);
+            Tensor<T> expandedMax = OnnxOp.Expand(maxVal, inputShape);
 
             // Create mask: 1 where x == max, 0 elsewhere
-            Tensor<T> mask = (Variable)OnnxOp.Cast(OnnxOp.Equal(x, expandedMax), saturate: null, to: x.Type);
+            Tensor<T> mask = OnnxOp.Cast(OnnxOp.Equal(x, expandedMax), saturate: null, to: x.Type);
 
             // Normalize by number of max elements (handle ties):
             // GlobalAveragePool(mask) gives the mean of mask per channel, multiplied by
             // spatialSize gives the count of max elements per channel.
-            Tensor<int64> spatialShape = (Variable)OnnxOp.Shape(x, start: 2);
-            Tensor<int64> spatialSize = (Variable)OnnxOp.ReduceProd(spatialShape, keepdims: false);
-            Tensor<T> spatialSizeT = (Variable)OnnxOp.Cast(spatialSize, saturate: null, to: x.Type);
-            Tensor<T> maskSum = (Variable)OnnxOp.GlobalAveragePool(mask) * spatialSizeT;
-            Tensor<T> expandedMaskSum = (Variable)OnnxOp.Expand(maskSum, inputShape);
+            Tensor<int64> spatialShape = OnnxOp.Shape(x, start: 2);
+            Tensor<int64> spatialSize = OnnxOp.ReduceProd(spatialShape, keepdims: false);
+            Tensor<T> spatialSizeT = OnnxOp.Cast(spatialSize, saturate: null, to: x.Type);
+            Tensor<T> maskSum = OnnxOp.GlobalAveragePool(mask) * spatialSizeT;
+            Tensor<T> expandedMaskSum = OnnxOp.Expand(maskSum, inputShape);
 
-            Tensor<T> expandedGrad = (Variable)OnnxOp.Expand(grad, inputShape);
+            Tensor<T> expandedGrad = OnnxOp.Expand(grad, inputShape);
             return [mask / expandedMaskSum * expandedGrad];
         }
 
@@ -75,20 +75,20 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var inputShape = x.DShape;
 
             // Recompute forward: Y = GlobalLpPool(X, p) → [N, C, 1, 1, ...]
-            Tensor<T> y = (Variable)OnnxOp.GlobalLpPool(x, pVal);
+            Tensor<T> y = OnnxOp.GlobalLpPool(x, pVal);
 
-            Tensor<T> absX = (Variable)OnnxOp.Abs(x);
-            Tensor<T> signX = (Variable)OnnxOp.Sign(x);
+            Tensor<T> absX = OnnxOp.Abs(x);
+            Tensor<T> signX = OnnxOp.Sign(x);
 
             // Compute |X|^(p-1) and Y^(1-p)
             var pMinus1 = TypedConst((float)(pVal - 1), x);
             var oneMinusP = TypedConst((float)(1 - pVal), x);
-            Tensor<T> absXPm1 = (Variable)OnnxOp.Pow(absX, pMinus1);
-            Tensor<T> yPow = (Variable)OnnxOp.Pow(y, oneMinusP);
+            Tensor<T> absXPm1 = OnnxOp.Pow(absX, pMinus1);
+            Tensor<T> yPow = OnnxOp.Pow(y, oneMinusP);
 
             // Expand pooled-shape tensors to input shape for element-wise multiply
-            Tensor<T> expandedYPow = (Variable)OnnxOp.Expand(yPow, inputShape);
-            Tensor<T> expandedGrad = (Variable)OnnxOp.Expand(grad, inputShape);
+            Tensor<T> expandedYPow = OnnxOp.Expand(yPow, inputShape);
+            Tensor<T> expandedGrad = OnnxOp.Expand(grad, inputShape);
 
             return [expandedGrad * expandedYPow * absXPm1 * signX];
         }

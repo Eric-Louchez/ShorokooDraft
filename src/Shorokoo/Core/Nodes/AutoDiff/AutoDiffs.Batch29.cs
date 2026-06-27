@@ -29,8 +29,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var zero = TypedConst(0.0f, x);
             var one = TypedConst(1.0f, x);
             var t = alphaConst * x + betaConst;
-            Tensor<bit> inRange = (Variable)OnnxOp.And(OnnxOp.Greater(t, zero), OnnxOp.Less(t, one));
-            Tensor<T> slope = (Variable)OnnxOp.Where(inRange, alphaConst, zero);
+            Tensor<bit> inRange = OnnxOp.And(OnnxOp.Greater(t, zero), OnnxOp.Less(t, one));
+            Tensor<T> slope = OnnxOp.Where(inRange, alphaConst, zero);
             return [grad * slope];
         }
 
@@ -47,9 +47,9 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var zero = TypedConst(0.0f, x);
             var one = TypedConst(1.0f, x);
             var t = oneSixth * x + half;
-            Tensor<T> s = (Variable)OnnxOp.Min((Variable)OnnxOp.Max(t, zero), one);
-            Tensor<bit> inRange = (Variable)OnnxOp.And(OnnxOp.Greater(t, zero), OnnxOp.Less(t, one));
-            Tensor<T> deriv = (Variable)OnnxOp.Where(inRange, s + x * oneSixth, s);
+            Tensor<T> s = OnnxOp.Min(OnnxOp.Max(t, zero), one);
+            Tensor<bit> inRange = OnnxOp.And(OnnxOp.Greater(t, zero), OnnxOp.Less(t, one));
+            Tensor<T> deriv = OnnxOp.Where(inRange, s + x * oneSixth, s);
             return [grad * deriv];
         }
 
@@ -62,9 +62,9 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         public static Variable?[] Mish<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             var one = TypedConst(1.0f, x);
-            Tensor<T> sp = (Variable)OnnxOp.Softplus(x);
-            Tensor<T> th = (Variable)OnnxOp.Tanh(sp);
-            Tensor<T> sig = (Variable)OnnxOp.Sigmoid(x);
+            Tensor<T> sp = OnnxOp.Softplus(x);
+            Tensor<T> th = OnnxOp.Tanh(sp);
+            Tensor<T> sig = OnnxOp.Sigmoid(x);
             var deriv = th + x * (one - th * th) * sig;
             return [grad * deriv];
         }
@@ -76,7 +76,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         [AutoDiff(SOFTPLUS)]
         public static Variable?[] Softplus<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
-            Tensor<T> sig = (Variable)OnnxOp.Sigmoid(x);
+            Tensor<T> sig = OnnxOp.Sigmoid(x);
             return [grad * sig];
         }
 
@@ -88,7 +88,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         public static Variable?[] Softsign<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             var one = TypedConst(1.0f, x);
-            var denom = one + (Variable)OnnxOp.Abs(x);
+            var denom = one + OnnxOp.Abs(x);
             return [grad / (denom * denom)];
         }
 
@@ -104,7 +104,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var zero = TypedConst(0.0f, x);
             var one = TypedConst(1.0f, x);
             var mask = x > alphaConst;
-            Tensor<T> slope = (Variable)OnnxOp.Where(mask, one, zero);
+            Tensor<T> slope = OnnxOp.Where(mask, one, zero);
             return [grad * slope];
         }
 
@@ -121,8 +121,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var lambdConst = TypedConst(effLambd, x);
             var zero = TypedConst(0.0f, x);
             var one = TypedConst(1.0f, x);
-            Tensor<bit> outside = (Variable)OnnxOp.Abs(x) > lambdConst;
-            Tensor<T> slope = (Variable)OnnxOp.Where(outside, one, zero);
+            Tensor<bit> outside = OnnxOp.Abs(x) > lambdConst;
+            Tensor<T> slope = OnnxOp.Where(outside, one, zero);
             return [grad * slope];
         }
 
@@ -151,8 +151,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var zero = TypedConst(0.0f, x);
             var one = TypedConst(1.0f, x);
             var positive = x > zero;
-            Tensor<T> dxFactor = (Variable)OnnxOp.Where(positive, one, slope);
-            Tensor<T> dslopeFactor = (Variable)OnnxOp.Where(positive, zero, x);
+            Tensor<T> dxFactor = OnnxOp.Where(positive, one, slope);
+            Tensor<T> dslopeFactor = OnnxOp.Where(positive, zero, x);
             var dx = ReverseBroadcast(grad * dxFactor, x.DShape);
             var dslope = ReverseBroadcast(grad * dslopeFactor, slope.DShape);
             return [dx, dslope];
@@ -172,19 +172,19 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var axesVec = Vector(effectiveAxes);
             var eps = TypedConst(1e-9f, x);
 
-            Tensor<T> mean = (Variable)OnnxOp.ReduceMean(x, axesVec, keepdims: true);
+            Tensor<T> mean = OnnxOp.ReduceMean(x, axesVec, keepdims: true);
             var xCentered = x - mean;
-            Tensor<T> variance = (Variable)OnnxOp.ReduceMean(xCentered * xCentered, axesVec, keepdims: true);
-            Tensor<T> invStd = (Variable)OnnxOp.Reciprocal((Variable)OnnxOp.Sqrt(variance + eps));
+            Tensor<T> variance = OnnxOp.ReduceMean(xCentered * xCentered, axesVec, keepdims: true);
+            Tensor<T> invStd = OnnxOp.Reciprocal(OnnxOp.Sqrt(variance + eps));
 
             // N = product of the dim sizes over the reduction axes, in T's dtype.
             var xShape = x.DShape;
-            Tensor<int64> axisSizes = (Variable)OnnxOp.Gather(xShape, Vector(effectiveAxes), axis: 0);
-            Tensor<int64> nLong = (Variable)OnnxOp.ReduceProd(axisSizes, axes: Vector(0L), keepdims: false, noopWithEmptyAxes: false);
-            Tensor<T> n = (Variable)OnnxOp.Cast(nLong, saturate: null, to: x.Type);
+            Tensor<int64> axisSizes = OnnxOp.Gather(xShape, Vector(effectiveAxes), axis: 0);
+            Tensor<int64> nLong = OnnxOp.ReduceProd(axisSizes, axes: Vector(0L), keepdims: false, noopWithEmptyAxes: false);
+            Tensor<T> n = OnnxOp.Cast(nLong, saturate: null, to: x.Type);
 
-            Tensor<T> meanGrad = (Variable)OnnxOp.ReduceMean(grad, axesVec, keepdims: true);
-            Tensor<T> meanGradXc = (Variable)OnnxOp.ReduceMean(grad * xCentered, axesVec, keepdims: true);
+            Tensor<T> meanGrad = OnnxOp.ReduceMean(grad, axesVec, keepdims: true);
+            Tensor<T> meanGradXc = OnnxOp.ReduceMean(grad * xCentered, axesVec, keepdims: true);
             var dx = invStd * (grad - meanGrad - xCentered * meanGradXc * invStd * invStd);
             _ = n; // Reduce*Mean already divides by N; kept here only for parity with the textbook formula.
             return [dx];

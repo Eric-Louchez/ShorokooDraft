@@ -57,7 +57,7 @@ namespace Shorokoo
                 defaultName: defaultName,
                 stateOwnership: stateOwnership);
 
-            return (Variable)InternalOp.TrainableParamRef(inputs, iterationIndices, localModelId: null, targetFn.Outputs[0].Type, targetFn.Outputs[0].Rank, targetFn, isTrainable);
+            return InternalOp.TrainableParamRef(inputs, iterationIndices, localModelId: null, targetFn.Outputs[0].Type, targetFn.Outputs[0].Rank, targetFn, isTrainable);
         }
 
         /// <summary>

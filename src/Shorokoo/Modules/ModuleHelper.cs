@@ -358,7 +358,7 @@ namespace Shorokoo.Core
             {
                 genericTypeArgs = ExtractGenericTypeArgsFromType(moduleType);
             }
-            return (Variable)InternalOp.CreateModule(targetFunction, genericTypeArgs);
+            return InternalOp.CreateModule(targetFunction, genericTypeArgs);
         }
 
         /// <summary>

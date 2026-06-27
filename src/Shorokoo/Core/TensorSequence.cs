@@ -46,7 +46,7 @@ namespace Shorokoo.Core
         Variable IValueHandle.Immutable => Imm;
 
         /// <summary>The wrapped immutable, materialising an empty sequence for a defaulted handle.</summary>
-        internal Variable Imm => inner ??= (Variable)OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>());
+        internal Variable Imm => inner ??= OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>());
 
         public static implicit operator TensorSequence<T>(Variable imm)
             => new TensorSequence<T> { inner = imm };
@@ -54,39 +54,39 @@ namespace Shorokoo.Core
             => handle.Imm;
 
         // ── User-facing typed API (the sequence surface lives here, not on the immutable) ──
-        public Scalar<int64> Count => (Variable)OnnxOp.SequenceLength(Imm);
+        public Scalar<int64> Count => OnnxOp.SequenceLength(Imm);
 
         public Tensor<T> Concat(long axis, bool newAxis = false)
-            => (Variable)OnnxOp.ConcatFromSequence(Imm, axis, newAxis);
+            => OnnxOp.ConcatFromSequence(Imm, axis, newAxis);
 
         public Tensor<T> this[Scalar<int64> index]
-            => (Variable)OnnxOp.SequenceAt(Imm, index);
+            => OnnxOp.SequenceAt(Imm, index);
 
         /// <summary>Removes the element at <paramref name="index"/>, or the LAST element when called
         /// without an index (ONNX SequenceErase's optional-position default).</summary>
         public TensorSequence<T> RemoveAt(Scalar<int64>? index = null)
             => Imm.OwningNode.TargetFunction is null ?
-                    (Variable)OnnxOp.SequenceErase(Imm, index) :
-                    (Variable)OnnxOp.SequenceErase(Imm.OwningNode.TargetFunction, Imm, index);
+                    OnnxOp.SequenceErase(Imm, index) :
+                    OnnxOp.SequenceErase(Imm.OwningNode.TargetFunction, Imm, index);
 
         public TensorSequence<T> InsertAt(Tensor<T> tensor, Scalar<int64>? index)
             => Imm.OwningNode.TargetFunction is null ?
-                    (Variable)OnnxOp.SequenceInsert(Imm, tensor, index) :
-                    (Variable)OnnxOp.SequenceInsert(Imm.OwningNode.TargetFunction, Imm, tensor, index);
+                    OnnxOp.SequenceInsert(Imm, tensor, index) :
+                    OnnxOp.SequenceInsert(Imm.OwningNode.TargetFunction, Imm, tensor, index);
 
         public TensorSequence<T> Append(Tensor<T> tensor) => this.InsertAt(tensor, null);
 
         // Typed factories live here on the handle (the element type T is known here, not on the node).
         public static TensorSequence<T> CreateEmpty()
-            => (Variable)OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>());
+            => OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>());
         internal static TensorSequence<T> CreateEmpty(Function targetFunction)
-            => (Variable)OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>(), targetFunction);
+            => OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>(), targetFunction);
         public static TensorSequence<T> Create(Tensor<T>[] tensors)
             => tensors.Length == 0 ? CreateEmpty()
-                : (Variable)OnnxOp.SequenceConstruct([.. tensors.Select(t => (Variable)t)]);
+                : OnnxOp.SequenceConstruct([.. tensors.Select(t => (Variable)t)]);
         internal static TensorSequence<T> Create(Tensor<T>[] tensors, Function targetFunction)
             => tensors.Length == 0 ? CreateEmpty(targetFunction)
-                : (Variable)OnnxOp.SequenceConstruct(targetFunction, [.. tensors.Select(t => (Variable)t)]);
+                : OnnxOp.SequenceConstruct(targetFunction, [.. tensors.Select(t => (Variable)t)]);
 
         // ITensorSequence explicit members (interface signatures, returning interface types).
         Scalar<int64> ITensorSequence.Count => this.Count;

@@ -107,7 +107,7 @@ namespace Shorokoo
         {
             // Key the loop-variable dictionaries by the Immutable* graph value (they are populated
             // with node outputs, which are immutables); a struct handle would not match.
-            Variable retVal = (Variable)OnnxOp.LoopScanZombie(toScan);
+            Variable retVal = OnnxOp.LoopScanZombie(toScan);
 
             if (this.CurrentPass == 1)
             {
@@ -224,7 +224,7 @@ namespace Shorokoo
             if (dctLoopIndexVariables.ContainsKey(CurrentPass))
                 return dctLoopIndexVariables[CurrentPass];
 
-            Scalar<int64> indexVariable = (Variable)OnnxOp.LoopIndexVariable();
+            Scalar<int64> indexVariable = OnnxOp.LoopIndexVariable();
             dctLoopIndexVariables[CurrentPass] = indexVariable;
             return indexVariable;
         }

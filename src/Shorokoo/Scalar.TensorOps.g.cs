@@ -37,7 +37,7 @@ namespace Shorokoo
             float? cubicCoefficient = null,
             bool? excludeOutside = null)
         {
-            return (Variable)OnnxOp.Resize(
+            return OnnxOp.Resize(
                 this, null, null, sizes, antiaAlias, axes, transformMode, cubicCoefficient, excludeOutside, null, 
                 aspectRatio, 
                 mode, nearestMode);
@@ -53,7 +53,7 @@ namespace Shorokoo
             float? cubicCoefficient = null,
             bool? excludeOutside = null)
         {
-            return (Variable)OnnxOp.Resize(
+            return OnnxOp.Resize(
                 this, null, scales, null, antiaAlias, axes, transformMode, cubicCoefficient, excludeOutside, null,
                 null, mode, nearestMode);
         }
@@ -64,22 +64,22 @@ namespace Shorokoo
             // Absent axes propagate as an absent (optional) input: ONNX then squeezes ALL
             // size-1 dims. (Previously substituted axes=[-1] — squeeze only the LAST dim,
             // and an ORT shape-inference error when that dim isn't 1.)
-            return (Variable)OnnxOp.Squeeze(this, axes);
+            return OnnxOp.Squeeze(this, axes);
         }
 
         /// <summary>Slices along the given axes using start/end indices and optional steps (ONNX Slice).</summary>
         public Tensor<T> Slice(Vector<int64> start, Vector<int64> end, Vector<int64>? axes = null, Vector<int64>? steps = null)
-            => (Variable)OnnxOp.Slice(this, start, end, axes, steps);
+            => OnnxOp.Slice(this, start, end, axes, steps);
 
         /// <summary>Softmax normalization along <paramref name="axis"/> (defaults to the last axis).</summary>
         public Tensor<T> Softmax(long? axis = null)
-            => (Variable)OnnxOp.Softmax(this, axis);
+            => OnnxOp.Softmax(this, axis);
 
         /// <summary>The shape - optionally the dims[start:end] slice of it - as an in-graph vector.</summary>
         public Vector<int64> ShapeTensor(long? start = null, long? end = null)
             // OnnxOp.Shape declares (data, end, start) — name the args; passing positionally
             // swapped start/end (e.g. ShapeTensor(1) sliced dims[:1] instead of dims[1:]).
-            => (Variable)((Variable)OnnxOp.Shape(this, end: end, start: start)).Vec();
+            => (Variable)(OnnxOp.Shape(this, end: end, start: start)).Vec();
 
         /// <summary>The element count: the product of the dimensions, optionally restricted to dims[start:end].</summary>
         public Scalar<int64> SizeTensor(long? start = null, long? end = null)
@@ -91,11 +91,11 @@ namespace Shorokoo
 
         /// <summary>Gathers entries along <paramref name="axis"/> using the given indices (ONNX Gather).</summary>
         public Tensor<T> Gather(Tensor<int64> indices, long? axis)
-            => (Variable)OnnxOp.Gather(this, indices, axis);
+            => OnnxOp.Gather(this, indices, axis);
 
         /// <summary>Gathers slices using multi-dimensional indices (ONNX GatherND).</summary>
         public Tensor<T> GatherND(Tensor<int64> indices, long? batchDims)
-            => (Variable)OnnxOp.GatherND(this, indices, batchDims);
+            => OnnxOp.GatherND(this, indices, batchDims);
 
         /// <summary>Reduction (e.g. sum, mean, max) over <paramref name="axes"/> - all axes when null - keeping reduced dimensions by default.</summary>
         public Tensor<T> Reduce(ReduceKind reduceKind, Vector<int64>? axes = null, bool keepDims = true)
@@ -103,23 +103,23 @@ namespace Shorokoo
 
         /// <summary>Tiles the tensor by repeating it <paramref name="repeats"/> times along each axis.</summary>
         public Tensor<T> Tile(Tensor<int64> repeats)
-            => (Variable)OnnxOp.Tile(this, repeats);
+            => OnnxOp.Tile(this, repeats);
 
         /// <summary>Matrix product with <paramref name="other"/> (ONNX MatMul).</summary>
         public Tensor<T> MatMul(Tensor<T> other)
-            => (Variable)OnnxOp.MatMul(this, other);
+            => OnnxOp.MatMul(this, other);
 
         /// <summary>Indices of the maximum values along <paramref name="axis"/>.</summary>
         public Tensor<int64> ArgMax(long axis = 0, bool keepdims = false, bool selectLastIndex = false)
-            => (Variable)OnnxOp.ArgMax(this, axis == 0 ? null : axis, keepdims ? null : keepdims, selectLastIndex ? selectLastIndex : null);
+            => OnnxOp.ArgMax(this, axis == 0 ? null : axis, keepdims ? null : keepdims, selectLastIndex ? selectLastIndex : null);
 
         /// <summary>Indices of the minimum values along <paramref name="axis"/>.</summary>
         public Tensor<int64> ArgMin(long axis = 0, bool keepdims = false, bool selectLastIndex = false)
-            => (Variable)OnnxOp.ArgMin(this, axis == 0 ? null : axis, keepdims ? null : keepdims, selectLastIndex ? selectLastIndex : null);
+            => OnnxOp.ArgMin(this, axis == 0 ? null : axis, keepdims ? null : keepdims, selectLastIndex ? selectLastIndex : null);
 
         /// <summary>Average pooling with the given kernel shape (ONNX AveragePool).</summary>
         public Tensor<T> AveragePool(long[] kernelShape, RoundMode roundMode = RoundMode.Floor, bool countIncludePad = false, long[]? dilations = null, long[]? pads = null, long[]? strides = null)
-            => (Variable)OnnxOp.AveragePool(this, null, roundMode == RoundMode.Floor ? null : true, countIncludePad, dilations, kernelShape, pads, strides);
+            => OnnxOp.AveragePool(this, null, roundMode == RoundMode.Floor ? null : true, countIncludePad, dilations, kernelShape, pads, strides);
 
         /// <summary>Batch normalization using the given scale, bias, mean, and variance (ONNX BatchNormalization).</summary>
         public Tensor<T> BatchNormalization<T1, T2>(Vector<T1> scale, Vector<T1> bias, Vector<T2> mean, Vector<T2> variance, float epsilon = 1e-05f, float momentum = 0.9f, bool trainingMode = false)
@@ -139,39 +139,39 @@ namespace Shorokoo
 
         /// <summary>Center-crops or pads to the given dimensions (ONNX CenterCropPad).</summary>
         public Tensor<T> CenterCropPad(Vector<int64> newDims, long[]? axes = null)
-            => (Variable)OnnxOp.CenterCropPad(this, newDims, axes);
+            => OnnxOp.CenterCropPad(this, newDims, axes);
 
         /// <summary>Center-crops or pads to the given dimensions (ONNX CenterCropPad).</summary>
         public Tensor<T> CenterCropPad(Vector<int32> newDims, long[]? axes = null)
-            => (Variable)OnnxOp.CenterCropPad(this, newDims, axes);
+            => OnnxOp.CenterCropPad(this, newDims, axes);
 
         /// <summary>Cumulative sum along <paramref name="axis"/>.</summary>
         public Tensor<T> CumSum<V>(Scalar<V> axis, bool exclusive = false, bool reverse = false) where V : IndexLike
-            => (Variable)OnnxOp.CumSum(this, axis, exclusive, reverse);
+            => OnnxOp.CumSum(this, axis, exclusive, reverse);
 
         /// <summary>Rearranges channel data into spatial blocks (ONNX DepthToSpace).</summary>
         public Tensor<T> DepthToSpace(long blockSize, DepthColumnRowMode mode = DepthColumnRowMode.DCR)
-            => (Variable)OnnxOp.DepthToSpace(this, blockSize, mode);
+            => OnnxOp.DepthToSpace(this, blockSize, mode);
 
         /// <summary>Concatenates this tensor with <paramref name="others"/> along <paramref name="axis"/>.</summary>
         public Tensor<T> Concat(long axis, params Tensor<T>[] others)
-            => (Variable)OnnxOp.Concat([this, .. others], axis);
+            => OnnxOp.Concat([this, .. others], axis);
 
         /// <summary>Reshapes to <paramref name="newShape"/>; a 0 entry copies the corresponding input dimension unless <paramref name="allowZero"/> is true.</summary>
         public Tensor<T> Reshape(Vector<int64> newShape, bool allowZero = false)
-            => (Variable)OnnxOp.Reshape(this, newShape, allowZero);
+            => OnnxOp.Reshape(this, newShape, allowZero);
 
         /// <summary>Permutes the dimensions; with no arguments, reverses them.</summary>
         public Tensor<T> Transpose(params long[] newDims)
-            => (Variable)OnnxOp.Transpose(this, newDims.Length == 0 ? null : newDims);
+            => OnnxOp.Transpose(this, newDims.Length == 0 ? null : newDims);
 
         /// <summary>Pads using separate begin (<paramref name="outerPads"/>) and end (<paramref name="innerPads"/>) pad counts per axis.</summary>
         public Tensor<T> Pad(PadMode mode, Vector<int64> outerPads, Vector<int64> innerPads, Scalar<T>? val = null, Vector<int64>? axes = null)
-            => (Variable)OnnxOp.Pad(this, (Vector<int64>)[.. outerPads, .. innerPads], val, axes, mode);
+            => OnnxOp.Pad(this, (Vector<int64>)[.. outerPads, .. innerPads], val, axes, mode);
 
         /// <summary>Pads using an ONNX-style pads vector (begin counts for all axes, then end counts).</summary>
         public Tensor<T> Pad(PadMode mode, Vector<int64> pads, Scalar<T>? val = null, Vector<int64>? axes = null)
-            => (Variable)OnnxOp.Pad(this, pads, val, axes, mode);
+            => OnnxOp.Pad(this, pads, val, axes, mode);
 
         /// <summary>Broadcasts to the given shape.</summary>
         public Tensor<T> Expand(params long[] shape)
@@ -179,36 +179,36 @@ namespace Shorokoo
 
         /// <summary>Broadcasts to the given shape (ONNX Expand).</summary>
         public Tensor<T> Expand(Vector<int64> shape)
-            => (Variable)OnnxOp.Expand(this, shape);
+            => OnnxOp.Expand(this, shape);
 
         /// <summary>One-hot encoding of the maximum along <paramref name="axis"/> (ONNX Hardmax).</summary>
         public Tensor<T> Hardmax(long? axis = null)
-            => (Variable)OnnxOp.Hardmax(this, axis);
+            => OnnxOp.Hardmax(this, axis);
 
         /// <summary>Log-softmax along <paramref name="axis"/>.</summary>
         public Tensor<T> LogSoftmax(long? axis = null)
-            => (Variable)OnnxOp.LogSoftmax(this, axis);
+            => OnnxOp.LogSoftmax(this, axis);
 
         /// <summary>Normalizes to zero mean and unit variance over <paramref name="axes"/>.</summary>
         public Tensor<T> MeanVarianceNormalization(long[]? axes = null)
-            => (Variable)OnnxOp.MeanVarianceNormalization(this, axes);
+            => OnnxOp.MeanVarianceNormalization(this, axes);
 
         /// <summary>Writes <paramref name="values"/> at <paramref name="indices"/> into a copy of this tensor (ONNX ScatterND).</summary>
         public Tensor<T> ScatterND(Tensor<int64> indices, Tensor<T> values, ScatterNDReduction? reduceMode = ScatterNDReduction.None)
         {
-            return (Variable)OnnxOp.ScatterND(this, indices, values, reduceMode);
+            return OnnxOp.ScatterND(this, indices, values, reduceMode);
         }
 
         /// <summary>Selects elements where <paramref name="condition"/> is true, flattening to a rank-1 result.</summary>
         public Vector<T> Compress(Vector<bit> condition)
-            => (Variable)OnnxOp.Compress(this, condition, null);
+            => OnnxOp.Compress(this, condition, null);
 
         /// <summary>Selects slices along <paramref name="axis"/> where <paramref name="condition"/> is true.</summary>
         public Tensor<T> Compress(Vector<bit> condition, long axis)
-            => (Variable)OnnxOp.Compress(this, condition, axis);
+            => OnnxOp.Compress(this, condition, axis);
 
         /// <summary>Flattens to 2-D: dimensions before <paramref name="axis"/> collapse into the first dimension, the rest into the second.</summary>
         public Tensor<T> Flatten(long axis = 1)
-            => (Variable)OnnxOp.Flatten(this, axis);
+            => OnnxOp.Flatten(this, axis);
     }
 }

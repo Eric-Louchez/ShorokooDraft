@@ -281,7 +281,7 @@ namespace Shorokoo
         }
 
         // ── Tensor surface (meaningful for DataStructure.Tensor values) ──
-        public virtual Vector<int64> DShape => (Variable)OnnxOp.Shape(this, null, null);
+        public virtual Vector<int64> DShape => OnnxOp.Shape(this, null, null);
 
         public virtual Vector<int64>? InfShape => this.Kind == DataStructure.Tensor && this.Rank == 0
             ? Vector<int64>.Empty
@@ -294,23 +294,23 @@ namespace Shorokoo
         public Scalar<V> Scalar<V>() where V : IVarType => this.Cast<V>().Scalar();
 
         /// <summary>Reinterprets this tensor as a rank-1 vector, inserting an Identity node when needed.</summary>
-        public Variable Vec() => this.Rank == 1 ? this : (Variable)OnnxOp.Identity(this, rank: 1);
+        public Variable Vec() => this.Rank == 1 ? this : OnnxOp.Identity(this, rank: 1);
 
         /// <summary>Reinterprets this tensor as a rank-0 scalar, inserting an Identity node when needed.</summary>
-        public Variable Scalar() => this.Rank == 0 ? this : (Variable)OnnxOp.Identity(this, rank: 0);
+        public Variable Scalar() => this.Rank == 0 ? this : OnnxOp.Identity(this, rank: 0);
 
         /// <summary>Casts the element type to <typeparamref name="V"/>; returns this tensor unchanged when the types already match.</summary>
         public Tensor<V> Cast<V>(bool saturate = true) where V : IVarType
             => OnnxUtils.GetDType<V>() == this.Type ?
                 (Tensor<V>)this :
-                (Variable)OnnxOp.Cast(this, saturate ? null : saturate, OnnxUtils.GetDType<V>());
+                OnnxOp.Cast(this, saturate ? null : saturate, OnnxUtils.GetDType<V>());
 
         // ── Sequence surface (meaningful for DataStructure.Sequence values) ──
-        public Scalar<int64> Count => (Variable)OnnxOp.SequenceLength(this);
-        public Variable Concat(long axis, bool newAxis = false) => (Variable)OnnxOp.ConcatFromSequence(this, axis, newAxis);
-        public Variable At(Scalar<int64> index) => (Variable)OnnxOp.SequenceAt(this, index);
-        public Variable RemoveAt(Scalar<int64> index) => (Variable)OnnxOp.SequenceErase(this, index);
-        public Variable InsertAt(Variable tensor, Scalar<int64> index) => (Variable)OnnxOp.SequenceInsert(this, tensor, index);
+        public Scalar<int64> Count => OnnxOp.SequenceLength(this);
+        public Variable Concat(long axis, bool newAxis = false) => OnnxOp.ConcatFromSequence(this, axis, newAxis);
+        public Variable At(Scalar<int64> index) => OnnxOp.SequenceAt(this, index);
+        public Variable RemoveAt(Scalar<int64> index) => OnnxOp.SequenceErase(this, index);
+        public Variable InsertAt(Variable tensor, Scalar<int64> index) => OnnxOp.SequenceInsert(this, tensor, index);
 
         // ── Struct surface (meaningful for DataStructure.TensorStruct values) ──
         public TensorStructDef Definition => this.structDef!;
