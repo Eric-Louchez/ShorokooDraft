@@ -75,10 +75,11 @@ namespace Shorokoo.Modules
             {
                 var modelVariable = base.modelSequenceVariable[index].Scalar();
                 var type = typeof(T);
-                // The generated model constructor takes the value-struct Scalar<IModelVarType>; wrap
-                // the immutable scalar so reflective Invoke can bind it.
+                // The generated model constructor takes Scalar<IModelVarType>. That type is statically
+                // known here, so convert with the implicit operator directly; reflective Invoke just
+                // boxes the resulting handle (it cannot itself apply the conversion).
                 var ctor = type.GetConstructor([typeof(Scalar<IModelVarType>)]).AssertNotNull();
-                return (T)ctor.Invoke([Shorokoo.Core.VariableHandle.WrapForParam((Variable)modelVariable, typeof(Scalar<IModelVarType>))]);
+                return (T)ctor.Invoke([(Scalar<IModelVarType>)(Variable)modelVariable]);
             }
         }
 

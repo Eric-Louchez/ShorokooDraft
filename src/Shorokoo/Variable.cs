@@ -234,7 +234,14 @@ namespace Shorokoo
         /// <c>(A)this</c> would be an illegal struct unbox). Routes through the handle's validating
         /// <c>op_Implicit</c>, so structure / dtype / rank are checked exactly as a direct cast would be.
         /// </summary>
-        public A Cast<A>() where A : IValue => (A)VariableHandle.WrapAsHandle(this, typeof(A));
+        public A Cast<A>() where A : IValue
+        {
+            // A is a type parameter, so the compiler can't apply the handle's implicit operator(Variable)
+            // here; find and invoke it. A plain (A)(object)this would unbox a Variable to a struct handle
+            // and throw, so that path remains only as a clear-error fallback when no converter exists.
+            var conv = VariableHandle.MatchingConverter(typeof(A), this.GetType());
+            return conv is not null ? (A)conv.Invoke(null, [this])! : (A)(object)this;
+        }
 
         /// <summary>The structural kind of this graph value (graph-side mirror of <c>IValue.Structure()</c>).</summary>
         public DataStructure Structure() => this.Kind;

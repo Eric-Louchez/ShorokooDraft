@@ -561,7 +561,8 @@ namespace Shorokoo.Core
                     if (prop == null)
                         throw new InvalidOperationException(
                             $"Property '{def.Fields[i].Name}' not found on type '{structType.Name}'");
-                    fieldValues[i] = Shorokoo.Core.VariableHandle.Normalize(prop.GetValue(retval))!;
+                    // The IStruct field is a value handle (IValue); read its backing node directly.
+                    fieldValues[i] = ((IValue)prop.GetValue(retval)!).Immutable!;
                 }
 
                 return [InternalOp.TensorStructCreate(dtype, fieldValues)];

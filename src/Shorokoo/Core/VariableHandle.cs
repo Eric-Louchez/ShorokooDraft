@@ -102,19 +102,6 @@ namespace Shorokoo.Core
             return value;
         }
 
-        /// <summary>
-        /// Reflection core of <see cref="Variable.Cast{A}()"/>: wrap <paramref name="node"/> into the value
-        /// handle <paramref name="handleType"/> by invoking that handle's <c>op_Implicit(Variable)</c>
-        /// (which validates structure/dtype/rank). Constraint-free so it also serves call sites whose
-        /// target type is statically unconstrained (e.g. <c>ModuleHelper.Reformat&lt;T&gt;</c>). When no
-        /// converter exists the node is returned boxed, so the caller's cast raises a clear error.
-        /// </summary>
-        internal static object WrapAsHandle(Variable node, Type handleType)
-        {
-            var conv = MatchingConverter(handleType, node.GetType());
-            return conv is not null ? conv.Invoke(null, [node])! : node;
-        }
-
         internal static MethodInfo? MatchingConverter(Type handleType, Type valueType)
         {
             var candidates = wrappers.GetOrAdd(handleType, FindImplicitWrappers);
