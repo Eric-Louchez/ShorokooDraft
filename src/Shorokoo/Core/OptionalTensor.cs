@@ -31,7 +31,7 @@ namespace Shorokoo.Core
     /// deliberately minimal: the user-facing API lives on the value-type handle
     /// <see cref="OptionalTensor{T}"/>, which wraps one of these.
     /// </summary>
-    public class ImmutableOptionalTensor<T> : ImmutableVariable<T>, IOptionalTensor where T : IVarType
+    public class ImmutableOptionalTensor : Variable, IOptionalTensor
     {
         public ImmutableOptionalTensor(DType type, Node owningNode, Function? moduleFn, string? name) : base(type, owningNode, moduleFn, name) {}
     }
@@ -39,7 +39,7 @@ namespace Shorokoo.Core
     /// <summary>
     /// Value-type handle for an optional tensor. The original <c>OptionalTensor&lt;T&gt;</c> name now
     /// denotes this <see langword="struct"/>; the reference type was renamed
-    /// <see cref="ImmutableOptionalTensor{T}"/>. This struct carries the full user-facing surface.
+    /// <see cref="ImmutableOptionalTensor"/>. This struct carries the full user-facing surface.
     /// <para>
     /// The struct holds the immutable <b>directly</b> in a field (no shared box) so copying a handle
     /// copies the reference field by value — giving the Module DSL value-type semantics: a callee
@@ -53,18 +53,18 @@ namespace Shorokoo.Core
     /// </summary>
     public struct OptionalTensor<T> : IOptionalTensor, IValueHandle where T : IVarType
     {
-        private ImmutableOptionalTensor<T>? inner;
+        private ImmutableOptionalTensor? inner;
 
         IValue IValueHandle.Immutable => Imm;
 
         /// <summary>The wrapped immutable, materialising an absent optional for a defaulted handle.</summary>
-        internal ImmutableOptionalTensor<T> Imm
-            => inner ??= (ImmutableOptionalTensor<T>)OnnxOp.Optional(null, DataStructure.Tensor, OnnxUtils.GetDType<T>());
+        internal ImmutableOptionalTensor Imm
+            => inner ??= (ImmutableOptionalTensor)OnnxOp.Optional(null, DataStructure.Tensor, OnnxUtils.GetDType<T>());
 
         // Wrap / unwrap between the handle and its immutable.
-        public static implicit operator OptionalTensor<T>(ImmutableOptionalTensor<T> imm)
+        public static implicit operator OptionalTensor<T>(ImmutableOptionalTensor imm)
             => new OptionalTensor<T> { inner = imm };
-        public static implicit operator ImmutableOptionalTensor<T>(OptionalTensor<T> handle)
+        public static implicit operator ImmutableOptionalTensor(OptionalTensor<T> handle)
             => handle.Imm;
 
         /// <summary>

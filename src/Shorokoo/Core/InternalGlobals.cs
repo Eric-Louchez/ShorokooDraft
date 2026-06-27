@@ -102,16 +102,12 @@ namespace Shorokoo.Core
         private static ImmutableTensorSequence<T> CreateTensorSequence<T>(Node owningNode, DType dtype, Function? moduleFn, string? name) where T : IVarType
             => TensorSequence<T>(owningNode, dtype, moduleFn, name);
 
-        internal static ImmutableOptionalTensor<T> OptionalTensor<T>(Node owningNode, DType dtype, Function? moduleFn, string? name = null) where T : IVarType
-            => new ImmutableOptionalTensor<T>(dtype, owningNode, moduleFn, name);
-
-        internal static IOptionalTensor OptionalTensor(DType dtype, Node owningNode, Function? moduleFn, string? name = null)
-            => (IOptionalTensor)OnnxUtils.CallGeneric(dtype.ToIVarType(), typeof(InternalGlobals), nameof(CreateOptionalTensor), [owningNode, dtype, moduleFn, name]);
+        // The optional node is now non-generic, so it is built directly from the runtime DType —
+        // no per-output CallGeneric/MakeGenericType reflection round-trip.
+        internal static ImmutableOptionalTensor OptionalTensor(DType dtype, Node owningNode, Function? moduleFn, string? name = null)
+            => new ImmutableOptionalTensor(dtype, owningNode, moduleFn, name);
 
         internal static IVector EmptyVector(DType type) => (IVector)Shorokoo.Core.Nodes.NodeDefinitions.OnnxOp.Constant(Globals.TensorData(type));
-
-        private static ImmutableOptionalTensor<T> CreateOptionalTensor<T>(Node owningNode, DType dtype, Function? moduleFn, string? name = null) where T : IVarType
-            => OptionalTensor<T>(owningNode, dtype, moduleFn, name);
 
         /// <summary>
         /// Creates a TensorStruct for a given DType (which must be a TensorStruct type).

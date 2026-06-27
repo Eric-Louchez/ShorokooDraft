@@ -132,7 +132,7 @@ namespace Shorokoo
     /// generic subclasses into this one class.
     /// </para>
     /// </summary>
-    public abstract class Variable
+    public abstract class Variable : IValue
     {
         public Node OwningNode { get; private set; }
 
@@ -198,6 +198,21 @@ namespace Shorokoo
         {
             return (this.uniqueName ?? "") + ": " + this.GetType().Name;
         }
+
+        /// <summary>
+        /// Reinterprets this node to the generic node view of element type <typeparamref name="V"/>.
+        /// During the migration the concrete nodes are still the generic <see cref="ImmutableVariable{T}"/>
+        /// subclasses, so this is a checked reference reinterpret; the element <see cref="DType"/> must
+        /// already match.
+        /// </summary>
+        public ImmutableVariable<V> As<V>() where V : IVarType
+        {
+            if (this is ImmutableVariable<V> v)
+                return v;
+
+            throw new InvalidTensorOperationException(ErrorCodes.CR006, "As<V>", $"from {this.Type} to {typeof(V).Name}",
+                $"Cannot reinterpret {this.GetType().Name} as ImmutableVariable<{typeof(V).Name}> - element types are not compatible");
+        }
     }
 
     public abstract class ImmutableVariable<T> : Variable, IValue<T> where T : IVarType
@@ -211,16 +226,6 @@ namespace Shorokoo
         public Vector<T> Vec() => this.Tensor().Vec();
         public Scalar<T> Scalar() => this.Tensor().Scalar();
         public TensorSequence<T> Sequence() => (ImmutableTensorSequence<T>)this;
-        public OptionalTensor<T> Optional() => (ImmutableOptionalTensor<T>)this;
-
-        ImmutableVariable<V> IValue.As<V>()
-        {
-            if (typeof(V) == typeof(T))
-                return (ImmutableVariable<V>)(object)this;
-
-            throw new InvalidTensorOperationException(ErrorCodes.CR006, "As<V>", $"from {typeof(T).Name} to {typeof(V).Name}",
-                $"Cannot cast ImmutableVariable<{typeof(T).Name}> to ImmutableVariable<{typeof(V).Name}> - types are not compatible");
-        }
 
         public override string ToString()
         {
