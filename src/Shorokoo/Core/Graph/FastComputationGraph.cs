@@ -57,7 +57,7 @@ namespace Shorokoo.Graph
         public List<FastTensorKey> Outputs { get; set; } = new();
 
         /// <summary>
-        /// Original <see cref="IValue.UniqueName"/> for each entry in <see cref="Inputs"/>,
+        /// Original <see cref="Variable.UniqueName"/> for each entry in <see cref="Inputs"/>,
         /// captured by <see cref="FastComputationGraphConverter.ToFastGraph"/> and re-applied
         /// by <see cref="FastComputationGraphConverter.ToComputationGraph"/>. Preserves
         /// human-readable input names across the round-trip.
@@ -65,7 +65,7 @@ namespace Shorokoo.Graph
         public List<string?> InputUniqueNames { get; set; } = new();
 
         /// <summary>
-        /// Original <see cref="IValue.UniqueName"/> for each entry in <see cref="Outputs"/>.
+        /// Original <see cref="Variable.UniqueName"/> for each entry in <see cref="Outputs"/>.
         /// Same purpose as <see cref="InputUniqueNames"/>.
         /// </summary>
         public List<string?> OutputUniqueNames { get; set; } = new();
@@ -85,7 +85,7 @@ namespace Shorokoo.Graph
 
         /// <summary>
         /// Builds a <see cref="FastComputationGraph"/> directly from an
-        /// <see cref="IValue"/>-shaped graph. Walks back from <paramref name="outputs"/>
+        /// <see cref="Variable"/>-shaped graph. Walks back from <paramref name="outputs"/>
         /// to collect every reachable <see cref="Node"/>, sorts by
         /// <see cref="Node.OrderingHintNumber"/> (each Node's monotonic creation counter,
         /// which by construction places every producer before its consumers and every
@@ -102,14 +102,14 @@ namespace Shorokoo.Graph
         /// take the corresponding slots in <see cref="Inputs"/>.</para>
         /// </summary>
         public FastComputationGraph(
-            ImmutableArray<IValue> inputs,
-            ImmutableArray<IValue> outputs,
+            ImmutableArray<Variable> inputs,
+            ImmutableArray<Variable> outputs,
             ImmutableArray<int?>? outputRankOverrides = null,
-            IReadOnlyDictionary<IValue, FastTensorKey>? externalInputKeys = null)
+            IReadOnlyDictionary<Variable, FastTensorKey>? externalInputKeys = null)
         {
             Debug.Assert(inputs.All(x => x.OwningNode.IsModelInput));
 
-            var tensors = Visitors.ReversePreOrder(ImmutableArray<IValue>.Empty, outputs).ToHashSet();
+            var tensors = Visitors.ReversePreOrder(ImmutableArray<Variable>.Empty, outputs).ToHashSet();
             var orderedNodes = tensors.Select(x => x.OwningNode)
                                       .Concat(inputs.Select(x => x.OwningNode))
                                       .NotNulls()
@@ -117,7 +117,7 @@ namespace Shorokoo.Graph
                                       .OrderBy(n => n.OrderingHintNumber)
                                       .ToImmutableArray();
 
-            var ranks = outputRankOverrides?.ToArray() ?? outputs.Select(x => x.Rank()).ToArray();
+            var ranks = outputRankOverrides?.ToArray() ?? outputs.Select(x => x.Rank).ToArray();
             FastComputationGraphConverter.PopulateFromNodes(
                 this, orderedNodes, inputs, outputs, ranks,
                 useSequentialIds: false, externalInputKeys: externalInputKeys);
@@ -201,9 +201,9 @@ namespace Shorokoo.Graph
         /// <summary>
         /// Computes the module / model signature strings for this graph. Operates on Fast
         /// keys: the input/output IValues consumed by
-        /// <see cref="ModuleHelper.CreateFunctionSignatureString(IValue[], IValue[], IValue[], int?[])"/>
+        /// <see cref="ModuleHelper.CreateFunctionSignatureString(Variable[], Variable[], Variable[], int?[])"/>
         /// are pulled out of the converter's <see cref="FastTensorKey"/> →
-        /// <see cref="IValue"/> mapping.
+        /// <see cref="Variable"/> mapping.
         /// </summary>
         internal (string moduleSignature, string modelSignature) GetSignatureStrings()
         {

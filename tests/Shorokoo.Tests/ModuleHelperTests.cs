@@ -32,12 +32,14 @@ public class ModuleHelperCoverageTests
         // ──────────────────────────────────────────────────────────────────
         // DefaultVariable — one branch per supported variable shape + unsupported throw
         // ──────────────────────────────────────────────────────────────────
-        Assert.IsAssignableFrom<ITensor>(ModuleHelper.DefaultVariable(typeof(Tensor<float32>)));
-        Assert.IsAssignableFrom<IOptionalTensor>(ModuleHelper.DefaultVariable(typeof(OptionalTensor<float32>)));
-        Assert.IsAssignableFrom<ITensorSequence>(ModuleHelper.DefaultVariable(typeof(TensorSequence<float32>)));
+        // DefaultVariable returns the graph-side Variable node; its structural kind is the
+        // distinguishing feature now that the node is non-generic and not a handle.
+        Assert.Equal(DataStructure.Tensor, ModuleHelper.DefaultVariable(typeof(Tensor<float32>)).Structure());
+        Assert.Equal(DataStructure.Optional, ModuleHelper.DefaultVariable(typeof(OptionalTensor<float32>)).Structure());
+        Assert.Equal(DataStructure.Sequence, ModuleHelper.DefaultVariable(typeof(TensorSequence<float32>)).Structure());
         // ITensorStruct branch (lines 170-181): pass a concrete TensorStruct type.
-        Assert.IsAssignableFrom<ITensorStruct>(
-            ModuleHelper.DefaultVariable(typeof(TensorStruct<GenericPairStruct>)));
+        Assert.Equal(DataStructure.TensorStruct,
+            ModuleHelper.DefaultVariable(typeof(TensorStruct<GenericPairStruct>)).Structure());
         Assert.Throws<UnsupportedDTypeException>(() => ModuleHelper.DefaultVariable(typeof(int)));
 
         // ──────────────────────────────────────────────────────────────────
@@ -53,7 +55,7 @@ public class ModuleHelperCoverageTests
         Assert.Equal("float32?", ModuleHelper.ToSignatureStringWithOverride(opt, -1));
 
         var seq = OnnxOp.SequenceEmpty(DType.Float32);
-        Assert.Contains("float32/seq", ModuleHelper.ToSignatureStringWithOverride((ITensorSequence)seq, -1));
+        Assert.Contains("float32/seq", ModuleHelper.ToSignatureStringWithOverride(seq, -1));
 
         // ITensorStruct arm (lines 128-132).
         var structFields = new[]
@@ -108,19 +110,19 @@ public class ModuleHelperCoverageTests
         // ──────────────────────────────────────────────────────────────────
         var a = InputScalar<float32>("a");
         var b = InputScalar<float32>("b");
-        Assert.NotNull(ModuleHelper.Reformat<Scalar<float32>>(new IValue[] { a }));
+        Assert.NotNull(ModuleHelper.Reformat<Scalar<float32>>((Variable[])[ a ]));
 
-        var tuple = ModuleHelper.Reformat<(Scalar<float32>, Scalar<float32>)>(new IValue[] { a, b });
+        var tuple = ModuleHelper.Reformat<(Scalar<float32>, Scalar<float32>)>((Variable[])[ a, b ]);
         Assert.NotNull(tuple.Item1);
         Assert.NotNull(tuple.Item2);
 
-        var array = ModuleHelper.Reformat<Scalar<float32>[]>(new IValue[] { a, b });
+        var array = ModuleHelper.Reformat<Scalar<float32>[]>((Variable[])[ a, b ]);
         Assert.Equal(2, array.Length);
 
         Assert.Throws<UnsupportedDTypeException>(
-            () => ModuleHelper.Reformat<List<IValue>>(new IValue[] { a }));
+            () => ModuleHelper.Reformat<List<IValue>>((Variable[])[ a ]));
         Assert.Throws<InvalidTensorOperationException>(
-            () => ModuleHelper.Reformat<(Scalar<float32>, Scalar<float32>)>(new IValue[] { a }));
+            () => ModuleHelper.Reformat<(Scalar<float32>, Scalar<float32>)>((Variable[])[ a ]));
 
         // ──────────────────────────────────────────────────────────────────
         // InfosFromTouts — each per-element-type arm + tuple / non-tuple split

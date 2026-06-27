@@ -72,9 +72,9 @@ namespace Shorokoo
         public Vector<int64> DShape => Imm.DShape;
         public Vector<int64> TShape => Imm.TShape;
         public Scalar<int64> TRank => Imm.TRank;
-        IVector ITensor.Vec() => (Variable)Imm.Vec();
+        IVector ITensor.Vec() => (Vector<T>)Imm.Vec();
         Vector<V> ITensor.Vec<V>() => Imm.Cast<V>().Vec();
-        IScalar ITensor.Scalar() => (Variable)Imm.Scalar();
+        IScalar ITensor.Scalar() => (Scalar<T>)Imm.Scalar();
         Scalar<V> ITensor.Scalar<V>() => Imm.Cast<V>().Scalar();
 
         // IValue surface — forward to the wrapped immutable.

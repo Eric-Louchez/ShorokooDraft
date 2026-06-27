@@ -10,7 +10,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Sin =====
 
         [AutoDiff(SIN)]
-        public static IValue?[] Sin<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Sin<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(sin(x))/dx = cos(x)
             return [grad * x.Cos()];
@@ -19,7 +19,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Cos =====
 
         [AutoDiff(COS)]
-        public static IValue?[] Cos<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Cos<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(cos(x))/dx = -sin(x)
             return [-(grad * x.Sin())];
@@ -28,7 +28,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Tan =====
 
         [AutoDiff(TAN)]
-        public static IValue?[] Tan<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Tan<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(tan(x))/dx = 1/cos²(x) = sec²(x)
             var cosX = x.Cos();
@@ -38,7 +38,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Asin =====
 
         [AutoDiff(ASIN)]
-        public static IValue?[] Asin<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Asin<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(asin(x))/dx = 1/√(1-x²)
             var one = TypedConst(1.0f, x);
@@ -48,7 +48,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Acos =====
 
         [AutoDiff(ACOS)]
-        public static IValue?[] Acos<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Acos<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(acos(x))/dx = -1/√(1-x²)
             var one = TypedConst(1.0f, x);
@@ -58,7 +58,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Atan =====
 
         [AutoDiff(ATAN)]
-        public static IValue?[] Atan<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Atan<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(atan(x))/dx = 1/(1+x²)
             var one = TypedConst(1.0f, x);
@@ -68,7 +68,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Sinh =====
 
         [AutoDiff(SINH)]
-        public static IValue?[] Sinh<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Sinh<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(sinh(x))/dx = cosh(x)
             return [grad * x.Cosh()];
@@ -77,7 +77,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Cosh =====
 
         [AutoDiff(COSH)]
-        public static IValue?[] Cosh<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Cosh<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(cosh(x))/dx = sinh(x)
             return [grad * x.Sinh()];
@@ -86,7 +86,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Asinh =====
 
         [AutoDiff(ASINH)]
-        public static IValue?[] Asinh<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Asinh<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(asinh(x))/dx = 1/√(x²+1)
             var one = TypedConst(1.0f, x);
@@ -96,7 +96,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Acosh =====
 
         [AutoDiff(ACOSH)]
-        public static IValue?[] Acosh<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Acosh<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(acosh(x))/dx = 1/√(x²-1)
             var one = TypedConst(1.0f, x);
@@ -106,7 +106,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Atanh =====
 
         [AutoDiff(ATANH)]
-        public static IValue?[] Atanh<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Atanh<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(atanh(x))/dx = 1/(1-x²)
             var one = TypedConst(1.0f, x);

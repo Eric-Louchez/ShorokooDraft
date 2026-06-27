@@ -2975,7 +2975,7 @@ public partial class NNStaticWrapperWindowEyeDetCheck
         var hann = NN.HannWindow<float32>(Scalar(5L));
         var det = NN.DeterminantMatrix(sq);
         var eye = NN.EyeLike<float32>(sq);
-        var eyeShifted = NN.EyeLike<int64>((ITensor)sq, k: 1);
+        var eyeShifted = NN.EyeLike<int64>((Variable)sq, k: 1);
         var cat = NN.Concat(new[] { sq, sq }, axis: 0);
         return (blackman, blackman32, hamming, hann, det, eye, eyeShifted, cat);
     }

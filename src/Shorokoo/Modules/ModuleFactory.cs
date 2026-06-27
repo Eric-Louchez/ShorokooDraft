@@ -35,7 +35,7 @@ namespace Shorokoo.Modules
     /// captured locals would be baked invisibly into the graph and shared across closures.
     /// Inside the body, everything available to <c>[Module]</c> <c>Inline</c> methods works
     /// unchanged: <c>[TrainableParamInitializer]</c> classes /
-    /// <see cref="Globals.CallTrainableParamInitializer(Delegate, IValue[])"/>,
+    /// <see cref="Globals.CallTrainableParamInitializer(Delegate, Variable[])"/>,
     /// <see cref="Globals.StateUpdate{T}(T, T)"/>, <c>LoopAPI.Iterate</c>, and calls into other
     /// modules.</para>
     /// </summary>

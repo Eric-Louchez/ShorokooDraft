@@ -62,10 +62,10 @@ namespace Shorokoo
             where F : IValue
             => Ops.IfElse(condition, whenTrue, whenFalse);
 
-        public static ImmutableArray<IValue?> IfElse(this Scalar<bit> condition, ImmutableArray<IValue?> whenTrue, ImmutableArray<IValue?> whenFalse)
+        public static ImmutableArray<Variable?> IfElse(this Scalar<bit> condition, ImmutableArray<Variable?> whenTrue, ImmutableArray<Variable?> whenFalse)
         {
             var ifOpen = OnnxOp.IfOpen(condition);
-            return OnnxOp.IfClose(whenTrue.AssertNotNulls().ToArray(), whenFalse.AssertNotNulls().ToArray(), ifOpen).Select(x => (IValue?)x).ToImmutableArray();
+            return OnnxOp.IfClose(whenTrue.AssertNotNulls().ToArray(), whenFalse.AssertNotNulls().ToArray(), ifOpen).Select(x => (Variable?)x).ToImmutableArray();
         }
     }
 }

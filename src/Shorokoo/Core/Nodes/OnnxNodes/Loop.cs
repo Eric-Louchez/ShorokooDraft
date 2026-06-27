@@ -15,8 +15,8 @@ using System.Xml.Linq;
 
 namespace Shorokoo
 {
-    using FullInputs = ImmutableDictionary<string, IValue?[]>;
-    using FullOutputs = ImmutableDictionary<string, IValue?[]>;
+    using FullInputs = ImmutableDictionary<string, Variable?[]>;
+    using FullOutputs = ImmutableDictionary<string, Variable?[]>;
 
     /// <summary>
     /// The body of the loop executes four times.
@@ -61,27 +61,27 @@ namespace Shorokoo
 
         private Scalar<bit>? continueWhileTensor;
         private Scalar<int64>? maxNumIterations;
-        // private Dictionary<IValue, LoopScanVariable> scanVariablesByScanInput = new Dictionary<IValue, LoopScanVariable>();
+        // private Dictionary<Variable, LoopScanVariable> scanVariablesByScanInput = new Dictionary<Variable, LoopScanVariable>();
 
         private Dictionary<(int NodeIndex, int InputIndex), LoopVariable> loopVariableByNodeInputLocation = new Dictionary<(int NodeIndex, int InputIndex), LoopVariable>();
         private Dictionary<(int NodeIndex, int OutputIndex), LoopVariable> loopVariableByNodeOutputLocation = new Dictionary<(int NodeIndex, int OutputIndex), LoopVariable>();
-        // private Dictionary<IValue, LoopVariable> openNodeInputs = new Dictionary<IValue, LoopVariable>();
+        // private Dictionary<Variable, LoopVariable> openNodeInputs = new Dictionary<Variable, LoopVariable>();
 
         // Open node outputs except the first two: the vestigal condition variable (always set to scalar true) and the iteration index variable.
-        private Dictionary<IValue, LoopVariable> openNodeOutputs = new Dictionary<IValue, LoopVariable>();
-        private Dictionary<IValue, LoopVariable> thirdPassOutputs = new Dictionary<IValue, LoopVariable>();
-        private Dictionary<IValue, LoopVariable> closeNodeOutputs = new Dictionary<IValue, LoopVariable>();
-        private Dictionary<IValue, LoopVariable> innerLoopCloseNodeOutputs = new Dictionary<IValue, LoopVariable>();
+        private Dictionary<Variable, LoopVariable> openNodeOutputs = new Dictionary<Variable, LoopVariable>();
+        private Dictionary<Variable, LoopVariable> thirdPassOutputs = new Dictionary<Variable, LoopVariable>();
+        private Dictionary<Variable, LoopVariable> closeNodeOutputs = new Dictionary<Variable, LoopVariable>();
+        private Dictionary<Variable, LoopVariable> innerLoopCloseNodeOutputs = new Dictionary<Variable, LoopVariable>();
 
-        // private HashSet<ITensor> zombieScanVariableOutputs = new HashSet<ITensor>();
+        // private HashSet<Variable> zombieScanVariableOutputs = new HashSet<Variable>();
 
-        private HashSet<IValue> allExternalInputs = new HashSet<IValue>();
-        private HashSet<IValue> allExternalInputExceptLoopVariables = new HashSet<IValue>();
-        private Dictionary<(int nodeIndex, int outputIndex), IValue> secondPassOuputZombieVariables = new Dictionary<(int nodeIndex, int outputIndex), IValue>();
+        private HashSet<Variable> allExternalInputs = new HashSet<Variable>();
+        private HashSet<Variable> allExternalInputExceptLoopVariables = new HashSet<Variable>();
+        private Dictionary<(int nodeIndex, int outputIndex), Variable> secondPassOuputZombieVariables = new Dictionary<(int nodeIndex, int outputIndex), Variable>();
 
         private Dictionary<(int NodeIndex, int InputIndex), LoopVariableInput> variableInputs = new Dictionary<(int NodeIndex, int InputIndex), LoopVariableInput>();
         private Dictionary<(int NodeIndex, int OutputIndex), LoopVariableOutput> variableOutputs = new Dictionary<(int NodeIndex, int OutputIndex), LoopVariableOutput>();
-        private Dictionary<IValue, LoopVariableOutput> firstPassVariableOutputs = new Dictionary<IValue, LoopVariableOutput>();
+        private Dictionary<Variable, LoopVariableOutput> firstPassVariableOutputs = new Dictionary<Variable, LoopVariableOutput>();
 
         /// <summary>
         /// A special purpose loop variable that lets us output the iteration index from the Loop Close Node.
@@ -136,10 +136,10 @@ namespace Shorokoo
             this.continueWhileTensor = breakWhenTensor;
         }
 
-        private static ImmutableDictionary<string, IValue?[]> applyMapping(ImmutableDictionary<string, IValue?[]> original, List<(IValue from, IValue to)> mapping)
+        private static ImmutableDictionary<string, Variable?[]> applyMapping(ImmutableDictionary<string, Variable?[]> original, List<(Variable from, Variable to)> mapping)
         {
-            var retval = new Dictionary<string, IValue?[]>();
-            var mappingDct = new Dictionary<IValue, IValue>();
+            var retval = new Dictionary<string, Variable?[]>();
+            var mappingDct = new Dictionary<Variable, Variable>();
             foreach (var (from, to) in mapping)
                 mappingDct[from] = to;
 
@@ -155,9 +155,9 @@ namespace Shorokoo
             return retval.ToImmutableDictionary();
         }
 
-        // private static ImmutableDictionary<string, IValue[]> applyNotNullMapping(ImmutableDictionary<string, IValue[]> original, List<(IValue from, IValue to)> mapping)
+        // private static ImmutableDictionary<string, Variable[]> applyNotNullMapping(ImmutableDictionary<string, Variable[]> original, List<(Variable from, Variable to)> mapping)
         // {
-        //     var retval = new Dictionary<string, IValue[]>();
+        //     var retval = new Dictionary<string, Variable[]>();
         //     var mappingDct = mapping.ToDictionary(x => x.from, x => x.to);
         //     foreach (var key in original.Keys)
         //         retval[key] = original[key].Select(x => mappingDct.ContainsKey(x) ? mappingDct[x] : x).ToArray();
@@ -212,10 +212,10 @@ namespace Shorokoo
             }
         }
 
-        public static IValue?[] Inputs(FullInputs fullInputs)
+        public static Variable?[] Inputs(FullInputs fullInputs)
             => fullInputs.OrderBy(x => x.Key).SelectMany(x => x.Value).ToArray();
 
-        public static IValue?[] Outputs(FullOutputs fullInputs)
+        public static Variable?[] Outputs(FullOutputs fullInputs)
             => fullInputs.OrderBy(x => x.Key).SelectMany(x => x.Value).ToArray();
 
         private Dictionary<int, Scalar<int64>> dctLoopIndexVariables = new();
@@ -332,7 +332,7 @@ namespace Shorokoo
                 // 6. Variables defined in the previous iteration of the loop.
 
                 // Variables of type 1, 2 and 5 must be kept as is. Variables of type 3 must use the corresponding openNodeOutput variable.
-                List<(IValue from, IValue to)> mapping = new List<(IValue from, IValue to)>();
+                List<(Variable from, Variable to)> mapping = new List<(Variable from, Variable to)>();
                 for (int inputIndex = 0; inputIndex < nodeInputs.Length; inputIndex++)
                 {
                     var inputVariable = nodeInputs[inputIndex];
@@ -366,7 +366,7 @@ namespace Shorokoo
                     }
                 }
 
-                List<(IValue from, IValue to)> outputMapping = new List<(IValue from, IValue to)>();
+                List<(Variable from, Variable to)> outputMapping = new List<(Variable from, Variable to)>();
                 for (int outputIndex = 0; outputIndex < nodeOutputs.Length; outputIndex++)
                 {
                     var outputVariable = nodeOutputs[outputIndex];
@@ -413,7 +413,7 @@ namespace Shorokoo
                 // loop's body with the corresponding variables from the output of the loop close node.
                 // This way the caller can use these variables freely outside the loop.
 
-                List<(IValue from, IValue to)> mapping = new List<(IValue from, IValue to)>();
+                List<(Variable from, Variable to)> mapping = new List<(Variable from, Variable to)>();
                 for (int outputIndex = 0; outputIndex < nodeOutputs.Length; outputIndex++)
                 {
                     var outputVariable = nodeOutputs[outputIndex];
@@ -567,7 +567,7 @@ namespace Shorokoo
             this.CurrentPass = 3;
         }
 
-        public void MapInnerLoopCloseNodeOutputsToOuterLoopThirdPassOutputs(ImmutableList<(IValue outerThirdPassOuput, IValue innerCloseNodeOutput)> mappings)
+        public void MapInnerLoopCloseNodeOutputsToOuterLoopThirdPassOutputs(ImmutableList<(Variable outerThirdPassOuput, Variable innerCloseNodeOutput)> mappings)
         {
             foreach (var mapping in mappings)
             {
@@ -580,7 +580,7 @@ namespace Shorokoo
             }
         }
 
-        public ImmutableList<(IValue outerThirdPassOuput, IValue innerCloseNodeOutput)> BuildLoopCloseNode()
+        public ImmutableList<(Variable outerThirdPassOuput, Variable innerCloseNodeOutput)> BuildLoopCloseNode()
         {
             if (this.CurrentPass != 3)
                 throw new InvalidTensorOperationException(ErrorCodes.FW021, "Loop Phase Validation", $"current pass: {this.CurrentPass}", "Cannot build loop close node - current pass must be 3");
@@ -826,10 +826,10 @@ namespace Shorokoo
         /// </code>
         /// </summary>
         /// <param name="toInits"></param>
-        public static void Init(params IValue[] toInits)
+        public static void Init(params Variable[] toInits)
         {
             foreach (var toInit in toInits)
-                NN.Identity(toInit);
+                OnnxOp.Identity(toInit, toInit.Rank);
         }
 
         public static IEnumerable<IterationContext> Iterate(Scalar<int64> maxNumIterations)
@@ -865,19 +865,19 @@ namespace Shorokoo
 
     public class LoopVariableInput
     {
-        public LoopVariableInput(IValue input, int nodeIndex, int inputIndex)
+        public LoopVariableInput(Variable input, int nodeIndex, int inputIndex)
         {
             this.Key = (nodeIndex, inputIndex);
             this.FirstPassInput = input;
         }
 
         public (int NodeIndex, int InputIndex) Key { get; private set; }
-        public IValue FirstPassInput { get; private set; }
-        public IValue? SecondPassInput { get; private set; }
+        public Variable FirstPassInput { get; private set; }
+        public Variable? SecondPassInput { get; private set; }
 
         public LoopVariableOutput? LoopVariableConnection { get; private set; }
 
-        public void SetSecondPassInput(IValue input)
+        public void SetSecondPassInput(Variable input)
         {
             Debug.Assert(this.SecondPassInput is null);
             this.SecondPassInput = input;
@@ -886,7 +886,7 @@ namespace Shorokoo
 
     public class LoopVariableOutput
     {
-        public LoopVariableOutput(IValue output, int nodeIndex, int outputIndex)
+        public LoopVariableOutput(Variable output, int nodeIndex, int outputIndex)
         {
             this.Key = (nodeIndex, outputIndex);
             this.FirstPassOutput = output;
@@ -894,18 +894,18 @@ namespace Shorokoo
 
         public (int NodeIndex, int OutputIndex) Key { get; private set; }
 
-        public IValue FirstPassOutput { get; private set; }
-        public IValue? SecondPassOutput { get; private set; }
+        public Variable FirstPassOutput { get; private set; }
+        public Variable? SecondPassOutput { get; private set; }
 
-        public IValue? ScanInput { get; private set; }
+        public Variable? ScanInput { get; private set; }
 
-        public void SetSecondPassZombieOutput(IValue output)
+        public void SetSecondPassZombieOutput(Variable output)
         {
             Debug.Assert(this.SecondPassOutput is null);
             this.SecondPassOutput = output;
         }
 
-        public void SetIsLocalScanVariable(IValue scanInput)
+        public void SetIsLocalScanVariable(Variable scanInput)
         {
             Debug.Assert(!this.IsLocalScanVariable);
             Debug.Assert(this.ScanInput is null);
@@ -919,7 +919,7 @@ namespace Shorokoo
 
     public class LoopVariable
     {
-        public LoopVariable(IValue? initializerVariable, IValue firstPassZombie, IValue secondPassZombie, bool isLocalScanVariable, List<(int NodeIndex, int InputIndex)> inputKeys, (int NodeIndex, int OutputIndex) outputKey)
+        public LoopVariable(Variable? initializerVariable, Variable firstPassZombie, Variable secondPassZombie, bool isLocalScanVariable, List<(int NodeIndex, int InputIndex)> inputKeys, (int NodeIndex, int OutputIndex) outputKey)
         {
             this.InputKeys = inputKeys.ToImmutableList();
             this.OutputKey = outputKey;
@@ -937,14 +937,14 @@ namespace Shorokoo
         /// <summary>
         /// The initial value available before the loop.
         /// </summary>
-        public IValue? OpenNodeInputInitializer { get; private set; }
+        public Variable? OpenNodeInputInitializer { get; private set; }
 
         /// <summary>
         /// The tensor used inside the Loop Body / Loop Graph
         /// </summary>
-        public IValue? OpenNodeOutput { get; private set; }
+        public Variable? OpenNodeOutput { get; private set; }
 
-        public IValue? ScanVariableThirdPassInput { get; private set; }
+        public Variable? ScanVariableThirdPassInput { get; private set; }
 
         /// <summary>
         /// The updated value after each execution of the Loop Body / Loop Graph
@@ -953,59 +953,59 @@ namespace Shorokoo
         /// If this is the output of a node that belong to a nested inner loop (at any level), then this
         /// will correspond to the CloseNode output variable of the outermost of these nested inner loops.
         /// </summary>
-        public IValue? CloseNodeInput => InnerLoopCloseNodeOutput ?? this.ScanVariableThirdPassInput ?? ThirdPassOutput;
+        public Variable? CloseNodeInput => InnerLoopCloseNodeOutput ?? this.ScanVariableThirdPassInput ?? ThirdPassOutput;
 
         /// <summary>
         /// The final value after the loop exits.
         /// </summary>
-        public IValue? CloseNodeOutput { get; private set; }
+        public Variable? CloseNodeOutput { get; private set; }
 
         /// <summary>
         /// Variable created during the first pass over the loop's body.
         /// If there is an outer then this is also the variable recorded as that outer loop's ThirdPassOutput.
         /// </summary>
-        public IValue FirstPassOutput { get; private set; }
+        public Variable FirstPassOutput { get; private set; }
 
         /// <summary>
         /// Variable created during the third pass over the loop's body.
         /// If there is an inner loop then this is also the variable recorded as that inner loop's FirstPassOutput
         /// </summary>
-        public IValue? ThirdPassOutput { get; private set; }
+        public Variable? ThirdPassOutput { get; private set; }
 
-        public IValue? InvalidFourthPassOutput { get; private set; }
+        public Variable? InvalidFourthPassOutput { get; private set; }
 
-        public IValue? FourthPassOutput => CloseNodeOutput ?? InvalidFourthPassOutput;
+        public Variable? FourthPassOutput => CloseNodeOutput ?? InvalidFourthPassOutput;
 
         /// <summary>
         /// When there is an inner loop, then this will hold that inner's loop corresponding Close Node Output
         /// it is to be used here as the close node input.
         /// </summary>
-        public IValue? InnerLoopCloseNodeOutput { get; private set; }
+        public Variable? InnerLoopCloseNodeOutput { get; private set; }
 
         /// <summary>
         /// Temporary variable created during the second pass over the loop's body. This variable should eventually get discarded.
         /// </summary>
-        public IValue? SecondPassZombie { get; private set; }
+        public Variable? SecondPassZombie { get; private set; }
 
-        public void SetOpenNodeOutput(IValue openNodeOutput)
+        public void SetOpenNodeOutput(Variable openNodeOutput)
         {
             Debug.Assert(this.OpenNodeOutput is null);
             this.OpenNodeOutput = openNodeOutput;
         }
 
-        public void SetThirdPassOutput(IValue thirdPassOutput)
+        public void SetThirdPassOutput(Variable thirdPassOutput)
         {
             Debug.Assert(this.ThirdPassOutput is null);
             this.ThirdPassOutput = thirdPassOutput;
         }
 
-        public void SetCloseNodeOutput(IValue closeNodeOutput)
+        public void SetCloseNodeOutput(Variable closeNodeOutput)
         {
             Debug.Assert(this.CloseNodeOutput is null);
             this.CloseNodeOutput = closeNodeOutput;
         }
 
-        public void SetInnerLoopCloseNodeOutput(IValue innerLoopCloseNodeOutput)
+        public void SetInnerLoopCloseNodeOutput(Variable innerLoopCloseNodeOutput)
         {
             Debug.Assert(this.InnerLoopCloseNodeOutput is null);
             this.InnerLoopCloseNodeOutput = innerLoopCloseNodeOutput;
@@ -1017,7 +1017,7 @@ namespace Shorokoo
             this.ScanVariableThirdPassInput = Shorokoo.Core.VariableHandle.Normalize(toScan);
         }
 
-        public void SetInvalidFourthPassOutput(IValue fourthPassOutput)
+        public void SetInvalidFourthPassOutput(Variable fourthPassOutput)
         {
             Debug.Assert(this.InvalidFourthPassOutput is null);
             this.InvalidFourthPassOutput = fourthPassOutput;

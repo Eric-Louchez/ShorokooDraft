@@ -32,7 +32,7 @@ namespace Shorokoo
         #region Scalar constants constructors
 
         /// <summary>Creates a constant scalar from a boxed value, dispatching on its runtime type.</summary>
-        public static IScalar Scalar(object val)
+        public static Variable Scalar(object val)
         {
             switch (val)
             {
@@ -377,20 +377,20 @@ namespace Shorokoo
             => (Variable)Tensor(OnnxUtils.GetDType<T>(), dims, base64IREncodedData);
 
         /// <summary>Creates a constant tensor of the given dtype from base64-encoded raw IR element data.</summary>
-        public static ITensor Tensor(DType dtype, long[] dims, string base64IREncodedData) => (ITensor)OnnxOp.Constant(TensorData(dtype, dims, base64IREncodedData));
+        public static Variable Tensor(DType dtype, long[] dims, string base64IREncodedData) => (Variable)OnnxOp.Constant(TensorData(dtype, dims, base64IREncodedData));
 
         /// <summary>Wraps existing typed TensorData in a constant tensor node.</summary>
         public static Tensor<T> MakeTensor<T>(TensorData<T> data) where T : IVarType
             => (Variable)OnnxOp.Constant(data);
 
         /// <summary>Wraps existing TensorData in a constant tensor node.</summary>
-        public static ITensor Tensor(TensorData data)
-            => (ITensor)OnnxOp.Constant(data);
+        public static Variable Tensor(TensorData data)
+            => (Variable)OnnxOp.Constant(data);
 
         /// <summary>Creates a constant tensor with the given dims filled with the element type's default value.</summary>
         public static Tensor<T> DefaultTensor<T>(long[] dims) where T : IVarType => (Variable)DefaultTensor(OnnxUtils.GetDType<T>(), dims);
         /// <summary>Creates a constant tensor with the given dims filled with the dtype's default value.</summary>
-        public static ITensor DefaultTensor(DType dtype, long[] dims) => (ITensor)OnnxOp.Constant(TensorDataWithDefaultVals(dtype, dims));
+        public static Variable DefaultTensor(DType dtype, long[] dims) => (Variable)OnnxOp.Constant(TensorDataWithDefaultVals(dtype, dims));
 
         #endregion
 
@@ -401,13 +401,13 @@ namespace Shorokoo
             where T : IVarType
             => tensors.Length == 0 ?
                     (Variable)OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>()) :
-                    (Variable)OnnxOp.SequenceConstruct([.. tensors.Cast<IValue>()]);
+                    (Variable)OnnxOp.SequenceConstruct([.. tensors.Select(x => (Variable)x)]);
 
         /// <summary>Creates a tensor sequence from the given tensors; an empty sequence when none are supplied.</summary>
-        public static ITensorSequence TensorSequence(DType dtype, params ITensor[] tensors)
+        public static Variable TensorSequence(DType dtype, params Variable[] tensors)
             => tensors.Length == 0 ?
-                    (ITensorSequence)OnnxOp.SequenceEmpty(dtype) :
-                    (ITensorSequence)OnnxOp.SequenceConstruct([.. tensors.Cast<IValue>()]);
+                    (Variable)OnnxOp.SequenceEmpty(dtype) :
+                    (Variable)OnnxOp.SequenceConstruct([.. tensors.Cast<Variable>()]);
         #endregion
 
         #region Optional Tensor constructors
@@ -418,8 +418,8 @@ namespace Shorokoo
             => (Variable)OnnxOp.Optional(tensor, DataStructure.Tensor, OnnxUtils.GetDType<T>());
 
         /// <summary>Creates an optional tensor wrapping the given tensor, or an empty optional when null.</summary>
-        public static IOptionalTensor OptionalTensor(DType dtype, ITensor? tensor = null)
-            => (IOptionalTensor)OnnxOp.Optional(tensor, DataStructure.Tensor, dtype);
+        public static Variable OptionalTensor(DType dtype, Variable? tensor = null)
+            => (Variable)OnnxOp.Optional(tensor, DataStructure.Tensor, dtype);
 
         #endregion
 
@@ -684,7 +684,7 @@ namespace Shorokoo
         }
 
         /// <summary>Creates a placeholder variable: a default-valued tensor constant, an empty optional, or an empty sequence, depending on structure.</summary>
-        public static IValue CreateVariable(DType type, int rank, DataStructure structure)
+        public static Variable CreateVariable(DType type, int rank, DataStructure structure)
         {
             switch (structure)
             {
@@ -790,11 +790,11 @@ namespace Shorokoo
         #region Input Tensors Constructors
 
         /// <summary>Creates a module input node matching the variable's dtype, rank, and data structure.</summary>
-        public static IValue ToInput(this IValue var)
+        public static Variable ToInput(this Variable var)
         {
             var structure = var.Structure();
             var dtype = var.Type;
-            var rank = var.Rank();
+            var rank = var.Rank;
             if (structure == DataStructure.Tensor)
                 return InternalOp.ModuleTensorInput(dtype, rank, null, var.ModuleFn, var.UniqueName);
 
@@ -874,8 +874,8 @@ namespace Shorokoo
         }
 
         /// <summary>Creates a runtime (graph) input tensor with optional name and rank/dims.</summary>
-        public static ITensor InputTensor(DType type, string? defaultName = null, TensorDim?[]? dims = null, int? rank = null)
-            => (ITensor) OnnxUtils.CallGeneric(type.ToIVarType(), typeof(Globals), nameof(createInputTensor), [defaultName, dims, rank]);
+        public static Variable InputTensor(DType type, string? defaultName = null, TensorDim?[]? dims = null, int? rank = null)
+            => Shorokoo.Core.VariableHandle.Normalize(OnnxUtils.CallGeneric(type.ToIVarType(), typeof(Globals), nameof(createInputTensor), [defaultName, dims, rank]))!;
 
         private static Tensor<T> createInputTensor<T>(string? defaultName = null, TensorDim?[]? dims = null, int? rank = null) where T : IVarType 
             => InputTensor<T>(defaultName, dims);
@@ -885,8 +885,8 @@ namespace Shorokoo
             => InputTensor<T>(defaultName, rank: 1).Vec();
 
         /// <summary>Creates a rank-1 runtime (graph) input.</summary>
-        public static IVector InputVector(DType type, string? defaultName = null)
-            => (IVector)OnnxUtils.CallGeneric(type.ToIVarType(), typeof(Globals), nameof(createInputVector), [defaultName]);
+        public static Variable InputVector(DType type, string? defaultName = null)
+            => Shorokoo.Core.VariableHandle.Normalize(OnnxUtils.CallGeneric(type.ToIVarType(), typeof(Globals), nameof(createInputVector), [defaultName]))!;
         private static Vector<T> createInputVector<T>(string? defaultName = null) where T : IVarType => InputVector<T>(defaultName);
 
         /// <summary>Creates a rank-0 runtime (graph) input.</summary>
@@ -894,8 +894,8 @@ namespace Shorokoo
             => InputTensor<T>(defaultName, rank: 0, moduleFn: moduleFn).Scalar();
 
         /// <summary>Creates a rank-0 runtime (graph) input.</summary>
-        public static IScalar InputScalar(DType type, string? defaultName = null, Function? moduleFn = null)
-            => (IScalar)OnnxUtils.CallGeneric(type.ToIVarType(), typeof(Globals), nameof(createInputScalar), [defaultName, moduleFn]);
+        public static Variable InputScalar(DType type, string? defaultName = null, Function? moduleFn = null)
+            => Shorokoo.Core.VariableHandle.Normalize(OnnxUtils.CallGeneric(type.ToIVarType(), typeof(Globals), nameof(createInputScalar), [defaultName, moduleFn]))!;
         private static Scalar<T> createInputScalar<T>(string? defaultName, Function? moduleFn) where T : IVarType => InputScalar<T>(defaultName, moduleFn);
 
         /// <summary>Not yet implemented; always throws.</summary>
@@ -904,8 +904,8 @@ namespace Shorokoo
                 "InputOptionalTensor functionality is not yet implemented");
 
         /// <summary>Not yet implemented; always throws.</summary>
-        public static IOptionalTensor InputOptionalTensor(DType type, string? defaultName = null)
-            => (IOptionalTensor)OnnxUtils.CallGeneric(type.ToIVarType(), typeof(Globals), nameof(createInputOptionalTensor), [defaultName]);
+        public static Variable InputOptionalTensor(DType type, string? defaultName = null)
+            => Shorokoo.Core.VariableHandle.Normalize(OnnxUtils.CallGeneric(type.ToIVarType(), typeof(Globals), nameof(createInputOptionalTensor), [defaultName]))!;
         private static OptionalTensor<T> createInputOptionalTensor<T>(string? defaultName = null) where T : IVarType => InputOptionalTensor<T>(defaultName);
 
         /// <summary>Not yet implemented; always throws.</summary>
@@ -914,8 +914,8 @@ namespace Shorokoo
                 "InputTensorSequence functionality is not yet implemented");
 
         /// <summary>Not yet implemented; always throws.</summary>
-        public static ITensorSequence InputTensorSequence(DType type, string? defaultName = null)
-            => (ITensorSequence)OnnxUtils.CallGeneric(type.ToIVarType(), typeof(Globals), nameof(createInputTensorSequence), [defaultName]);
+        public static Variable InputTensorSequence(DType type, string? defaultName = null)
+            => Shorokoo.Core.VariableHandle.Normalize(OnnxUtils.CallGeneric(type.ToIVarType(), typeof(Globals), nameof(createInputTensorSequence), [defaultName]))!;
         private static TensorSequence<T> createInputTensorSequence<T>(string? defaultName = null) where T : IVarType => InputTensorSequence<T>(defaultName);
 
         #endregion
@@ -932,7 +932,7 @@ namespace Shorokoo
         /// <typeparam name="T">The IStruct interface type defining the struct fields</typeparam>
         /// <param name="fields">Field values, positional in IStruct declaration order</param>
         /// <returns>A proxy implementing T with property access wired to graph operations</returns>
-        public static T TensorStruct<T>(params IValue[] fields) where T : IStruct
+        public static T TensorStruct<T>(params Variable[] fields) where T : IStruct
         {
             if (typeof(T) == typeof(DTypeStruct))
                 throw new InvalidOperationException("Globals.TensorStruct<DTypeStruct> requires a concrete IStruct interface type");
@@ -944,14 +944,14 @@ namespace Shorokoo
         }
 
         /// <summary>
-        /// Wraps an existing struct-shaped IValue (e.g. the result of <c>IfElse</c> or
+        /// Wraps an existing struct-shaped Variable (e.g. the result of <c>IfElse</c> or
         /// <c>SequenceAt</c> over a struct sequence) in a DispatchProxy implementing the given
         /// IStruct interface, so callers can read fields via property access (e.g.
         /// <c>proxy.First</c>) instead of <c>InternalOp.TensorStructGetField</c> calls.
         /// </summary>
         /// <typeparam name="T">The IStruct interface to expose</typeparam>
-        /// <param name="existingStruct">An IValue carrying struct-shaped data.</param>
-        public static T AsTensorStruct<T>(IValue existingStruct) where T : IStruct
+        /// <param name="existingStruct">An Variable carrying struct-shaped data.</param>
+        public static T AsTensorStruct<T>(Variable existingStruct) where T : IStruct
         {
             if (typeof(T) == typeof(DTypeStruct))
                 throw new InvalidOperationException("Globals.AsTensorStruct<DTypeStruct> requires a concrete IStruct interface type");
@@ -968,11 +968,11 @@ namespace Shorokoo
         #region Trainable Tensors
 
         /// <summary>Creates a trainable parameter tensor initialized from the given data.</summary>
-        public static ITensor TrainableTensor(TensorData data, string? defaultName = null)
-            => (ITensor)InternalOp.ModelParamData(data, isTrainable: true, identifierTemplateString: null, defaultName);
+        public static Variable TrainableTensor(TensorData data, string? defaultName = null)
+            => (Variable)InternalOp.ModelParamData(data, isTrainable: true, identifierTemplateString: null, defaultName);
 
-        internal static ITensor TrainableTensor(TensorData data, bool isTrainable, string? identifierTemplateString, string? defaultName = null)
-            => (ITensor)InternalOp.ModelParamData(data, isTrainable: isTrainable, identifierTemplateString, defaultName);
+        internal static Variable TrainableTensor(TensorData data, bool isTrainable, string? identifierTemplateString, string? defaultName = null)
+            => (Variable)InternalOp.ModelParamData(data, isTrainable: isTrainable, identifierTemplateString, defaultName);
 
         /// <summary>Creates a trainable parameter tensor initialized from the given data.</summary>
         public static Tensor<T> TrainableTensor<T>(TensorData<T> data, string? defaultName = null) where T : IVarType

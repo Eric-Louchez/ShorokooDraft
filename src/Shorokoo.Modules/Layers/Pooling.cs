@@ -26,7 +26,7 @@ namespace Shorokoo.Modules.Layers;
 /// broadcasts to every spatial axis; <c>padding</c> may also be
 /// <c>2*spatialRank</c> ONNX <c>[begin₁…beginₙ, end₁…endₙ]</c>). Scalar-square
 /// convenience overloads broadcast one scalar per knob (rank from
-/// <c>x.Rank() - 2</c>, which must be known at build time), and the
+/// <c>x.Rank - 2</c>, which must be known at build time), and the
 /// <c>*1d/2d/3d</c> aliases assert the rank. In every form <c>stride</c> defaults
 /// to <c>kernelSize</c> (the PyTorch convention). The historical scalar
 /// <see cref="MaxPool2d{T}(Tensor{T}, long, long?, long, long, bool)"/> /
@@ -108,7 +108,7 @@ public static class Pooling
 
     /// <summary>
     /// Square/cubic max-pool convenience overload: one scalar per geometry knob,
-    /// broadcast to every spatial axis (rank from <c>x.Rank() - 2</c>, which must
+    /// broadcast to every spatial axis (rank from <c>x.Rank - 2</c>, which must
     /// be known at graph-build time). <paramref name="stride"/> defaults to
     /// <paramref name="kernelSize"/>. See the per-axis
     /// <see cref="MaxPool{T}(Tensor{T}, long[], long[], long[], long[], bool, AutoPad)"/>.
@@ -220,7 +220,7 @@ public static class Pooling
 
     /// <summary>
     /// Square/cubic average-pool convenience overload: one scalar per geometry
-    /// knob, broadcast to every spatial axis (rank from <c>x.Rank() - 2</c>, which
+    /// knob, broadcast to every spatial axis (rank from <c>x.Rank - 2</c>, which
     /// must be known at graph-build time). <paramref name="stride"/> defaults to
     /// <paramref name="kernelSize"/>. See the per-axis
     /// <see cref="AvgPool{T}(Tensor{T}, long[], long[], long[], long[], bool, bool, AutoPad)"/>.
@@ -347,7 +347,7 @@ public static class Pooling
 
     /// <summary>
     /// Square/cubic Lᵖ-pool convenience overload: one scalar per geometry knob,
-    /// broadcast to every spatial axis (rank from <c>x.Rank() - 2</c>, which must
+    /// broadcast to every spatial axis (rank from <c>x.Rank - 2</c>, which must
     /// be known at graph-build time). <paramref name="stride"/> defaults to
     /// <paramref name="kernelSize"/>. See the per-axis
     /// <see cref="LpPool{T}(Tensor{T}, long[], long[], long[], long[], long, bool, AutoPad)"/>.
@@ -467,7 +467,7 @@ public static class Pooling
     /// <summary>
     /// Square/cubic <see cref="MaxPoolWithIndices{T}(Tensor{T}, long[], long[], long[], bool, AutoPad)"/>
     /// convenience overload: one scalar per geometry knob, broadcast to every
-    /// spatial axis (rank from <c>x.Rank() - 2</c>, which must be known at
+    /// spatial axis (rank from <c>x.Rank - 2</c>, which must be known at
     /// graph-build time). <paramref name="stride"/> defaults to
     /// <paramref name="kernelSize"/>.
     /// </summary>

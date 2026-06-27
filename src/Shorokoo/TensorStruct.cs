@@ -32,7 +32,7 @@ namespace Shorokoo
     {
         private Variable? inner;
 
-        IValue Shorokoo.Core.IValueHandle.Immutable => Imm;
+        Variable Shorokoo.Core.IValueHandle.Immutable => Imm;
 
         /// <summary>The wrapped immutable. A defaulted handle has no recoverable field layout, so this throws.</summary>
         internal readonly Variable Imm
@@ -47,30 +47,24 @@ namespace Shorokoo
         // ── User-facing API (the struct surface lives here, not on the immutable) ──
         public TensorStructDef Definition => Imm.Def;
 
-        public IValue GetField(string name) => Imm.Field(name);
+        public Variable GetField(string name) => Imm.Field(name);
 
         public TField GetField<TField>(string name) where TField : IValue
-        {
-            var field = Imm.Field(name);
-            if (field is TField typedField)
-                return typedField;
+            => VariableHandle.Cast<TField>(Imm.Field(name));
 
-            throw new InvalidCastException($"Field '{name}' is of type {field.GetType().Name}, not {typeof(TField).Name}");
-        }
-
-        public bool TryGetField(string name, out IValue? field) => Imm.Fields.TryGetValue(name, out field);
+        public bool TryGetField(string name, out Variable? field) => Imm.Fields.TryGetValue(name, out field);
 
         public IEnumerable<string> FieldNames => Imm.Fields.Keys;
 
-        public IEnumerable<KeyValuePair<string, IValue>> AllFields => Imm.Fields;
+        public IEnumerable<KeyValuePair<string, Variable>> AllFields => Imm.Fields;
 
-        internal TensorStruct<T> WithFields(ImmutableDictionary<string, IValue> newFields) => Imm.WithFields(newFields);
+        internal TensorStruct<T> WithFields(ImmutableDictionary<string, Variable> newFields) => Imm.WithFields(newFields);
 
         public override readonly string ToString() => Imm.ToString();
 
         // ITensorStruct explicit members.
         TensorStructDef ITensorStruct.Definition => Imm.Def;
-        IValue ITensorStruct.GetField(string name) => Imm.Field(name);
+        Variable ITensorStruct.GetField(string name) => Imm.Field(name);
 
         // IValue surface — forward to the wrapped immutable.
         public Node OwningNode => Imm.OwningNode;

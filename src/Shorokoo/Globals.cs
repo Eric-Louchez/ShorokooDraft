@@ -24,9 +24,9 @@ namespace Shorokoo
         /// Creates a trainable parameter node whose value is produced by the given
         /// [TrainableParamInitializer] delegate, invoked with the supplied inputs.
         /// </summary>
-        public static ITensor CallTrainableParamInitializer(Delegate trainableParamInitializerImplementation, params IValue[] inputs)
+        public static Variable CallTrainableParamInitializer(Delegate trainableParamInitializerImplementation, params Variable[] inputs)
         {
-            return (ITensor)CallTrainableParamInitializer(trainableParamInitializerImplementation, defaultName: null, isTrainable: true, inputs);
+            return (Variable)CallTrainableParamInitializer(trainableParamInitializerImplementation, defaultName: null, isTrainable: true, inputs);
         }
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace Shorokoo
         /// <see cref="StateOwnership.ModuleOwned"/>; use the overload taking a
         /// <see cref="StateOwnership"/> for optimizer-owned state.
         /// </summary>
-        public static ITensor CallTrainableParamInitializer(Delegate trainableParamInitializerImplementation, string? defaultName, bool isTrainable, params IValue[] inputs)
+        public static Variable CallTrainableParamInitializer(Delegate trainableParamInitializerImplementation, string? defaultName, bool isTrainable, params Variable[] inputs)
             => CallTrainableParamInitializer(trainableParamInitializerImplementation, defaultName, isTrainable, StateOwnership.ModuleOwned, inputs);
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace Shorokoo
         /// (<see cref="StateOwnership.ModuleOwned"/>) or an optimizer module
         /// (<see cref="StateOwnership.OptimizerOwned"/>).
         /// </summary>
-        public static ITensor CallTrainableParamInitializer(Delegate trainableParamInitializerImplementation, string? defaultName, bool isTrainable, StateOwnership stateOwnership, params IValue[] inputs)
+        public static Variable CallTrainableParamInitializer(Delegate trainableParamInitializerImplementation, string? defaultName, bool isTrainable, StateOwnership stateOwnership, params Variable[] inputs)
         {
             Vector<int64> iterationIndices = [.. LoopAPI.IterationIndices];
 
@@ -57,7 +57,7 @@ namespace Shorokoo
                 defaultName: defaultName,
                 stateOwnership: stateOwnership);
 
-            return (ITensor)InternalOp.TrainableParamRef(inputs, iterationIndices, localModelId: null, targetFn.Outputs[0].Type, targetFn.Outputs[0].Rank(), targetFn, isTrainable);
+            return (Variable)InternalOp.TrainableParamRef(inputs, iterationIndices, localModelId: null, targetFn.Outputs[0].Type, targetFn.Outputs[0].Rank, targetFn, isTrainable);
         }
 
         /// <summary>
@@ -72,7 +72,7 @@ namespace Shorokoo
         /// <param name="isTrainable">True for trainable parameters, false for state parameters</param>
         /// <param name="inputs">The input variables to the initializer</param>
         /// <returns>A tensor with the correct generic type</returns>
-        public static Tensor<T> CallTrainableParamInitializer<T>(Delegate trainableParamInitializerImplementation, string? defaultName, bool isTrainable, params IValue[] inputs) where T : IVarType
+        public static Tensor<T> CallTrainableParamInitializer<T>(Delegate trainableParamInitializerImplementation, string? defaultName, bool isTrainable, params Variable[] inputs) where T : IVarType
             => CallTrainableParamInitializer<T>(trainableParamInitializerImplementation, defaultName, isTrainable, StateOwnership.ModuleOwned, inputs);
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace Shorokoo
         /// generic type; for state parameters (<paramref name="isTrainable"/> false),
         /// <paramref name="stateOwnership"/> records who updates the state.
         /// </summary>
-        public static Tensor<T> CallTrainableParamInitializer<T>(Delegate trainableParamInitializerImplementation, string? defaultName, bool isTrainable, StateOwnership stateOwnership, params IValue[] inputs) where T : IVarType
+        public static Tensor<T> CallTrainableParamInitializer<T>(Delegate trainableParamInitializerImplementation, string? defaultName, bool isTrainable, StateOwnership stateOwnership, params Variable[] inputs) where T : IVarType
         {
             Vector<int64> iterationIndices = [.. LoopAPI.IterationIndices];
 
@@ -100,7 +100,7 @@ namespace Shorokoo
             // For concrete types: use OnnxUtils.GetDType<T>() to get the concrete DType.
             // GetDType<T>() returns null for unknown types, so we fallback to targetFn's dtype.
             var dtype = OnnxUtils.GetDType<T>();
-            var rank = targetFn.Outputs[0].Rank();
+            var rank = targetFn.Outputs[0].Rank;
 
 
             // Build generic type args array (mirrors MODEL_INVOKE behavior).
@@ -115,10 +115,10 @@ namespace Shorokoo
             // Create the trainable param ref with the appropriate dtype and generic type args
             var result = InternalOp.TrainableParamRef(inputs, iterationIndices, localModelId: null, dtype, rank, targetFn, isTrainable, genericTypeArgs);
 
-            // The result is IValue but we know it's a tensor with the specified dtype.
-            // Cast through ITensor first (the interface), then to the concrete Tensor<T>.
+            // The result is Variable but we know it's a tensor with the specified dtype.
+            // Cast through Variable first (the interface), then to the concrete Tensor<T>.
             // This cast succeeds because TrainableParamRef creates a Variable with the correct dtype.
-            return (Variable)(ITensor)result;
+            return (Variable)(Variable)result;
         }
 
         /// <summary>
@@ -152,7 +152,7 @@ namespace Shorokoo
         /// 3. Registers the update pair for later use when wrapping module outputs with WithStateDeps
         /// 4. Ensures that if the module output is used, the state update will be included in the graph
         /// </summary>
-        /// <typeparam name="T">The tensor type (must implement ITensor)</typeparam>
+        /// <typeparam name="T">The tensor type (must implement Variable)</typeparam>
         /// <param name="originalState">The original state tensor from a state initializer</param>
         /// <param name="updatedState">The computed updated value for the state</param>
         /// <exception cref="InvalidStateUpdateException">
@@ -160,11 +160,11 @@ namespace Shorokoo
         /// trainable parameter). The message explains how to declare a state variable via a
         /// [StateInitializer] class.
         /// </exception>
-        public static void StateUpdate<T>(T originalState, T updatedState) where T : ITensor
+        public static void StateUpdate<T>(T originalState, T updatedState) where T : IValue
         {
-            // Get the underlying IValue for both tensors
-            var originalVar = originalState as IValue;
-            var updatedVar = updatedState as IValue;
+            // Unwrap the user-facing handles to their backing graph-side Variable nodes.
+            var originalVar = VariableHandle.Normalize(originalState);
+            var updatedVar = VariableHandle.Normalize(updatedState);
 
             if (originalVar is null || updatedVar is null)
             {
@@ -178,7 +178,7 @@ namespace Shorokoo
             var producer = originalVar.OwningNode;
             while (producer.OpCode == OpCodes.IDENTITY
                    && producer.Inputs.Length > 0
-                   && producer.Inputs[0] is IValue identityInput)
+                   && producer.Inputs[0] is Variable identityInput)
             {
                 producer = identityInput.OwningNode;
             }

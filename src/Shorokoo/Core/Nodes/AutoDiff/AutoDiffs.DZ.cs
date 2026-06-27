@@ -47,7 +47,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Arithmetic Operations =====
 
         [AutoDiff(SUB)]
-        public static IValue?[] Sub<T>(Tensor<T> a, Tensor<T> b, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Sub<T>(Tensor<T> a, Tensor<T> b, Tensor<T> grad) where T : IVarType
         {
             // d(a - b)/da = 1, d(a - b)/db = -1
             var aGrad = ReverseBroadcast(grad, a.DShape);
@@ -57,7 +57,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         }
 
         [AutoDiff(DIV)]
-        public static IValue?[] Div<T>(Tensor<T> a, Tensor<T> b, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Div<T>(Tensor<T> a, Tensor<T> b, Tensor<T> grad) where T : IVarType
         {
             // d(a/b)/da = 1/b, d(a/b)/db = -a/b^2
             var aGrad = ReverseBroadcast(grad / b, a.DShape);
@@ -67,14 +67,14 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         }
 
         [AutoDiff(NEG)]
-        public static IValue?[] Neg<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Neg<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(-x)/dx = -1
             return [-grad];
         }
 
         [AutoDiff(POW)]
-        public static IValue?[] Pow<T>(Tensor<T> x, Tensor<T> y, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Pow<T>(Tensor<T> x, Tensor<T> y, Tensor<T> grad) where T : IVarType
         {
             // d(x^y)/dx = y * x^(y-1) * grad
             // d(x^y)/dy = x^y * ln(x) * grad
@@ -90,21 +90,21 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Math Functions =====
 
         [AutoDiff(EXP)]
-        public static IValue?[] Exp<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Exp<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(exp(x))/dx = exp(x)
             return [grad * x.Exp()];
         }
 
         [AutoDiff(LOG)]
-        public static IValue?[] Log<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Log<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(ln(x))/dx = 1/x → gradient = grad / x
             return [grad / x];
         }
 
         [AutoDiff(SQRT)]
-        public static IValue?[] Sqrt<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Sqrt<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(sqrt(x))/dx = 1/(2*sqrt(x))
             var two = TypedConst(2.0f, x);
@@ -114,7 +114,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Activation Functions =====
 
         [AutoDiff(RELU)]
-        public static IValue?[] Relu<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Relu<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(relu(x))/dx = 1 if x > 0, 0 otherwise
             var zero = TypedConst(0.0f, x);
@@ -123,7 +123,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         }
 
         [AutoDiff(SIGMOID)]
-        public static IValue?[] Sigmoid<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Sigmoid<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(sigmoid(x))/dx = sigmoid(x) * (1 - sigmoid(x))
             var sig = x.Sigmoid();
@@ -132,7 +132,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         }
 
         [AutoDiff(TANH)]
-        public static IValue?[] Tanh<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Tanh<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(tanh(x))/dx = 1 - tanh(x)^2
             var tanhX = x.Tanh();
@@ -143,7 +143,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Reduction Operations =====
 
         [AutoDiff(REDUCE_SUM)]
-        public static IValue?[] ReduceSum<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static Variable?[] ReduceSum<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -153,7 +153,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         }
 
         [AutoDiff(REDUCE_MEAN)]
-        public static IValue?[] ReduceMean<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static Variable?[] ReduceMean<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -183,7 +183,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Shape Operations =====
 
         [AutoDiff(RESHAPE)]
-        public static IValue?[] Reshape<T1, T2>(Tensor<T1> input, Tensor<T2> shape, Tensor<T1> grad, bool? allowzero) 
+        public static Variable?[] Reshape<T1, T2>(Tensor<T1> input, Tensor<T2> shape, Tensor<T1> grad, bool? allowzero) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -193,7 +193,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         }
 
         [AutoDiff(TRANSPOSE)]
-        public static IValue?[] Transpose<T>(Tensor<T> data, Tensor<T> grad, long[]? perm) where T : IVarType
+        public static Variable?[] Transpose<T>(Tensor<T> data, Tensor<T> grad, long[]? perm) where T : IVarType
         {
             // Gradient of Transpose: transpose with inverse permutation
             if (perm == null || perm.Length == 0)
@@ -214,7 +214,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Matrix Operations =====
 
         [AutoDiff(MATMUL)]
-        public static IValue?[] MatMul<T>(Tensor<T> a, Tensor<T> b, Tensor<T> grad) where T : IVarType
+        public static Variable?[] MatMul<T>(Tensor<T> a, Tensor<T> b, Tensor<T> grad) where T : IVarType
         {
             // For 2D: d(A@B)/dA = grad @ B^T, d(A@B)/dB = A^T @ grad
             // For batched matmul, transpose the last two dims
@@ -273,7 +273,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Identity Operation =====
 
         [AutoDiff(IDENTITY)]
-        public static IValue?[] Identity<T>(Tensor<T> input, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Identity<T>(Tensor<T> input, Tensor<T> grad) where T : IVarType
         {
             // Identity gradient: pass through unchanged
             return [grad];
@@ -282,7 +282,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Softmax =====
 
         [AutoDiff(SOFTMAX)]
-        public static IValue?[] Softmax<T>(Tensor<T> input, Tensor<T> grad, long? axis) where T : IVarType
+        public static Variable?[] Softmax<T>(Tensor<T> input, Tensor<T> grad, long? axis) where T : IVarType
         {
             // d(softmax(x))/dx_i = softmax(x)_i * (delta_ij - softmax(x)_j)
             // Efficient form: grad_input = softmax * (grad - sum(grad * softmax, axis=axis, keepdims=true))
@@ -296,7 +296,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ReduceProd =====
 
         [AutoDiff(REDUCE_PROD)]
-        public static IValue?[] ReduceProd<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static Variable?[] ReduceProd<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -329,7 +329,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ReduceSumSquare =====
 
         [AutoDiff(REDUCE_SUM_SQUARE)]
-        public static IValue?[] ReduceSumSquare<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static Variable?[] ReduceSumSquare<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -342,7 +342,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ReduceLogSumExp =====
 
         [AutoDiff(REDUCE_LOG_SUM_EXP)]
-        public static IValue?[] ReduceLogSumExp<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static Variable?[] ReduceLogSumExp<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -362,7 +362,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ReduceL1 =====
 
         [AutoDiff(REDUCE_L1)]
-        public static IValue?[] ReduceL1<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static Variable?[] ReduceL1<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -374,7 +374,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ReduceL2 =====
 
         [AutoDiff(REDUCE_L2)]
-        public static IValue?[] ReduceL2<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static Variable?[] ReduceL2<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -392,7 +392,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ReduceLogSum =====
 
         [AutoDiff(REDUCE_LOG_SUM)]
-        public static IValue?[] ReduceLogSum<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static Variable?[] ReduceLogSum<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -410,7 +410,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ReduceMax =====
 
         [AutoDiff(REDUCE_MAX)]
-        public static IValue?[] ReduceMax<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static Variable?[] ReduceMax<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -434,7 +434,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ReduceMin =====
 
         [AutoDiff(REDUCE_MIN)]
-        public static IValue?[] ReduceMin<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
+        public static Variable?[] ReduceMin<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad, bool? keepdims, bool? noopWithEmptyAxes) 
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -458,7 +458,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== CumSum =====
 
         [AutoDiff(CUM_SUM)]
-        public static IValue?[] CumSum<T1, T2>(Tensor<T1> x, Tensor<T2> axis, Tensor<T1> grad, bool? exclusive, bool? reverse)
+        public static Variable?[] CumSum<T1, T2>(Tensor<T1> x, Tensor<T2> axis, Tensor<T1> grad, bool? exclusive, bool? reverse)
             where T1 : IVarType
             where T2 : IVarType
         {

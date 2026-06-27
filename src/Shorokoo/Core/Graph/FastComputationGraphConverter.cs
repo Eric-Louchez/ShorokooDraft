@@ -18,10 +18,10 @@ using Shorokoo.Core.Nodes.Processors.Helpers;
 namespace Shorokoo.Graph
 {
     /// <summary>
-    /// FastCG-only helpers: build IValue / Node views of a
+    /// FastCG-only helpers: build Variable / Node views of a
     /// <see cref="FastComputationGraph"/>, walk it for Functions, and populate a fresh
     /// FastCG from a topologically-ordered Node sequence (used by the FastCG
-    /// constructor). All operations stay within the FastCG / Node / IValue triangle —
+    /// constructor). All operations stay within the FastCG / Node / Variable triangle —
     /// no <c>ComputationGraph</c> wrapper is materialized.
     /// </summary>
     public static partial class FastComputationGraphConverter
@@ -38,28 +38,28 @@ namespace Shorokoo.Graph
         /// Populates an empty <paramref name="fastGraph"/> by lowering the provided
         /// topologically-ordered <see cref="Node"/> sequence to <see cref="FastNode"/>s
         /// and wiring up <paramref name="inputs"/> / <paramref name="outputs"/>. Used by
-        /// the <see cref="FastComputationGraph(System.Collections.Immutable.ImmutableArray{IValue}, System.Collections.Immutable.ImmutableArray{IValue}, System.Collections.Immutable.ImmutableArray{int?}?, IReadOnlyDictionary{IValue, FastTensorKey}?)"/>
+        /// the <see cref="FastComputationGraph(System.Collections.Immutable.ImmutableArray{Variable}, System.Collections.Immutable.ImmutableArray{Variable}, System.Collections.Immutable.ImmutableArray{int?}?, IReadOnlyDictionary{Variable, FastTensorKey}?)"/>
         /// constructor.
         /// </summary>
         internal static void PopulateFromNodes(
             FastComputationGraph fastGraph,
             IEnumerable<Node> topologicalOrderNodes,
-            IEnumerable<IValue> inputs,
-            IEnumerable<IValue> outputs,
+            IEnumerable<Variable> inputs,
+            IEnumerable<Variable> outputs,
             int?[] outputRankOverrides,
             bool useSequentialIds,
-            IReadOnlyDictionary<IValue, FastTensorKey>? externalInputKeys = null)
+            IReadOnlyDictionary<Variable, FastTensorKey>? externalInputKeys = null)
         {
             fastGraph.OutputRankOverrides = outputRankOverrides;
 
             // When the source node sequence contains duplicate NodeKeys (which happens when
             // the same cached inner function is inlined multiple times), we must assign fresh
-            // FastNodeKeys to the duplicates. We track the mapping from IValue objects
+            // FastNodeKeys to the duplicates. We track the mapping from Variable objects
             // (unique by reference) to the correct FastTensorKey so that input wiring
             // follows the right producer even when keys would otherwise collide.
             var usedNodeKeys = new HashSet<NodeKey>();
             var usedFastIds = useSequentialIds ? new HashSet<UInt128>() : null;
-            var variableToKey = new Dictionary<IValue, FastTensorKey>(ReferenceEqualityComparer.Instance);
+            var variableToKey = new Dictionary<Variable, FastTensorKey>(ReferenceEqualityComparer.Instance);
             // For GraphOpenNodeKey: map from Node object to the assigned FastNodeKey.
             var nodeToAssignedKey = new Dictionary<Node, FastNodeKey>(ReferenceEqualityComparer.Instance);
 
@@ -73,7 +73,7 @@ namespace Shorokoo.Graph
             foreach (var node in topologicalOrderNodes)
             {
                 if (externalInputKeys is not null && node.Outputs.Length == 1 &&
-                    node.Outputs[0] is IValue outIv && externalInputKeys.ContainsKey(outIv))
+                    node.Outputs[0] is Variable outIv && externalInputKeys.ContainsKey(outIv))
                 {
                     // Stand-in input — host key already in variableToKey; don't emit a FastNode.
                     continue;
@@ -203,28 +203,28 @@ namespace Shorokoo.Graph
         }
 
         /// <summary>
-        /// Builds the <see cref="FastTensorKey"/> → <see cref="IValue"/> mapping for
+        /// Builds the <see cref="FastTensorKey"/> → <see cref="Variable"/> mapping for
         /// <paramref name="fastGraph"/> by reconstructing the underlying
-        /// <see cref="Node"/> / <see cref="IValue"/> objects. Use this when you only
-        /// need per-tensor IValue metadata (dtype, structure, rank, unique name,
+        /// <see cref="Node"/> / <see cref="Variable"/> objects. Use this when you only
+        /// need per-tensor Variable metadata (dtype, structure, rank, unique name,
         /// owning module function).
         /// </summary>
-        public static Dictionary<FastTensorKey, IValue> BuildTensorMapping(FastComputationGraph fastGraph)
+        public static Dictionary<FastTensorKey, Variable> BuildTensorMapping(FastComputationGraph fastGraph)
         {
             if (fastGraph is null) throw new ArgumentNullException(nameof(fastGraph));
             return BuildNodesAndTensorMap(fastGraph).tensorsByKey;
         }
 
         /// <summary>
-        /// Reconstructs the underlying <see cref="Node"/> / <see cref="IValue"/> objects
+        /// Reconstructs the underlying <see cref="Node"/> / <see cref="Variable"/> objects
         /// for <paramref name="fastGraph"/> in topological (build) order, returning the
-        /// rebuilt nodes alongside the inputs, outputs and FastTensorKey → IValue map.
-        /// Use this when a caller wants Node/IValue views of the graph.
+        /// rebuilt nodes alongside the inputs, outputs and FastTensorKey → Variable map.
+        /// Use this when a caller wants Node/Variable views of the graph.
         /// </summary>
         public static (ImmutableArray<Node> nodesInTopoOrder,
-                       ImmutableArray<IValue> inputs,
-                       ImmutableArray<IValue> outputs,
-                       Dictionary<FastTensorKey, IValue> tensorMapping)
+                       ImmutableArray<Variable> inputs,
+                       ImmutableArray<Variable> outputs,
+                       Dictionary<FastTensorKey, Variable> tensorMapping)
             BuildNodes(FastComputationGraph fastGraph)
         {
             if (fastGraph is null) throw new ArgumentNullException(nameof(fastGraph));
@@ -290,14 +290,14 @@ namespace Shorokoo.Graph
         }
 
         private static (ImmutableArray<Node> nodesInTopoOrder,
-                        Dictionary<FastTensorKey, IValue> tensorsByKey,
-                        ImmutableArray<IValue> inputs,
-                        ImmutableArray<IValue> outputs)
+                        Dictionary<FastTensorKey, Variable> tensorsByKey,
+                        ImmutableArray<Variable> inputs,
+                        ImmutableArray<Variable> outputs)
             BuildNodesAndTensorMap(FastComputationGraph fastGraph)
         {
-            // Map from the stored FastTensorKey to the freshly-created IValue we built while
+            // Map from the stored FastTensorKey to the freshly-created Variable we built while
             // rebuilding nodes in topological order.
-            var tensorsByKey = new Dictionary<FastTensorKey, IValue>();
+            var tensorsByKey = new Dictionary<FastTensorKey, Variable>();
             var nodesByKey = new Dictionary<FastNodeKey, Node>();
             var nodesInOrder = new List<Node>(fastGraph.Nodes.Count);
 
@@ -318,12 +318,12 @@ namespace Shorokoo.Graph
                     kvp => kvp.Key,
                     kvp => kvp.Value.Select(k =>
                     {
-                        if (k is null || k.Value.IsEmpty) return (IValue?)null;
+                        if (k is null || k.Value.IsEmpty) return (Variable?)null;
                         if (!tensorsByKey.TryGetValue(k.Value, out var found))
                             throw new InvalidOperationException(
                                 $"FastComputationGraphConverter: tensor {k.Value} referenced by node '{fastNode.OpCode}' (Key={fastNode.Key}) was not produced by any earlier node. " +
                                 "Make sure FastComputationGraph.Nodes is in topological order.");
-                        return (IValue?)found;
+                        return (Variable?)found;
                     }).ToArray());
 
                 Node? openNode = null;
@@ -440,7 +440,7 @@ namespace Shorokoo.Graph
                 closeNode.ConnectingTensor = resolvedOpen.ConnectingTensor;
             }
 
-            IValue LookupGraphTensor(FastTensorKey key, string role)
+            Variable LookupGraphTensor(FastTensorKey key, string role)
             {
                 if (tensorsByKey.TryGetValue(key, out var v)) return v;
                 throw new InvalidOperationException(
@@ -459,7 +459,7 @@ namespace Shorokoo.Graph
             return (nodesInOrder.ToImmutableArray(), tensorsByKey, inputs, outputs);
         }
 
-        private static void ApplyOriginalNames(ImmutableArray<IValue> variables, List<string?> names)
+        private static void ApplyOriginalNames(ImmutableArray<Variable> variables, List<string?> names)
         {
             for (int i = 0; i < variables.Length && i < names.Count; i++)
             {

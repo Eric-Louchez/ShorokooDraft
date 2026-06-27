@@ -125,8 +125,9 @@ namespace Shorokoo
         /// Gets a field from this TensorStruct by name.
         /// </summary>
         /// <param name="name">The name of the field to retrieve</param>
-        /// <returns>The IValue for the specified field</returns>
-        IValue GetField(string name);
+        /// <returns>The graph node (<see cref="Variable"/>) for the specified field; it
+        /// implicitly converts to the typed handle the caller expects.</returns>
+        Variable GetField(string name);
     }
 
     public static class IValueExtensions
@@ -161,11 +162,17 @@ namespace Shorokoo
 
         public static bool IsModelInput(this IValue var) => var.OwningNode.IsModelInput;
 
-        internal static IValue ToVariable(this IModuleParam param) => 
-                        param is IValue var ? var :
-                        param is IModel model ? model.ModelVariable :
-                        param is IModule module ? module.ModuleVariable :
-                        throw new InvalidTensorOperationException(ErrorCodes.CR001, "ToVariable", param?.GetType()?.Name ?? "null", 
-                            "Invalid IModuleParam type for variable conversion");
+        // Unwrap a module parameter to its graph-side Variable node. Handles (IValue) carry their
+        // backing node via IValueHandle; models/modules expose it through their *Variable handle.
+        internal static Variable ToVariable(this IModuleParam param) =>
+                        param switch
+                        {
+                            Variable v => v,
+                            IModel model => VariableHandle.Normalize(model.ModelVariable)!,
+                            IModule module => VariableHandle.Normalize(module.ModuleVariable)!,
+                            _ => VariableHandle.Normalize(param)
+                                 ?? throw new InvalidTensorOperationException(ErrorCodes.CR001, "ToVariable", param?.GetType()?.Name ?? "null",
+                                        "Invalid IModuleParam type for variable conversion"),
+                        };
     }
 }

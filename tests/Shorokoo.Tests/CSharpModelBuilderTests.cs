@@ -104,7 +104,7 @@ public class CSharpModelBuilderCoverageTests
 
     private static FastComputationGraph BuildConstantBranchesGraph()
     {
-        var outputs = new IValue[]
+        var outputs = new Variable[]
         {
             Scalar(1.5),                                // float64 scalar
             Scalar((short)2),                           // int16 scalar (<4 cast path)
@@ -165,7 +165,7 @@ public class CSharpModelBuilderCoverageTests
 
         return ToFastGraph(new FastComputationGraph(
             [rankedElem, unrankedElem],
-            ImmutableArray.Create<IValue>(atInsert, atErase, atIdentity)));
+            ImmutableArray.Create<Variable>(atInsert, atErase, atIdentity)));
     }
 
     private static FastComputationGraph BuildScanLoopGraph()
@@ -347,7 +347,7 @@ public class CSharpModelBuilderCoverageTests
             finalIdx = ctx.IterationIndex;
             ctx.Break(ctx.IterationIndex >= Scalar(0L));
         }
-        var graph = new FastComputationGraph([], ImmutableArray.Create<IValue>(scanned!, finalIdx!));
+        var graph = new FastComputationGraph([], ImmutableArray.Create<Variable>(scanned!, finalIdx!));
         var code = new CSharpModelBuilder().BuildFullGraph(ToFastGraph(graph), "CovTest");
         // finalIdx is declared inside the foreach but consumed by the return
         // expression at outer scope; codegen must emit a forward declaration.
@@ -410,16 +410,16 @@ public class CSharpModelBuilderCoverageTests
     {
         // value_floats attribute → AttributeType.Floats with :params}
         var floats = NodeBuilder.CallCustomOperator<Vector<float32>>(
-            OpCodes.CONSTANT, new IValue[] { },
+            OpCodes.CONSTANT, new Variable[] { },
             new object?[] { OnnxOpAttributeNames.AttrValueFloats, new float[] { 1.0f, 2.0f, 3.0f } });
 
         // value_ints attribute → AttributeType.Longs with :params}
         var ints = NodeBuilder.CallCustomOperator<Vector<int64>>(
-            OpCodes.CONSTANT, new IValue[] { },
+            OpCodes.CONSTANT, new Variable[] { },
             new object?[] { OnnxOpAttributeNames.AttrValueInts, new long[] { 10L, 20L, 30L } });
 
         var graph = new FastComputationGraph(
-            [], ImmutableArray.Create<IValue>(floats, ints));
+            [], ImmutableArray.Create<Variable>(floats, ints));
         var code = new CSharpModelBuilder().BuildFullGraph(ToFastGraph(graph), "CovTest");
         Assert.Contains("Vector(", code);
     }

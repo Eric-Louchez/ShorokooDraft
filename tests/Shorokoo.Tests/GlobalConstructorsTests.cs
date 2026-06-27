@@ -341,17 +341,17 @@ public partial class VariableAndInputConstructorsModel
         _ = CreateVariable(DType.Float32, 1, Shorokoo.Core.Nodes.NodeDefinitions.DataStructure.Sequence);
 
         // ToInput — three dispatch arms (Tensor/Optional/Sequence).
-        _ = ((IValue)Scalar(1.0f)).ToInput();
-        _ = ((IValue)OptionalTensor<float32>(Vector(1.0f, 2.0f).Reshape(Vector(2L)))).ToInput();
-        _ = ((IValue)TensorSequence(DType.Float32, (ITensor)Vector(1.0f))).ToInput();
+        _ = ((Variable)Scalar(1.0f)).ToInput();
+        _ = ((Variable)OptionalTensor<float32>(Vector(1.0f, 2.0f).Reshape(Vector(2L)))).ToInput();
+        _ = ((Variable)TensorSequence(DType.Float32, (Variable)Vector(1.0f))).ToInput();
 
         // TensorSequence(DType, …) non-generic — empty + non-empty arms.
         _ = TensorSequence(DType.Float32);
-        _ = TensorSequence(DType.Float32, (ITensor)Vector(1.0f, 2.0f));
+        _ = TensorSequence(DType.Float32, (Variable)Vector(1.0f, 2.0f));
 
         // OptionalTensor(DType, …) non-generic — null + non-null arms.
         _ = OptionalTensor(DType.Float32);
-        _ = OptionalTensor(DType.Float32, (ITensor)Vector(1.0f));
+        _ = OptionalTensor(DType.Float32, (Variable)Vector(1.0f));
 
         // DType-keyed Input* dispatchers (each routes through OnnxUtils.CallGeneric).
         _ = InputTensor(DType.Float32, "t1");

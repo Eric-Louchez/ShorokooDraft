@@ -44,7 +44,7 @@ namespace Shorokoo.Core
     {
         private Variable? inner;
 
-        IValue IValueHandle.Immutable => Imm;
+        Variable IValueHandle.Immutable => Imm;
 
         /// <summary>The wrapped immutable, materialising an absent optional for a defaulted handle.</summary>
         internal Variable Imm
@@ -65,7 +65,7 @@ namespace Shorokoo.Core
             => optional.inner is null ? default(Tensor<T>?) : optional.TensorValue();
 
         // ── User-facing API (the optional surface lives here, not on the immutable) ──
-        public IValue Value() => OnnxOp.OptionalGetElement(Imm);
+        public Variable Value() => OnnxOp.OptionalGetElement(Imm);
         public Tensor<T> TensorValue() => (Variable)Value();
         public Tensor<T> SequenceValue() => (Variable)Value();
         public Scalar<bit> HasValue() => (Variable)OnnxOp.OptionalHasElement(Imm);

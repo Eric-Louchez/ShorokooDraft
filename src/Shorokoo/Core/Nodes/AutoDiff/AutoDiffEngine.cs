@@ -15,7 +15,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 {
     internal class AutoDiffEngine
     {
-        public static IValue AccumulateGradients(IValue a, IValue b)
+        public static Variable AccumulateGradients(Variable a, Variable b)
         {
             if (a.Structure() == DataStructure.Tensor)
             {

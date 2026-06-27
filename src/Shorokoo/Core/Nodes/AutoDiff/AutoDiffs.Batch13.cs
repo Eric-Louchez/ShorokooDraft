@@ -24,7 +24,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // CenterCropPad with the original input shape reverses the operation.
 
         [AutoDiff(CENTER_CROP_PAD)]
-        public static IValue?[] CenterCropPad<T1, T2>(
+        public static Variable?[] CenterCropPad<T1, T2>(
             Tensor<T1> input, Tensor<T2> shape,
             Tensor<T1> grad,
             long[]? axes)

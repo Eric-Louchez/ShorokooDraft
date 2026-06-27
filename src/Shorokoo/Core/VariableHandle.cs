@@ -7,16 +7,16 @@ namespace Shorokoo.Core
     /// <summary>
     /// Implemented by every value-type handle (<see cref="Tensor{T}"/>, <see cref="Vector{T}"/>, …)
     /// so the framework can recover the backing <c>Immutable*</c> graph value from a boxed handle.
-    /// Graph-level machinery must hold immutables, never struct handles, as <see cref="IValue"/>.
+    /// Graph-level machinery must hold immutables, never struct handles, as <see cref="Variable"/>.
     /// </summary>
     internal interface IValueHandle
     {
         // The backing Immutable* graph value, or null for a defaulted/absent handle.
-        IValue? Immutable { get; }
+        Variable? Immutable { get; }
     }
 
     /// <summary>
-    /// Converts an <see cref="IValue"/> graph value (always one of the <c>Immutable*</c> classes)
+    /// Converts an <see cref="Variable"/> graph value (always one of the <c>Immutable*</c> classes)
     /// into a requested handle type. When the target is one of the value-type handles
     /// (<see cref="Tensor{T}"/>, <see cref="Vector{T}"/>, <see cref="Scalar{T}"/>, …) a plain
     /// <c>(A)value</c> cast would unbox an interface reference to a struct and throw; this finds and
@@ -29,11 +29,10 @@ namespace Shorokoo.Core
 
         /// <summary>The backing <c>Immutable*</c> graph value: a struct handle unwrapped, an immutable
         /// as-is, or null for a defaulted/absent struct handle.</summary>
-        public static IValue? Normalize(IValue? value)
-            => value is IValueHandle h ? h.Immutable : value;
+        public static Variable? Normalize(object? value)            => value is IValueHandle h ? h.Immutable : value as Variable;
 
         /// <summary>Reinterpret <paramref name="value"/> as the handle type <typeparamref name="A"/>.</summary>
-        public static A Cast<A>(IValue? value)
+        public static A Cast<A>(object? value)
         {
             if (value is A already)
                 return already;
@@ -52,7 +51,7 @@ namespace Shorokoo.Core
                 return (A)conv.Invoke(null, [imm])!;
 
             // No struct wrapper found — fall back to a direct cast so the runtime raises a clear error.
-            return (A)imm;
+            return (A)(object)imm;
         }
 
         /// <summary>
@@ -60,7 +59,7 @@ namespace Shorokoo.Core
         /// (<c>MethodInfo.Invoke</c> does not apply user-defined conversions). Non-struct or
         /// already-matching parameters pass through unchanged.
         /// </summary>
-        public static object? WrapForParam(IValue? value, Type paramType)
+        public static object? WrapForParam(object? value, Type paramType)
         {
             if (value is null)
                 return value;
@@ -116,7 +115,7 @@ namespace Shorokoo.Core
                 if (p.Length != 1)
                     continue;
                 var pt = p[0].ParameterType;
-                if (!pt.IsValueType && typeof(IValue).IsAssignableFrom(pt))
+                if (!pt.IsValueType && typeof(Variable).IsAssignableFrom(pt))
                     result.Add(m);
             }
             return result.ToArray();

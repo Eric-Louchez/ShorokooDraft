@@ -15,7 +15,7 @@ public partial class SimpleSumSquaredLoss
     {
         var diff = predictions - targets;
         var squared = diff * diff;
-        var reduced = (Tensor<float32>)(Variable)OnnxOp.ReduceSum((ITensor)squared, keepdims: false);
+        var reduced = (Tensor<float32>)(Variable)OnnxOp.ReduceSum(squared, keepdims: false);
         return reduced.Scalar();
     }
 }
@@ -72,8 +72,8 @@ public class TrainingGraphBuilderQuickTests
         var input = Globals.InputTensor<float32>("input", rank: 1);
         var output = OnnxOp.Identity(input, null);
         var modelGraph = new FastComputationGraph(
-            ImmutableArray.Create<IValue>(input),
-            ImmutableArray.Create((IValue)output));
+            ImmutableArray.Create<Variable>(input),
+            ImmutableArray.Create(output));
 
         var lossGraph = SimpleSumSquaredLoss.ComputationGraph;
 
@@ -122,7 +122,7 @@ public class TrainingGraphBuilderQuickTests
 
         // A lambda is not a module Inline method — its method name won't be "Inline"
         Func<Tensor<float32>, Tensor<float32>, Scalar<float32>> notAModule =
-            (pred, targ) => ((Tensor<float32>)(Variable)OnnxOp.ReduceSum((ITensor)(pred - targ), keepdims: false)).Scalar();
+            (pred, targ) => ((Tensor<float32>)(Variable)OnnxOp.ReduceSum(pred - targ, keepdims: false)).Scalar();
 
         Assert.Throws<ArgumentException>(() =>
             TrainingGraphBuilder.PrepareForTrainingAsFast(modelGraph, notAModule));

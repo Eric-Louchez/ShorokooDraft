@@ -29,21 +29,6 @@ namespace Shorokoo.Core
         ITensor this[Scalar<int64> index] { get; }
         ITensorSequence RemoveAt(Scalar<int64> index);
         ITensorSequence InsertAt(ITensor tensor, Scalar<int64> index);
-
-        /// <summary>
-        /// Inserts an arbitrary IValue (e.g. an <see cref="ITensorStruct"/> for
-        /// sequence-of-struct cases) at the given position, or appends when
-        /// <paramref name="index"/> is null. Default implementation lowers directly to
-        /// <c>SEQUENCE_INSERT</c>.
-        /// </summary>
-        public ITensorSequence Insert(IValue variable, Scalar<int64>? index = null)
-            => (ITensorSequence)OnnxOp.SequenceInsert(this, variable, index);
-
-        public static ITensorSequence CreateEmpty(DType dtype)
-                => (ITensorSequence)OnnxOp.SequenceEmpty(dtype);
-
-        public static ITensorSequence Create(IValue[] variables)
-            => (ITensorSequence)OnnxOp.SequenceConstruct(variables);
     }
 
     /// <summary>
@@ -58,7 +43,7 @@ namespace Shorokoo.Core
     {
         private Variable? inner;
 
-        IValue IValueHandle.Immutable => Imm;
+        Variable IValueHandle.Immutable => Imm;
 
         /// <summary>The wrapped immutable, materialising an empty sequence for a defaulted handle.</summary>
         internal Variable Imm => inner ??= (Variable)OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>());
@@ -98,10 +83,10 @@ namespace Shorokoo.Core
             => (Variable)OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>(), targetFunction);
         public static TensorSequence<T> Create(Tensor<T>[] tensors)
             => tensors.Length == 0 ? CreateEmpty()
-                : (Variable)OnnxOp.SequenceConstruct([.. tensors.Cast<IValue>()]);
+                : (Variable)OnnxOp.SequenceConstruct([.. tensors.Select(t => (Variable)t)]);
         internal static TensorSequence<T> Create(Tensor<T>[] tensors, Function targetFunction)
             => tensors.Length == 0 ? CreateEmpty(targetFunction)
-                : (Variable)OnnxOp.SequenceConstruct(targetFunction, [.. tensors.Cast<IValue>()]);
+                : (Variable)OnnxOp.SequenceConstruct(targetFunction, [.. tensors.Select(t => (Variable)t)]);
 
         // ITensorSequence explicit members (interface signatures, returning interface types).
         Scalar<int64> ITensorSequence.Count => this.Count;

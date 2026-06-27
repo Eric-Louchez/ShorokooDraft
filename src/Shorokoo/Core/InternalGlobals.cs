@@ -23,13 +23,13 @@ namespace Shorokoo.Core
         /// Each pair represents (original state, updated state) registered via StateUpdate.
         /// </summary>
         [ThreadStatic]
-        private static List<(IValue original, IValue updated)>? _stateUpdatePairs;
+        private static List<(Variable original, Variable updated)>? _stateUpdatePairs;
 
         /// <summary>
         /// Gets the current state update pairs collection, creating it if necessary.
         /// </summary>
-        private static List<(IValue original, IValue updated)> StateUpdatePairs
-            => _stateUpdatePairs ??= new List<(IValue original, IValue updated)>();
+        private static List<(Variable original, Variable updated)> StateUpdatePairs
+            => _stateUpdatePairs ??= new List<(Variable original, Variable updated)>();
 
         /// <summary>
         /// Registers a state update relationship between an original state tensor and its updated value.
@@ -38,7 +38,7 @@ namespace Shorokoo.Core
         /// <param name="original">The original state tensor from a state initializer</param>
         /// <param name="updated">The computed updated value for the state</param>
         /// <returns>The linked updated state tensor (output of STATE_UPDATE_LINK node)</returns>
-        internal static IValue RegisterStateUpdate(IValue original, IValue updated)
+        internal static Variable RegisterStateUpdate(Variable original, Variable updated)
         {
             
             // Create the STATE_UPDATE_LINK node to track the relationship in the graph
@@ -55,10 +55,10 @@ namespace Shorokoo.Core
         /// Called after the module's Inline method returns to wrap outputs with WithStateDeps.
         /// </summary>
         /// <returns>Array of updated state tensors (the linked versions)</returns>
-        internal static IValue[] GetAndClearStateUpdates()
+        internal static Variable[] GetAndClearStateUpdates()
         {
             if (_stateUpdatePairs == null || _stateUpdatePairs.Count == 0)
-                return Array.Empty<IValue>();
+                return Array.Empty<Variable>();
 
             var updates = _stateUpdatePairs.Select(p => p.updated).ToArray();
             _stateUpdatePairs.Clear();
@@ -74,13 +74,13 @@ namespace Shorokoo.Core
 
         // Every kind is now the single non-generic Variable, built directly from the runtime DType +
         // kind + rank — no per-output CallGeneric/MakeGenericType reflection round-trip.
-        internal static ITensor Tensor(Func<Vector<int64>>? shapeFn, DType dtype, Node owningNode, Function? moduleFn, string? name = null, int? rank = null)
+        internal static Variable Tensor(Func<Vector<int64>>? shapeFn, DType dtype, Node owningNode, Function? moduleFn, string? name = null, int? rank = null)
             => new Variable(dtype, owningNode, moduleFn, name, DataStructure.Tensor, rank: rank, shapeFn: shapeFn);
 
-        internal static ITensor Vector(Func<Vector<int64>>? shapeFn, DType dtype, Node owningNode, Function? moduleFn, string? name = null)
+        internal static Variable Vector(Func<Vector<int64>>? shapeFn, DType dtype, Node owningNode, Function? moduleFn, string? name = null)
             => new Variable(dtype, owningNode, moduleFn, name, DataStructure.Tensor, rank: 1, shapeFn: shapeFn);
 
-        internal static IScalar Scalar(DType dtype, Node? owningNode, Function? moduleFn = null, string? name = null)
+        internal static Variable Scalar(DType dtype, Node? owningNode, Function? moduleFn = null, string? name = null)
             => new Variable(dtype, owningNode!, moduleFn, name, DataStructure.Tensor, rank: 0);
 
         private static Scalar<T> CreateScalarValForObj<T>(object val) where T : IVarType
@@ -92,12 +92,12 @@ namespace Shorokoo.Core
         internal static Variable OptionalTensor(DType dtype, Node owningNode, Function? moduleFn, string? name = null)
             => new Variable(dtype, owningNode, moduleFn, name, DataStructure.Optional);
 
-        internal static IVector EmptyVector(DType type) => (IVector)Shorokoo.Core.Nodes.NodeDefinitions.OnnxOp.Constant(Globals.TensorData(type));
+        internal static Variable EmptyVector(DType type) => (Variable)Shorokoo.Core.Nodes.NodeDefinitions.OnnxOp.Constant(Globals.TensorData(type));
 
         /// <summary>
         /// Creates a TensorStruct for a given DType (which must be a TensorStruct type).
         /// </summary>
-        internal static ITensorStruct TensorStruct(DType type, Node owningNode, Function? moduleFn, string? name = null)
+        internal static Variable TensorStruct(DType type, Node owningNode, Function? moduleFn, string? name = null)
         {
             if (!type.IsTensorStructType)
                 throw new InvalidOperationException($"DType {type} is not a TensorStruct type");
@@ -131,7 +131,7 @@ namespace Shorokoo.Core
         internal static OnnxTensorData<float32> OnnxTensorData(Shape shape, params float[] data) => new OnnxTensorData<float32>(shape, OnnxUtils.CreateTensorValue<float>(shape, data));
         internal static OnnxTensorData<float64> OnnxTensorData(Shape shape, params double[] data) => new OnnxTensorData<float64>(shape, OnnxUtils.CreateTensorValue<double>(shape, data));
 
-        internal static T IdentityOp<T>(T var) where T : IValue
-            => (T)OnnxOp.Identity(var, var.Rank());
+        internal static T IdentityOp<T>(T var) where T : Variable
+            => (T)OnnxOp.Identity(var, var.Rank);
     }
 }

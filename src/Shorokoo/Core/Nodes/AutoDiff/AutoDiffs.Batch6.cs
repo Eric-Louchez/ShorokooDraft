@@ -21,7 +21,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         //   Pass 1: scatter grad along H axis (axis=2) → intermediate [N,C,H_in,W_out]
         //   Pass 2: scatter intermediate along W axis (axis=3) → grad_x [N,C,H_in,W_in]
 
-        internal static IValue?[] ResizeGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static Variable?[] ResizeGradient(Variable?[] inputs, Variable?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             var mode = attributes.GetAttributeObj("mode") as ResizeMode? ?? ResizeMode.Nearest;
             if (mode != ResizeMode.Nearest)
@@ -130,7 +130,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // Implemented via the same two-pass ScatterElements approach as ResizeGradient.
         // Return: gradient for x only; scales has no gradient (non-differentiable index math).
 
-        internal static IValue?[] UpsampleGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static Variable?[] UpsampleGradient(Variable?[] inputs, Variable?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             var mode = attributes.GetAttributeObj("mode") as ResizeMode? ?? ResizeMode.Nearest;
             if (mode != ResizeMode.Nearest)
@@ -220,7 +220,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // where pool_k = bias + alpha/size * ChannelWindowSum(x^2)_k
 
         [AutoDiff(LRN)]
-        public static IValue?[] Lrn<T>(
+        public static Variable?[] Lrn<T>(
             Tensor<T> x, Tensor<T> grad, float? alpha, float? beta, float? bias, long? size)
             where T : IVarType
         {

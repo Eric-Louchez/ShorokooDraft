@@ -107,7 +107,7 @@ namespace Shorokoo.Core
             => paramInfo.GetCustomAttribute<HyperAttribute>() is { HasDefault: true } hyper ? hyper.DefaultValue : null;
 
         internal static string ToSignatureString(IModuleParam moduleParam)
-            => ToSignatureStringWithOverride(moduleParam, (moduleParam as IValue)?.Rank());
+            => ToSignatureStringWithOverride(moduleParam, (moduleParam as Variable)?.Rank);
 
         internal static string ToSignatureStringWithOverride(IModuleParam moduleParam, int? rank)
         {
@@ -118,16 +118,18 @@ namespace Shorokoo.Core
                 return $"[{module.ModuleVariable.ModuleFn!.ModuleSignatureString}]";
 
             // Model/module params are scalar nodes distinguished by their runtime DType (formerly the
-            // generic Variable<IModelVarType> / Variable<IModuleVarType>).
+            // generic ImmutableScalar<IModelVarType> / ImmutableScalar<IModuleVarType>).
             if (moduleParam is Variable modelVariable && modelVariable.Type == DType.Model)
                 return $"[{modelVariable.ModuleFn!.ModelSignatureString}]";
 
             if (moduleParam is Variable moduleVariable && moduleVariable.Type == DType.Module)
                 return $"[{moduleVariable.ModuleFn!.ModuleSignatureString}]";
 
-            var variable = moduleParam as IValue;
+            // moduleParam may be a user handle (IValue) or a raw graph node; Normalize unwraps either
+            // to the backing Variable.
+            var variable = Shorokoo.Core.VariableHandle.Normalize(moduleParam);
             if (variable is null)
-                throw new InvalidTensorOperationException(ErrorCodes.FW002, "Module Parameter Processing", $"parameter type {moduleParam?.GetType().Name ?? "null"}", "Module parameter must be convertible to IValue");
+                throw new InvalidTensorOperationException(ErrorCodes.FW002, "Module Parameter Processing", $"parameter type {moduleParam?.GetType().Name ?? "null"}", "Module parameter must be convertible to Variable");
 
             var rankString = rank is null || rank == -1 ? "" : $"#{rank}";
 
@@ -137,7 +139,7 @@ namespace Shorokoo.Core
             {
                 case DataStructure.TensorStruct:
                     // "struct:{typeName}" where typeName is the IStruct interface name.
-                    return $"struct:{((ITensorStruct)variable).Definition?.TypeName ?? "anonymous"}";
+                    return $"struct:{((Variable)variable).Definition?.TypeName ?? "anonymous"}";
                 case DataStructure.Tensor:
                     return $"{variable.Type.ToString().ToLower()}{rankString}";
                 case DataStructure.Optional:
@@ -146,7 +148,7 @@ namespace Shorokoo.Core
                     return $"{variable.Type.ToString().ToLower()}/seq{rankString}";
             }
 
-            throw new InvalidTensorOperationException(ErrorCodes.FW002, "Module Parameter Type Processing", $"parameter type {variable.GetType().Name}", "Unsupported module parameter type - expected ITensor, IOptionalTensor, ITensorSequence, or ITensorStruct");
+            throw new InvalidTensorOperationException(ErrorCodes.FW002, "Module Parameter Type Processing", $"parameter type {variable.GetType().Name}", "Unsupported module parameter type - expected Variable, Variable, Variable, or Variable");
         }
 
         internal static (string moduleSignature, string modelSignature) CreateFunctionSignatureString(Type[] hyperparams, Type[] inputs, Type[] outputs)
@@ -158,7 +160,7 @@ namespace Shorokoo.Core
             return CreateFunctionSignatureString(hyperparamInputs, inputInputs, outputInputs, null);
         }
 
-        internal static (string moduleSignature, string modelSignature) CreateFunctionSignatureString(IValue[] hyperparams, IValue[] inputs, IValue[] outputs, int?[]? outputOverrideRanks)
+        internal static (string moduleSignature, string modelSignature) CreateFunctionSignatureString(Variable[] hyperparams, Variable[] inputs, Variable[] outputs, int?[]? outputOverrideRanks)
         {
             var signatureHyperparamPart = string.Join(", ", hyperparams.Select(ToSignatureString));
             var signatureInputPart = string.Join(", ", inputs.Select(ToSignatureString));
@@ -170,7 +172,7 @@ namespace Shorokoo.Core
                 $"{signatureInputPart} > {signatureOutputPart}");
         }
 
-        internal static IValue DefaultVariable(Type type)
+        internal static Variable DefaultVariable(Type type)
         {
             if (type.IsAssignableTo(typeof(ITensorStruct)))
             {
@@ -204,7 +206,7 @@ namespace Shorokoo.Core
                 return TensorSequence(dtype.AssertNotNull()); // Empty sequence
             }
 
-            throw new UnsupportedDTypeException(ErrorCodes.FW002, type.Name, "CreateDefaultValue", $"Unsupported type for default value creation. Supported types: ITensor, IOptionalTensor, ITensorSequence, ITensorStruct. Received: {type.Name}");
+            throw new UnsupportedDTypeException(ErrorCodes.FW002, type.Name, "CreateDefaultValue", $"Unsupported type for default value creation. Supported types: Variable, Variable, Variable, Variable. Received: {type.Name}");
         }
 
         internal static Function CreateFunctionSignature(Type[] hyperparams, Type[] inputs, Type[] outputs)
@@ -370,11 +372,11 @@ namespace Shorokoo.Core
         /// Invokes a method with the given inputs and formats the outputs.
         /// Public helper for GraphBuilder to construct VirtualGraphs.
         /// For parameters typed as IStruct interfaces (not <see cref="TensorStruct{T}"/>), wraps
-        /// ITensorStruct inputs in DispatchProxy so property access creates graph operations.
+        /// Variable inputs in DispatchProxy so property access creates graph operations.
         /// <paramref name="target"/> is the invocation receiver: null for static methods, or the
         /// delegate's bound target for compiler-generated (non-capturing) lambda methods.
         /// </summary>
-        public static IValue[] InvokeAndFormat(MethodInfo method, IModuleParam[] inputs, object? target = null)
+        public static Variable[] InvokeAndFormat(MethodInfo method, IModuleParam[] inputs, object? target = null)
         {
             var parameters = method.GetParameters();
             var invokeArgs = new object?[inputs.Length];
@@ -387,7 +389,7 @@ namespace Shorokoo.Core
                     && paramType != typeof(IStruct) 
                     && paramType != typeof(IVarType)
                     && !typeof(IValue).IsAssignableFrom(paramType)
-                    && inputs[i] is ITensorStruct tensorStruct)
+                    && inputs[i] is Variable tensorStruct)
                 {
                     if (paramType.IsInterface)
                     {
@@ -444,10 +446,10 @@ namespace Shorokoo.Core
         }
 
         /// <summary>
-        /// Constructs a record/class instance implementing IStruct from an ITensorStruct,
+        /// Constructs a record/class instance implementing IStruct from an Variable,
         /// using TensorStructGetField operations to extract field values for the constructor.
         /// </summary>
-        private static object ConstructStructFromTensorStruct(Type structType, ITensorStruct tensorStruct)
+        private static object ConstructStructFromTensorStruct(Type structType, Variable tensorStruct)
         {
             var def = tensorStruct.Definition;
             var ctor = structType.GetConstructors()
@@ -477,7 +479,7 @@ namespace Shorokoo.Core
                 // value so reflective Invoke can bind it (it does not apply the implicit conversion).
                 args[i] = Shorokoo.Core.VariableHandle.WrapForParam(
                     InternalOp.TensorStructGetField(
-                        (IValue)tensorStruct,
+                        (Variable)tensorStruct,
                         fieldDef.Name,
                         fieldDef.ElementType,
                         fieldDef.Rank,
@@ -498,12 +500,12 @@ namespace Shorokoo.Core
             return genericDefinition.Namespace == "System" && genericDefinition.Name.StartsWith("ValueTuple`");
         }
 
-        internal static IValue[] Format(object? retval)
+        internal static Variable[] Format(object? retval)
         {
             if (retval is null)
                 throw new InvalidTensorOperationException(ErrorCodes.FW002, "Method Invocation Result", "method return value", "Method invocation returned null when non-null result expected");
 
-            if (retval is IValue[] vars)
+            if (retval is Variable[] vars)
                 return vars;
 
             if (retval is IModuleParam[] moduleParams)
@@ -512,29 +514,29 @@ namespace Shorokoo.Core
             if (retval is IModuleParam moduleParam)
                 return [moduleParam.ToVariable()];
 
-            // Handle TensorStructProxy (DispatchProxy wrapping an ITensorStruct).
+            // Handle TensorStructProxy (DispatchProxy wrapping an Variable).
             // When a module passes an IStruct interface object (created by DispatchProxy) to
-            // another module's Call method, extract the backing TensorStruct IValue.
+            // another module's Call method, extract the backing TensorStruct Variable.
             if (retval is ITensorStructProxy proxy)
-                return [(IValue)proxy.BackingTensorStruct];
+                return [(Variable)proxy.BackingTensorStruct];
 
             // Handle IStruct records/classes — extract field values and create a TensorStruct graph node.
             // When a module passes a record implementing IStruct to another module's Call method,
-            // we convert it to a TensorStruct by reading its property values (which are IValue graph nodes).
+            // we convert it to a TensorStruct by reading its property values (which are Variable graph nodes).
             if (retval is IStruct)
             {
                 var structType = retval.GetType();
                 var def = StructDefExtractor.ExtractFromType(structType);
                 var dtype = DType.GetOrCreateForTensorStruct(def);
 
-                var fieldValues = new IValue[def.Fields.Length];
+                var fieldValues = new Variable[def.Fields.Length];
                 for (int i = 0; i < def.Fields.Length; i++)
                 {
                     var prop = structType.GetProperty(def.Fields[i].Name);
                     if (prop == null)
                         throw new InvalidOperationException(
                             $"Property '{def.Fields[i].Name}' not found on type '{structType.Name}'");
-                    fieldValues[i] = (IValue)prop.GetValue(retval)!;
+                    fieldValues[i] = Shorokoo.Core.VariableHandle.Normalize(prop.GetValue(retval))!;
                 }
 
                 return [InternalOp.TensorStructCreate(dtype, fieldValues)];
@@ -546,10 +548,10 @@ namespace Shorokoo.Core
             if (retval is ITuple tuple)
                 return tuple.Cast<IModuleParam>().Select(x => x.ToVariable()).ToArray();
 
-            throw new InvalidTensorOperationException(ErrorCodes.FW002, "Return Value Processing", $"return type {retval.GetType().Name}", "Unsupported return value type - expected IValue[], IModuleParam[], IModuleParam, or ITuple");
+            throw new InvalidTensorOperationException(ErrorCodes.FW002, "Return Value Processing", $"return type {retval.GetType().Name}", "Unsupported return value type - expected Variable[], IModuleParam[], IModuleParam, or ITuple");
         }
 
-        internal static T Reformat<T>(IValue[] vars)
+        internal static T Reformat<T>(Variable[] vars)
         {
             var tType = typeof(T);
 
@@ -669,7 +671,7 @@ namespace Shorokoo.Core
                 else
                 {
                     throw new UnsupportedDTypeException(ErrorCodes.FW002, type.Name, "InfosFromTouts", 
-                        $"Unsupported type for InfosFromTouts. Supported types: ITensor, IOptionalTensor, ITensorSequence, ITensorStruct. Received: {type.Name}");
+                        $"Unsupported type for InfosFromTouts. Supported types: Variable, Variable, Variable, Variable. Received: {type.Name}");
                 }
             }
 

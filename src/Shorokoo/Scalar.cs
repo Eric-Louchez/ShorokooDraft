@@ -42,9 +42,9 @@ namespace Shorokoo
         public Vector<int64> TShape => Imm.TShape;
         public Scalar<int64> TRank => Imm.TRank;
         public Vector<T> Vec() => (Variable)Imm.Vec();
-        IVector ITensor.Vec() => (Variable)Imm.Vec();
+        IVector ITensor.Vec() => (Vector<T>)Imm.Vec();
         Vector<V> ITensor.Vec<V>() => Imm.Cast<V>().Vec();
-        IScalar ITensor.Scalar() => (Variable)Imm.Scalar();
+        IScalar ITensor.Scalar() => (Scalar<T>)Imm.Scalar();
         Scalar<V> ITensor.Scalar<V>() => Imm.Cast<V>().Scalar();        Tensor<V> ITensor.Cast<V>(bool saturate) => Imm.Cast<V>(saturate);
 
         public Node OwningNode => Imm.OwningNode;

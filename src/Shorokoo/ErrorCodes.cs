@@ -403,7 +403,7 @@ namespace Shorokoo
         /// <summary>Output tensors contain invalid variables</summary>
         public const string VG015 = "VG015";
         
-        /// <summary>Tensor casting to ITensor not implemented</summary>
+        /// <summary>Tensor casting to Variable not implemented</summary>
         public const string VG016 = "VG016";
         
         /// <summary>Tensor not found in graph canonical tensors</summary>

@@ -18,8 +18,16 @@ namespace Shorokoo.Core.Nodes
     {
         public static A IfElse<A>(Scalar<bit> condition, A aWhenTrue, A aWhenFalse) where A : IValue
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
-            return VariableHandle.Cast<A>(OnnxOp.IfClose([aWhenTrue], [aWhenFalse], ifOpen)[0]);
+            var ifOpen = OnnxOp.IfOpen(condition);
+            return VariableHandle.Cast<A>(OnnxOp.IfClose([aWhenTrue.ToVariable()], [aWhenFalse.ToVariable()], ifOpen)[0]);
+        }
+
+        // Graph-side overload: internal callers already hold non-generic Variable nodes (not user
+        // handles), so they bind here rather than the IValue-constrained generic above.
+        public static Variable IfElse(Scalar<bit> condition, Variable aWhenTrue, Variable aWhenFalse)
+        {
+            var ifOpen = OnnxOp.IfOpen(condition);
+            return OnnxOp.IfClose([aWhenTrue], [aWhenFalse], ifOpen)[0];
         }
 
         /// <summary>
@@ -31,18 +39,18 @@ namespace Shorokoo.Core.Nodes
         /// </summary>
         public static A IfElse<A>(Scalar<bit> condition, System.Func<A> whenTrue, System.Func<A> whenFalse) where A : IValue
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
+            var ifOpen = OnnxOp.IfOpen(condition);
             var t = whenTrue();
             var f = whenFalse();
-            return VariableHandle.Cast<A>(OnnxOp.IfClose([t], [f], ifOpen)[0]);
+            return VariableHandle.Cast<A>(OnnxOp.IfClose([t.ToVariable()], [f.ToVariable()], ifOpen)[0]);
         }
 
         public static (A, B) IfElse<A, B>(Scalar<bit> condition, (A a, B b) whenTrue, (A a, B b) whenFalse)
             where A : IValue
             where B : IValue
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
-            var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b], [whenFalse.a, whenFalse.b], ifOpen);
+            var ifOpen = OnnxOp.IfOpen(condition);
+            var retval = OnnxOp.IfClose([whenTrue.a.ToVariable(), whenTrue.b.ToVariable()], [whenFalse.a.ToVariable(), whenFalse.b.ToVariable()], ifOpen);
 
             return (VariableHandle.Cast<A>(retval[0]), VariableHandle.Cast<B>(retval[1]));
         }
@@ -52,8 +60,8 @@ namespace Shorokoo.Core.Nodes
             where B : IValue
             where C : IValue
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
-            var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c], [whenFalse.a, whenFalse.b, whenFalse.c], ifOpen);
+            var ifOpen = OnnxOp.IfOpen(condition);
+            var retval = OnnxOp.IfClose([whenTrue.a.ToVariable(), whenTrue.b.ToVariable(), whenTrue.c.ToVariable()], [whenFalse.a.ToVariable(), whenFalse.b.ToVariable(), whenFalse.c.ToVariable()], ifOpen);
 
             return (VariableHandle.Cast<A>(retval[0]), VariableHandle.Cast<B>(retval[1]), VariableHandle.Cast<C>(retval[2]));
         }
@@ -64,8 +72,8 @@ namespace Shorokoo.Core.Nodes
             where C : IValue
             where D : IValue
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
-            var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c, whenTrue.d], [whenFalse.a, whenFalse.b, whenFalse.c, whenFalse.d], ifOpen);
+            var ifOpen = OnnxOp.IfOpen(condition);
+            var retval = OnnxOp.IfClose([whenTrue.a.ToVariable(), whenTrue.b.ToVariable(), whenTrue.c.ToVariable(), whenTrue.d.ToVariable()], [whenFalse.a.ToVariable(), whenFalse.b.ToVariable(), whenFalse.c.ToVariable(), whenFalse.d.ToVariable()], ifOpen);
 
             return (VariableHandle.Cast<A>(retval[0]), VariableHandle.Cast<B>(retval[1]), VariableHandle.Cast<C>(retval[2]), VariableHandle.Cast<D>(retval[3]));
         }
@@ -77,8 +85,8 @@ namespace Shorokoo.Core.Nodes
             where D : IValue
             where E : IValue
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
-            var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c, whenTrue.d, whenTrue.e], [whenFalse.a, whenFalse.b, whenFalse.c, whenFalse.d, whenFalse.e], ifOpen);
+            var ifOpen = OnnxOp.IfOpen(condition);
+            var retval = OnnxOp.IfClose([whenTrue.a.ToVariable(), whenTrue.b.ToVariable(), whenTrue.c.ToVariable(), whenTrue.d.ToVariable(), whenTrue.e.ToVariable()], [whenFalse.a.ToVariable(), whenFalse.b.ToVariable(), whenFalse.c.ToVariable(), whenFalse.d.ToVariable(), whenFalse.e.ToVariable()], ifOpen);
 
             return (VariableHandle.Cast<A>(retval[0]), VariableHandle.Cast<B>(retval[1]), VariableHandle.Cast<C>(retval[2]), VariableHandle.Cast<D>(retval[3]), VariableHandle.Cast<E>(retval[4]));
         }
@@ -91,8 +99,8 @@ namespace Shorokoo.Core.Nodes
             where E : IValue
             where F : IValue
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
-            var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c, whenTrue.d, whenTrue.e, whenTrue.f], [whenFalse.a, whenFalse.b, whenFalse.c, whenFalse.d, whenFalse.e, whenFalse.f], ifOpen);
+            var ifOpen = OnnxOp.IfOpen(condition);
+            var retval = OnnxOp.IfClose([whenTrue.a.ToVariable(), whenTrue.b.ToVariable(), whenTrue.c.ToVariable(), whenTrue.d.ToVariable(), whenTrue.e.ToVariable(), whenTrue.f.ToVariable()], [whenFalse.a.ToVariable(), whenFalse.b.ToVariable(), whenFalse.c.ToVariable(), whenFalse.d.ToVariable(), whenFalse.e.ToVariable(), whenFalse.f.ToVariable()], ifOpen);
 
             return (VariableHandle.Cast<A>(retval[0]), VariableHandle.Cast<B>(retval[1]), VariableHandle.Cast<C>(retval[2]), VariableHandle.Cast<D>(retval[3]), VariableHandle.Cast<E>(retval[4]), VariableHandle.Cast<F>(retval[5]));
         }
@@ -106,8 +114,8 @@ namespace Shorokoo.Core.Nodes
             where F : IValue
             where G : IValue
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
-            var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c, whenTrue.d, whenTrue.e, whenTrue.f, whenTrue.g], [whenFalse.a, whenFalse.b, whenFalse.c, whenFalse.d, whenFalse.e, whenFalse.f, whenFalse.g], ifOpen);
+            var ifOpen = OnnxOp.IfOpen(condition);
+            var retval = OnnxOp.IfClose([whenTrue.a.ToVariable(), whenTrue.b.ToVariable(), whenTrue.c.ToVariable(), whenTrue.d.ToVariable(), whenTrue.e.ToVariable(), whenTrue.f.ToVariable(), whenTrue.g.ToVariable()], [whenFalse.a.ToVariable(), whenFalse.b.ToVariable(), whenFalse.c.ToVariable(), whenFalse.d.ToVariable(), whenFalse.e.ToVariable(), whenFalse.f.ToVariable(), whenFalse.g.ToVariable()], ifOpen);
 
             return (VariableHandle.Cast<A>(retval[0]), VariableHandle.Cast<B>(retval[1]), VariableHandle.Cast<C>(retval[2]), VariableHandle.Cast<D>(retval[3]), VariableHandle.Cast<E>(retval[4]), VariableHandle.Cast<F>(retval[5]), VariableHandle.Cast<G>(retval[6]));
         }
@@ -122,29 +130,23 @@ namespace Shorokoo.Core.Nodes
             where G : IValue
             where H : IValue
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
-            var retval = OnnxOp.IfClose([whenTrue.a, whenTrue.b, whenTrue.c, whenTrue.d, whenTrue.e, whenTrue.f, whenTrue.g, whenTrue.h], [whenFalse.a, whenFalse.b, whenFalse.c, whenFalse.d, whenFalse.e, whenFalse.f, whenFalse.g, whenFalse.h], ifOpen);
+            var ifOpen = OnnxOp.IfOpen(condition);
+            var retval = OnnxOp.IfClose([whenTrue.a.ToVariable(), whenTrue.b.ToVariable(), whenTrue.c.ToVariable(), whenTrue.d.ToVariable(), whenTrue.e.ToVariable(), whenTrue.f.ToVariable(), whenTrue.g.ToVariable(), whenTrue.h.ToVariable()], [whenFalse.a.ToVariable(), whenFalse.b.ToVariable(), whenFalse.c.ToVariable(), whenFalse.d.ToVariable(), whenFalse.e.ToVariable(), whenFalse.f.ToVariable(), whenFalse.g.ToVariable(), whenFalse.h.ToVariable()], ifOpen);
 
             return (VariableHandle.Cast<A>(retval[0]), VariableHandle.Cast<B>(retval[1]), VariableHandle.Cast<C>(retval[2]), VariableHandle.Cast<D>(retval[3]), VariableHandle.Cast<E>(retval[4]), VariableHandle.Cast<F>(retval[5]), VariableHandle.Cast<G>(retval[6]), VariableHandle.Cast<H>(retval[7]));
         }
 
-        public static ITensor[] IfElse(Scalar<bit> condition, ITensor[] whenTrue, ITensor[] whenFalse)
+        public static Variable[] IfElse(Scalar<bit> condition, IValue[] whenTrue, IValue[] whenFalse)
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
-            return (ITensor[])OnnxOp.IfClose([.. whenTrue.Cast<IValue>()], [.. whenFalse.Cast<IValue>()], ifOpen);
-        }
-
-        public static IValue[] IfElse(Scalar<bit> condition, IValue[] whenTrue, IValue[] whenFalse)
-        {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
-            return (IValue[])OnnxOp.IfClose([.. whenTrue.Cast<IValue>()], [.. whenFalse.Cast<IValue>()], ifOpen);
+            var ifOpen = OnnxOp.IfOpen(condition);
+            return OnnxOp.IfClose([.. whenTrue.Select(v => v.ToVariable())], [.. whenFalse.Select(v => v.ToVariable())], ifOpen);
         }
 
         public static Tensor<T> IfElse<T>(Scalar<bit> condition, Tensor<T>[] whenTrue, Tensor<T>[] whenFalse)
             where T : IVarType
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
-            var results = OnnxOp.IfClose([.. whenTrue.Cast<IValue>()], [.. whenFalse.Cast<IValue>()], ifOpen);
+            var ifOpen = OnnxOp.IfOpen(condition);
+            var results = OnnxOp.IfClose([.. whenTrue.Select(t => (Variable)t)], [.. whenFalse.Select(t => (Variable)t)], ifOpen);
 
             return (Variable)results[0];
         }
@@ -152,8 +154,8 @@ namespace Shorokoo.Core.Nodes
         public static IValue<T> IfElse<T>(Scalar<bit> condition, IValue<T>[] whenTrue, IValue<T>[] whenFalse)
             where T : IVarType
         {
-            var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
-            var results = OnnxOp.IfClose([.. whenTrue.Cast<IValue>()], [.. whenFalse.Cast<IValue>()], ifOpen);
+            var ifOpen = OnnxOp.IfOpen(condition);
+            var results = OnnxOp.IfClose([.. whenTrue.Select(t => t.ToVariable())], [.. whenFalse.Select(t => t.ToVariable())], ifOpen);
 
             return (IValue<T>)results[0];
         }

@@ -295,8 +295,8 @@ public class ModulesCoverageTests
         var output = (Tensor<float32>)(Variable)callResult[0];
 
         var graph = new FastComputationGraph(
-            System.Collections.Immutable.ImmutableArray.Create<Shorokoo.IValue>(input),
-            System.Collections.Immutable.ImmutableArray.Create<Shorokoo.IValue>(output));
+            System.Collections.Immutable.ImmutableArray.Create<Shorokoo.Variable>(input),
+            System.Collections.Immutable.ImmutableArray.Create<Shorokoo.Variable>(output));
 
         // Pre-save sanity: the graph carries the FUNCTION_INVOKE node pointing at fn.
         Assert.Single(graph.Nodes, n => n.OpCode == InternalOpCodes.FUNCTION_INVOKE);

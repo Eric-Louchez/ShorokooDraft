@@ -18,7 +18,7 @@ namespace Shorokoo.Tests;
 [Trait("Purpose", "Coverage")]
 public class NullableParamTests
 {
-    private static System.Collections.Immutable.ImmutableArray<IValue> InputsOf(FastComputationGraph graph)
+    private static System.Collections.Immutable.ImmutableArray<Variable> InputsOf(FastComputationGraph graph)
         => FastComputationGraphConverter.BuildNodes(graph).inputs;
 
     private static byte[] Bytes(params float[] values) => TensorData([(long)values.Length], values).AccessRawMemory().ToArray();

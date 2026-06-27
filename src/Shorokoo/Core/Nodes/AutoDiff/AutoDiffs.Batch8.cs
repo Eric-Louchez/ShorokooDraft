@@ -29,7 +29,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // Limitations:
         //   - Repeated subscripts within a single operand (e.g., "ii->i") are not supported
 
-        internal static IValue?[] EinsumGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static Variable?[] EinsumGradient(Variable?[] inputs, Variable?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             var equation = (string)attributes.GetAttributeObj("equation")!;
             var grad = outputGrads[0]!;
@@ -61,7 +61,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             }
 
             var inputSubs = inputPart.Split(',');
-            var result = new IValue?[inputs.Length];
+            var result = new Variable?[inputs.Length];
 
             for (int k = 0; k < inputs.Length; k++)
             {
@@ -90,7 +90,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
                 // Build gradient einsum operands
                 var gradSubs = new List<string>();
-                var gradVars = new List<IValue>();
+                var gradVars = new List<Variable>();
 
                 for (int i = 0; i < inputs.Length; i++)
                 {

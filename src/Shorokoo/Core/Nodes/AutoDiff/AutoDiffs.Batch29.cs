@@ -20,7 +20,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // dy/dx = alpha when 0 < alpha*x + beta < 1, else 0.
 
         [AutoDiff(HARD_SIGMOID)]
-        public static IValue?[] HardSigmoid<T>(Tensor<T> x, Tensor<T> grad, float? alpha, float? beta) where T : IVarType
+        public static Variable?[] HardSigmoid<T>(Tensor<T> x, Tensor<T> grad, float? alpha, float? beta) where T : IVarType
         {
             var effAlpha = alpha ?? 0.2f;
             var effBeta = beta ?? 0.5f;
@@ -40,7 +40,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // dy/dx = s + x * ds/dx = s + (x/6) when -3 < x < 3, else s.
 
         [AutoDiff(HARD_SWISH)]
-        public static IValue?[] HardSwish<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] HardSwish<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             var oneSixth = TypedConst(1.0f / 6.0f, x);
             var half = TypedConst(0.5f, x);
@@ -59,7 +59,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // dy/dx = th + x * (1 - th^2) * sig.
 
         [AutoDiff(MISH)]
-        public static IValue?[] Mish<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Mish<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             var one = TypedConst(1.0f, x);
             Tensor<T> sp = (Variable)OnnxOp.Softplus(x);
@@ -74,7 +74,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // dy/dx = sigmoid(x).
 
         [AutoDiff(SOFTPLUS)]
-        public static IValue?[] Softplus<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Softplus<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             Tensor<T> sig = (Variable)OnnxOp.Sigmoid(x);
             return [grad * sig];
@@ -85,7 +85,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // dy/dx = 1 / (1 + |x|)^2.
 
         [AutoDiff(SOFTSIGN)]
-        public static IValue?[] Softsign<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static Variable?[] Softsign<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             var one = TypedConst(1.0f, x);
             var denom = one + (Variable)OnnxOp.Abs(x);
@@ -97,7 +97,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // dy/dx = 1 if x > alpha else 0.
 
         [AutoDiff(THRESHOLDED_RELU)]
-        public static IValue?[] ThresholdedRelu<T>(Tensor<T> x, Tensor<T> grad, float? alpha) where T : IVarType
+        public static Variable?[] ThresholdedRelu<T>(Tensor<T> x, Tensor<T> grad, float? alpha) where T : IVarType
         {
             var effAlpha = alpha ?? 1.0f;
             var alphaConst = TypedConst(effAlpha, x);
@@ -114,7 +114,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // contributions vanish under differentiation.)
 
         [AutoDiff(SHRINK)]
-        public static IValue?[] Shrink<T>(Tensor<T> x, Tensor<T> grad, float? bias, float? lambd) where T : IVarType
+        public static Variable?[] Shrink<T>(Tensor<T> x, Tensor<T> grad, float? bias, float? lambd) where T : IVarType
         {
             _ = bias; // |bias| only shifts the piecewise-constant offset; it has no gradient effect.
             var effLambd = lambd ?? 0.5f;
@@ -132,7 +132,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // dx_j = grad_j - softmax(x)_j * sum_i(grad_i)
 
         [AutoDiff(LOG_SOFTMAX)]
-        public static IValue?[] LogSoftmax<T>(Tensor<T> x, Tensor<T> grad, long? axis) where T : IVarType
+        public static Variable?[] LogSoftmax<T>(Tensor<T> x, Tensor<T> grad, long? axis) where T : IVarType
         {
             var effAxis = axis ?? -1;
             var sm = x.Softmax(effAxis);
@@ -146,7 +146,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // dy/dslope = 0 if x > 0 else x  (sum-reduced over broadcast dims for the slope gradient)
 
         [AutoDiff(P_RELU)]
-        public static IValue?[] PRelu<T>(Tensor<T> x, Tensor<T> slope, Tensor<T> grad) where T : IVarType
+        public static Variable?[] PRelu<T>(Tensor<T> x, Tensor<T> slope, Tensor<T> grad) where T : IVarType
         {
             var zero = TypedConst(0.0f, x);
             var one = TypedConst(1.0f, x);
@@ -165,7 +165,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // unspecified, per the ONNX spec).
 
         [AutoDiff(MEAN_VARIANCE_NORMALIZATION)]
-        public static IValue?[] MeanVarianceNormalization<T>(Tensor<T> x, Tensor<T> grad, long[]? axes) where T : IVarType
+        public static Variable?[] MeanVarianceNormalization<T>(Tensor<T> x, Tensor<T> grad, long[]? axes) where T : IVarType
         {
             // ONNX default axes are [0, 2, 3] (over batch and spatial dims of an NCHW tensor).
             var effectiveAxes = axes ?? new long[] { 0, 2, 3 };

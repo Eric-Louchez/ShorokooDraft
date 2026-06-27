@@ -272,7 +272,7 @@ public class TensorDataApiCoverageTests
         Assert.Equal(5f, single.As<float32>().AccessMemory()[0]);
 
         // Array overload.
-        var pair = OnnxEngine.Eval([(IValue)sum, product]);
+        var pair = OnnxEngine.Eval([(Variable)sum, product]);
         Assert.Equal(2, pair.Length);
         Assert.Equal(8f, pair[1].As<float32>().AccessMemory()[0]);
 

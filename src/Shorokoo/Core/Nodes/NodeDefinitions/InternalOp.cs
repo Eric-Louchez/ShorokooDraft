@@ -14,13 +14,13 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions;
 
 internal static partial class InternalOp
 {
-    public static IValue?[] AutoGrad(IValue?[] inputs, IValue loss)
+    public static Variable?[] AutoGrad(Variable?[] inputs, Variable loss)
         => NodeBuilder.BuildNodeMultiOut(AUTO_GRAD, [loss, ..inputs], []);
 
-    public static IValue RuntimeInput(DType dtype, int? rank, string? defaultName = null, Function? moduleFn = null)
+    public static Variable RuntimeInput(DType dtype, int? rank, string? defaultName = null, Function? moduleFn = null)
         => NodeBuilder.BuildNodeSingleOut(MODEL_TENSOR_INPUT, [], [(AttrDtype, dtype), (ShrkAttrRank, (long?)rank)], outputNames: defaultName is null ? null : [defaultName], targetFunction: moduleFn);
 
-    public static IValue ModuleTensorInput(DType dtype, int? rank, InputType? inputType, Function? targetFunction, string? defaultName = null, float? defaultValue = null)
+    public static Variable ModuleTensorInput(DType dtype, int? rank, InputType? inputType, Function? targetFunction, string? defaultName = null, float? defaultValue = null)
     {
         Debug.Assert(targetFunction is null || dtype == DType.Model || dtype == DType.Module || dtype == DType.Int64);
 
@@ -39,7 +39,7 @@ internal static partial class InternalOp
         return NodeBuilder.BuildNodeSingleOut(MODEL_TENSOR_INPUT, [], [.. attributes], outputNames: defaultName is null ? null : [defaultName], targetFunction: targetFunction);
     }
 
-    public static IValue ModuleOptionalInput(DType dtype, InputType? inputType, Function? targetFunction, string? defaultName = null)
+    public static Variable ModuleOptionalInput(DType dtype, InputType? inputType, Function? targetFunction, string? defaultName = null)
     {
         Debug.Assert(targetFunction is not null || (dtype != DType.Model && dtype != DType.Module));
         
@@ -52,7 +52,7 @@ internal static partial class InternalOp
         return NodeBuilder.BuildNodeSingleOut(MODEL_OPTIONAL_INPUT, [], [.. attributes], outputNames: defaultName is null ? null : [defaultName], targetFunction: targetFunction);
     }
 
-    public static IValue ModuleSequenceInput(DType dtype, InputType? inputType, Function? targetFunction, string? defaultName = null)
+    public static Variable ModuleSequenceInput(DType dtype, InputType? inputType, Function? targetFunction, string? defaultName = null)
     {
         Debug.Assert(targetFunction is not null || (dtype != DType.Model && dtype != DType.Module));
         
@@ -65,7 +65,7 @@ internal static partial class InternalOp
         return NodeBuilder.BuildNodeSingleOut(MODEL_SEQUENCE_INPUT, [], [.. attributes], outputNames: defaultName is null ? null : [defaultName], targetFunction: targetFunction);
     }
 
-    public static IValue GenericTypeInput(DType dtype, int? rank, string[]? constraints = null, string? defaultName = null)
+    public static Variable GenericTypeInput(DType dtype, int? rank, string[]? constraints = null, string? defaultName = null)
     {
         var attributes = new List<(string, object?)>
         {
@@ -81,15 +81,15 @@ internal static partial class InternalOp
         return NodeBuilder.BuildNodeSingleOut(GENERIC_TYPE_INPUT, [], [.. attributes], outputNames: defaultName is null ? null : [defaultName]);
     }
 
-    public static IValue ModelParamData(TensorData data, bool isTrainable, string? identifierTemplateString, string? defaultName)
+    public static Variable ModelParamData(TensorData data, bool isTrainable, string? identifierTemplateString, string? defaultName)
         => NodeBuilder.BuildNodeSingleOut(MODEL_PARAM_DATA, [], [(ShrkAttrTensorData, data), (ShrkAttrIsTrainable, isTrainable)], identifierTemplateString: identifierTemplateString, outputNames: defaultName is null ? null : [defaultName]);
-    public static IValue ModuleSetHyperparams(IValue inputModule, IValue?[] moduleParams, IValue? iterationIndices, int[]? localModelId, string? identifierTemplateString)
+    public static Variable ModuleSetHyperparams(Variable inputModule, Variable?[] moduleParams, Variable? iterationIndices, int[]? localModelId, string? identifierTemplateString)
         => NodeBuilder.BuildNodeSingleOut(MODULE_SET_HYPERPARAMS, [inputModule, iterationIndices, .. moduleParams], [(ShrkAttrLocalModelId, localModelId)], identifierTemplateString: identifierTemplateString);
 
-    public static IValue GetModelId(IValue inputModule)
+    public static Variable GetModelId(Variable inputModule)
         => NodeBuilder.BuildNodeSingleOut(GET_MODEL_ID, [inputModule], []);
 
-    public static IValue CreateModule(Function targetFunction, DType[]? genericTypeArgs = null)
+    public static Variable CreateModule(Function targetFunction, DType[]? genericTypeArgs = null)
     {
         var attributes = new List<(string, object?)>
         {
@@ -106,10 +106,10 @@ internal static partial class InternalOp
         return NodeBuilder.BuildNodeSingleOut(InternalOpCodes.CREATE_MODULE, [], [.. attributes], targetFunction: targetFunction);
     }
 
-    public static IValue NodeModelLike(IValue inputModule)
+    public static Variable NodeModelLike(Variable inputModule)
         => NodeBuilder.BuildNodeSingleOut(NEW_MODEL_LIKE, [inputModule], []);
 
-    public static IValue[] ModelInvoke(IValue inputModule, IValue?[] inputs, DataStructure[] dataStructures, DType[] dtypes, int[] ranks, DType[]? genericTypeArgs = null)
+    public static Variable[] ModelInvoke(Variable inputModule, Variable?[] inputs, DataStructure[] dataStructures, DType[] dtypes, int[] ranks, DType[]? genericTypeArgs = null)
     {
         var attributes = new List<(string, object?)>
         {
@@ -127,7 +127,7 @@ internal static partial class InternalOp
         return NodeBuilder.BuildNodeMultiOut(MODEL_INVOKE, [inputModule, .. inputs], [.. attributes]);
     }
 
-    public static IValue[] FunctionInvoke(IValue?[] inputs, DataStructure[] dataStructures, DType[] dtypes, int[] ranks, Function targetFn, DType[]? genericTypeArgs = null)
+    public static Variable[] FunctionInvoke(Variable?[] inputs, DataStructure[] dataStructures, DType[] dtypes, int[] ranks, Function targetFn, DType[]? genericTypeArgs = null)
      => NodeBuilder.BuildNodeMultiOut(
                     FUNCTION_INVOKE, 
                     [ .. inputs], 
@@ -137,19 +137,19 @@ internal static partial class InternalOp
                          (ShrkAttrGenericTypeArgs, genericTypeArgs)],
                         targetFunction: targetFn);
 
-    public static IValue SequenceConcat(IValue[] inputs)
+    public static Variable SequenceConcat(Variable[] inputs)
         => NodeBuilder.BuildNodeSingleOut(SEQUENCE_CONCAT, inputs, []);
 
-    public static IValue SequenceSlice(IValue input_sequence, IValue start, IValue end)
+    public static Variable SequenceSlice(Variable input_sequence, Variable start, Variable end)
         => NodeBuilder.BuildNodeSingleOut(SEQUENCE_SLICE, [input_sequence, start, end], []);
 
-    public static IValue SubModel(IValue inputModule, IValue[] hyperparams, int[] relativeModelId, Function fnModule)
+    public static Variable SubModel(Variable inputModule, Variable[] hyperparams, int[] relativeModelId, Function fnModule)
         => NodeBuilder.BuildNodeSingleOut(SUBMODEL, [inputModule], [(ShrkAttrRelativeModelId, relativeModelId)], targetFunction: fnModule);
 
-    public static IValue ModelHyperparam(IValue inputModel, int hyperparamIndex, DType dtype, int? rank)
+    public static Variable ModelHyperparam(Variable inputModel, int hyperparamIndex, DType dtype, int? rank)
         => NodeBuilder.BuildNodeSingleOut(MODEL_HYPERPARAM, [inputModel], [(ShrkAttrHyperparamIndex, hyperparamIndex), (ShrkAttrDtype, dtype), (ShrkAttrRank, rank)]);
 
-    public static IValue TrainableParamRef(IValue? model, IValue[] initializerParams, IValue? iterationIndices, int[] modelId, DType dtype, int? rank, Function initializerFn, bool isTrainable, DType[]? genericTypeArgs = null)
+    public static Variable TrainableParamRef(Variable? model, Variable[] initializerParams, Variable? iterationIndices, int[] modelId, DType dtype, int? rank, Function initializerFn, bool isTrainable, DType[]? genericTypeArgs = null)
     {
         if (model is null)
             return TrainableParamRef(initializerParams, iterationIndices, modelId, dtype, rank, initializerFn, isTrainable, genericTypeArgs);
@@ -161,7 +161,7 @@ internal static partial class InternalOp
         return TrainableParamIdRef(model, initializerParams, iterationIndices, modelId, dtype, rank, initializerFn, isTrainable, genericTypeArgs);
     }
 
-    public static IValue TrainableParam(IValue[] initializerParams, int[]? localModelId, DType dtype, int? rank, Shape shape, Function initializerFn, bool isTrainable, string? identifierTemplateString = null)
+    public static Variable TrainableParam(Variable[] initializerParams, int[]? localModelId, DType dtype, int? rank, Shape shape, Function initializerFn, bool isTrainable, string? identifierTemplateString = null)
     {
         var attributes = new List<(string, object?)>
         {
@@ -177,7 +177,7 @@ internal static partial class InternalOp
         return NodeBuilder.BuildNodeSingleOut(TRAINABLE_PARAM, [.. initializerParams], [.. attributes], targetFunction: initializerFn, identifierTemplateString: identifierTemplateString);
     }
 
-    public static IValue TrainableParamRef(IValue[] initializerParams, IValue? iterationIndices, int[]? localModelId, DType dtype, int? rank, Function initializerFn, bool isTrainable, DType[]? genericTypeArgs = null, string? identifierTemplateString = null)
+    public static Variable TrainableParamRef(Variable[] initializerParams, Variable? iterationIndices, int[]? localModelId, DType dtype, int? rank, Function initializerFn, bool isTrainable, DType[]? genericTypeArgs = null, string? identifierTemplateString = null)
     {
         var attributes = new List<(string, object?)>
         {
@@ -198,7 +198,7 @@ internal static partial class InternalOp
         return NodeBuilder.BuildNodeSingleOut(TRAINABLE_PARAM_REF, [iterationIndices, .. initializerParams], [.. attributes], targetFunction: initializerFn, identifierTemplateString: identifierTemplateString);
     }
 
-    public static IValue TrainableParamModelRef(IValue model, IValue[] initializerParams, IValue? iterationIndices, int[] relativeModelId, DType dtype, int? rank, Function initializerFn, bool isTrainable, DType[]? genericTypeArgs = null, string? identifierTemplateString = null)
+    public static Variable TrainableParamModelRef(Variable model, Variable[] initializerParams, Variable? iterationIndices, int[] relativeModelId, DType dtype, int? rank, Function initializerFn, bool isTrainable, DType[]? genericTypeArgs = null, string? identifierTemplateString = null)
     {
         var attributes = new List<(string, object?)>
         {
@@ -219,7 +219,7 @@ internal static partial class InternalOp
         return NodeBuilder.BuildNodeSingleOut(TRAINABLE_PARAM_MODEL_REF, [model, iterationIndices, .. initializerParams], [.. attributes], targetFunction: initializerFn, identifierTemplateString: identifierTemplateString);
     }
 
-    public static IValue TrainableParamIdRef(IValue modelIndexId, IValue[] initializerParams, IValue? iterationIndices, int[] relativeModelId, DType dtype, int? rank, Function initializerFn, bool isTrainable, DType[]? genericTypeArgs = null, string? identifierTemplateString = null)
+    public static Variable TrainableParamIdRef(Variable modelIndexId, Variable[] initializerParams, Variable? iterationIndices, int[] relativeModelId, DType dtype, int? rank, Function initializerFn, bool isTrainable, DType[]? genericTypeArgs = null, string? identifierTemplateString = null)
     {
         var attributes = new List<(string, object?)>
         {
@@ -247,7 +247,7 @@ internal static partial class InternalOp
     /// <param name="originalState">The original state tensor from a state initializer</param>
     /// <param name="updatedState">The computed updated value for the state</param>
     /// <returns>The updated state tensor (pass-through)</returns>
-    public static IValue StateUpdateLink(IValue originalState, IValue updatedState)
+    public static Variable StateUpdateLink(Variable originalState, Variable updatedState)
         => NodeBuilder.BuildNodeSingleOut(STATE_UPDATE_LINK, [originalState, updatedState], []);
 
     /// <summary>
@@ -258,7 +258,7 @@ internal static partial class InternalOp
     /// <param name="mainOutput">The main output tensor (value to pass through)</param>
     /// <param name="stateDeps">Updated state tensors that should be linked to this output</param>
     /// <returns>The main output tensor (pass-through semantics)</returns>
-    public static IValue WithStateDeps(IValue mainOutput, params IValue[] stateDeps)
+    public static Variable WithStateDeps(Variable mainOutput, params Variable[] stateDeps)
         => NodeBuilder.BuildNodeSingleOut(WITH_STATE_DEPS, [mainOutput, ..stateDeps], []);
 
     // TensorStruct operations
@@ -271,7 +271,7 @@ internal static partial class InternalOp
     /// <param name="targetFunction">Optional target function for the input</param>
     /// <param name="defaultName">Optional default name for the input</param>
     /// <returns>The TensorStruct input variable</returns>
-    public static IValue TensorStructInput(DType dtype, InputType? inputType = null, Function? targetFunction = null, string? defaultName = null)
+    public static Variable TensorStructInput(DType dtype, InputType? inputType = null, Function? targetFunction = null, string? defaultName = null)
     {
         var attributes = new List<(string, object?)>
         {
@@ -292,7 +292,7 @@ internal static partial class InternalOp
     /// <param name="fieldRank">The rank of the field (for tensor fields)</param>
     /// <param name="fieldStructure">The structure of the field (Tensor, Sequence, Optional, TensorStruct)</param>
     /// <returns>The extracted field variable</returns>
-    public static IValue TensorStructGetField(IValue structInput, string fieldName, DType fieldDType, int? fieldRank, DataStructure fieldStructure)
+    public static Variable TensorStructGetField(Variable structInput, string fieldName, DType fieldDType, int? fieldRank, DataStructure fieldStructure)
     {
         var attributes = new List<(string, object?)>
         {
@@ -312,7 +312,7 @@ internal static partial class InternalOp
     /// <param name="structDType">The DType of the TensorStruct to create (must contain TensorStructDef)</param>
     /// <param name="fieldValues">The values for each field, ordered to match TensorStructDef.Fields</param>
     /// <returns>The created TensorStruct variable</returns>
-    public static IValue TensorStructCreate(DType structDType, IValue[] fieldValues)
+    public static Variable TensorStructCreate(DType structDType, Variable[] fieldValues)
     {
         var attributes = new List<(string, object?)>
         {
@@ -327,7 +327,7 @@ internal static partial class InternalOp
     /// Takes shape as a tensor input (dynamic shape support).
     /// Lowered to ONNX ConstantOfShape + RandomUniformLike before execution.
     /// </summary>
-    public static IValue RandomUniform(IValue shape, float? high = null, float? low = null, float? seed = null)
+    public static Variable RandomUniform(Variable shape, float? high = null, float? low = null, float? seed = null)
         => NodeBuilder.BuildNodeSingleOut(SHRK_RANDOM_UNIFORM, [shape], [
             (AttrHigh, high), (AttrLow, low), (AttrSeed, seed)]);
 
@@ -336,7 +336,7 @@ internal static partial class InternalOp
     /// Takes shape as a tensor input (dynamic shape support).
     /// Lowered to ONNX ConstantOfShape + RandomNormalLike before execution.
     /// </summary>
-    public static IValue RandomNormal(IValue shape, float? mean = null, float? scale = null, float? seed = null)
+    public static Variable RandomNormal(Variable shape, float? mean = null, float? scale = null, float? seed = null)
         => NodeBuilder.BuildNodeSingleOut(SHRK_RANDOM_NORMAL, [shape], [
             (AttrMean, mean), (AttrScale, scale), (AttrSeed, seed)]);
 
@@ -348,8 +348,8 @@ internal static partial class InternalOp
     /// inputs must be resolvable to constants (directly, via constant folding, or from sample
     /// inputs) at lowering time. <paramref name="autoPad"/> stays a static attribute.
     /// </summary>
-    public static IValue Conv(IValue x, IValue w, IValue b, AutoPad autoPad,
-        IValue pads, IValue strides, IValue dilations, IValue kernelShape, IValue group)
+    public static Variable Conv(Variable x, Variable w, Variable b, AutoPad autoPad,
+        Variable pads, Variable strides, Variable dilations, Variable kernelShape, Variable group)
         => NodeBuilder.BuildNodeSingleOut(SHRK_CONV, [x, w, b, pads, strides, dilations, kernelShape, group],
             [(AttrAutoPad, autoPad)]);
 }

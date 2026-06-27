@@ -29,7 +29,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // spatial dimension, then combined using the Horner scheme for flat indexing.
 
         [AutoDiff(COL2IM)]
-        public static IValue?[] Col2Im<T1>(
+        public static Variable?[] Col2Im<T1>(
             Tensor<T1> input, Tensor<int64> imageShape, Tensor<int64> blockShape,
             Tensor<T1> grad,
             long[]? dilations, long[]? pads, long[]? strides)
@@ -65,7 +65,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             Tensor<int64> C_s = (Variable)OnnxOp.Gather(gradShape, Scalar(1L), axis: 0);
 
             // Compute padded spatial dimensions
-            var paddedDims = new IValue[nDims];
+            var paddedDims = new Variable[nDims];
             for (int d = 0; d < nDims; d++)
             {
                 Tensor<int64> imageDimD = (Variable)OnnxOp.Gather(imageShape, Scalar((long)d), axis: 0);
@@ -76,7 +76,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             // Compute spatial strides for flat indexing into padded gradient
             // spatialStrides[d] = ∏_{j > d} paddedDims[j]
-            var spatialStrides = new IValue[nDims];
+            var spatialStrides = new Variable[nDims];
             spatialStrides[nDims - 1] = (Variable)Scalar(1L);
             for (int d = nDims - 2; d >= 0; d--)
                 spatialStrides[d] = (Variable)(((Tensor<int64>)(Variable)spatialStrides[d + 1]) * ((Tensor<int64>)(Variable)paddedDims[d + 1]));
@@ -90,7 +90,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // The index tensor has shape [k0, o0, k1, o1, ..., k_{n-1}, o_{n-1}]
             // flat_idx = Σ_d source_d * spatialStrides[d]
             var totalIndexDims = 2 * nDims;
-            IValue? flatIdx = null;
+            Variable? flatIdx = null;
 
             for (int d = 0; d < nDims; d++)
             {

@@ -31,15 +31,15 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         //   matching the engine's expected (cond, else..., then...) layout.
 
         [AutoDiff(IF_CLOSE)]
-        public static IValue?[] IfCloseGradient(
+        public static Variable?[] IfCloseGradient(
             Scalar<bit> cond,
-            IValue?[] branchInputs,
-            IValue?[] outputGrads,
+            Variable?[] branchInputs,
+            Variable?[] outputGrads,
             OnnxCSharpAttributes attributes)
         {
             var numOutputs = outputGrads.Length;
 
-            var result = new IValue?[1 + branchInputs.Length]; // 1 + 2*numOutputs
+            var result = new Variable?[1 + branchInputs.Length]; // 1 + 2*numOutputs
             result[0] = null; // condition is boolean, not differentiable
 
             for (int i = 0; i < numOutputs; i++)

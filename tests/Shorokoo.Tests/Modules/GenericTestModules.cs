@@ -668,9 +668,10 @@ namespace Shorokoo.Tests.Modules
             var thenPair = TensorStruct<GenericPairStruct>(a, b);
             var elsePair = TensorStruct<GenericPairStruct>(b, a);
 
-            // IfElse takes IValue args — unwrap each proxy to its backing struct,
+            // IfElse takes graph Variable args — unwrap each proxy to its backing struct,
             // then re-wrap the picked result so field access flows through the proxy.
-            var pickedVar = condition.IfElse(
+            var pickedVar = Shorokoo.Core.Nodes.Ops.IfElse(
+                condition,
                 ((ITensorStructProxy)thenPair).BackingTensorStruct,
                 ((ITensorStructProxy)elsePair).BackingTensorStruct);
             var picked = AsTensorStruct<GenericPairStruct>(pickedVar);
@@ -727,16 +728,16 @@ namespace Shorokoo.Tests.Modules
             var dtype = sAVar.Type;
 
             // EMPTY + INSERT path: empty struct sequence, append sA, read it back.
-            var empty = ITensorSequence.CreateEmpty(dtype);
-            var seq1 = empty.Insert(sAVar);
-            var picked1 = AsTensorStruct<GenericPairStruct>(seq1[Scalar(0L)]);
+            var empty = (Variable)OnnxOp.SequenceEmpty(dtype);
+            var seq1 = (Variable)OnnxOp.SequenceInsert(empty, sAVar, null);
+            var picked1 = AsTensorStruct<GenericPairStruct>(seq1.At(Scalar(0L)));
 
             // CONSTRUCT + ERASE + LENGTH + AT path: build two-element seq, drop the
             // head, query length and read the survivor.
-            var seq2 = ITensorSequence.Create([sAVar, sBVar]);
+            var seq2 = (Variable)OnnxOp.SequenceConstruct([sAVar, sBVar]);
             var erased = seq2.RemoveAt(Scalar(0L));
             var len = erased.Count.Cast<float32>();
-            var picked2 = AsTensorStruct<GenericPairStruct>(erased[Scalar(0L)]);
+            var picked2 = AsTensorStruct<GenericPairStruct>(erased.At(Scalar(0L)));
 
             return picked1.First + picked2.Second + len;
         }
@@ -760,7 +761,7 @@ namespace Shorokoo.Tests.Modules
             var dtype = DType.GetOrCreateForTensorStruct(def);
 
             var seed = InternalOp.TensorStructCreate(dtype, [a1, a2]);
-            IValue seq = OnnxOp.SequenceConstruct(seed);
+            Variable seq = OnnxOp.SequenceConstruct(seed);
 
             foreach (var ctx in LoopAPI.Iterate(Scalar(2L)))
             {
@@ -791,10 +792,10 @@ namespace Shorokoo.Tests.Modules
 
             var sA = InternalOp.TensorStructCreate(dtype, [a1, a2]);
             var sB = InternalOp.TensorStructCreate(dtype, [a2, a1]);
-            IValue thenSeq = OnnxOp.SequenceConstruct(sA, sB);
-            IValue elseSeq = OnnxOp.SequenceConstruct(sB, sA);
+            Variable thenSeq = OnnxOp.SequenceConstruct(sA, sB);
+            Variable elseSeq = OnnxOp.SequenceConstruct(sB, sA);
 
-            IValue picked = cond.IfElse(thenSeq, elseSeq);
+            Variable picked = Shorokoo.Core.Nodes.Ops.IfElse(cond, thenSeq, elseSeq);
             var firstStruct = OnnxOp.SequenceAt(picked, Scalar(0L));
             var first = (Scalar<float32>)(Variable)InternalOp.TensorStructGetField(firstStruct, "First", DType.Float32, 0, DataStructure.Tensor);
             return first;
@@ -817,8 +818,8 @@ namespace Shorokoo.Tests.Modules
             var def = StructDefExtractor.ExtractFromType<GenericPairStruct>();
             var dtype = DType.GetOrCreateForTensorStruct(def);
 
-            IValue thenStruct = InternalOp.TensorStructCreate(dtype, [a1, a2]);
-            IValue elseStruct = InternalOp.TensorStructCreate(dtype, [a2, a1]);
+            TensorStruct<GenericPairStruct> thenStruct = InternalOp.TensorStructCreate(dtype, [a1, a2]);
+            TensorStruct<GenericPairStruct> elseStruct = InternalOp.TensorStructCreate(dtype, [a2, a1]);
             var thenPlain = a1 + a2;
             var elsePlain = a1 - a2;
 
@@ -851,8 +852,8 @@ namespace Shorokoo.Tests.Modules
             var def = StructDefExtractor.ExtractFromType<GenericPairStruct>();
             var dtype = DType.GetOrCreateForTensorStruct(def);
 
-            IValue pair = InternalOp.TensorStructCreate(dtype, [a, b]);
-            IValue? scanned = null;
+            Variable pair = InternalOp.TensorStructCreate(dtype, [a, b]);
+            Variable? scanned = null;
             foreach (var ctx in LoopAPI.Iterate(Scalar(3L)))
             {
                 var first = (Scalar<float32>)(Variable)InternalOp.TensorStructGetField(
@@ -905,7 +906,7 @@ namespace Shorokoo.Tests.Modules
         public static Tensor<float32> Inline(Scalar<float32> x)
         {
             var acc = x;
-            IValue? scanned = null;
+            Variable? scanned = null;
             foreach (var ctx in LoopAPI.Iterate(Scalar(3L)))
             {
                 acc = acc + Scalar(1.0f);

@@ -11,7 +11,7 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions;
 
 public static partial class OnnxOp
 {
-    public static IValue Dft(IValue x, IValue? length, IValue? axis, bool? inverse, bool? onesided = null)
+    public static Variable Dft(Variable x, Variable? length, Variable? axis, bool? inverse, bool? onesided = null)
     {
         // ORT 1.25/1.26 segfaults when the DFT node's axis input is omitted (the
         // empty-string placeholder in the protobuf), even though the ONNX spec
@@ -21,7 +21,7 @@ public static partial class OnnxOp
         return NodeBuilder.BuildNodeSingleOut(DFT, [x, length, axis], [(AttrInverse, inverse), (AttrOnesided, onesided)]);
     }
 
-    public static IValue DeformConv(IValue x, IValue w, IValue offset, IValue? b, IValue? mask,
+    public static Variable DeformConv(Variable x, Variable w, Variable offset, Variable? b, Variable? mask,
         long[]? dilations, long? group, long[]? kernelShape, long? offsetGroup,
         long[]? pads, long[]? strides = null)
         => NodeBuilder.BuildNodeSingleOut(DEFORM_CONV, [x, w, offset, b, mask], [
@@ -32,69 +32,69 @@ public static partial class OnnxOp
             (AttrPads, pads),
             (AttrStrides, strides)]);
 
-    public static IValue DepthToSpace(IValue input, long? blockSize, DepthColumnRowMode? mode = null)
+    public static Variable DepthToSpace(Variable input, long? blockSize, DepthColumnRowMode? mode = null)
         => NodeBuilder.BuildNodeSingleOut(DEPTH_TO_SPACE, [input], [(AttrBlocksize, blockSize), (AttrMode, mode)]);
 
-    public static IValue DequantizeLinear(IValue x, IValue xScale, IValue? xZeroPoint,
+    public static Variable DequantizeLinear(Variable x, Variable xScale, Variable? xZeroPoint,
         long? axis, long? blockSize = null)
         => NodeBuilder.BuildNodeSingleOut(DEQUANTIZE_LINEAR, [x, xScale, xZeroPoint], 
             [(AttrAxis, axis), (AttrBlockSize, blockSize)]);
 
-    public static IValue Det(IValue x)
+    public static Variable Det(Variable x)
         => NodeBuilder.BuildNodeSingleOut(DET, [x], []);
 
-    public static IValue Div(IValue left, IValue right)
+    public static Variable Div(Variable left, Variable right)
         => NodeBuilder.BuildNodeSingleOut(DIV, [left, right], []);
 
-    public static (IValue output, IValue? mask) Dropout(IValue data, IValue? ratio, IValue? training_mode,
+    public static (Variable output, Variable? mask) Dropout(Variable data, Variable? ratio, Variable? training_mode,
         long? seed = null)
     {
         var retval = NodeBuilder.BuildNodeMultiOut(DROPOUT, [data, ratio, training_mode], [(AttrSeed, seed)]);
         return (retval[0], retval.Length > 1 ? retval[1] : null);
     }
 
-    // public static IValue Dropout(IValue data, IValue? ratio, IValue? training_mode,
+    // public static Variable Dropout(Variable data, Variable? ratio, Variable? training_mode,
     //     long? seed = null)
     // {
     //     var retval = NodeBuilder.BuildNodeMultiOut(DROPOUT, [data, ratio, training_mode], [(AttrSeed, seed)], outputNames: [null, ""]);
     //     return (retval[0], retval.Length > 1 ? retval[1] : null);
     // }
 
-    public static (IValue y, IValue yScale, IValue yZeroPoint) DynamicQuantizeLinear(IValue x)
+    public static (Variable y, Variable yScale, Variable yZeroPoint) DynamicQuantizeLinear(Variable x)
     {
         var retval = NodeBuilder.BuildNodeMultiOut(DYNAMIC_QUANTIZE_LINEAR, [x], []);
         return (retval[0], retval[1], retval[2]);
     }
 
-    public static IValue Einsum(IValue[] inputs, string? equation = null)
+    public static Variable Einsum(Variable[] inputs, string? equation = null)
         => NodeBuilder.BuildNodeSingleOut(EINSUM, inputs, [(AttrEquation, equation)]);
 
-    public static IValue Elu(IValue x, float? alpha = null)
+    public static Variable Elu(Variable x, float? alpha = null)
         => NodeBuilder.BuildNodeSingleOut(ELU, [x], [(AttrAlpha, alpha)]);
 
-    public static IValue Equal(IValue left, IValue right)
+    public static Variable Equal(Variable left, Variable right)
         => NodeBuilder.BuildNodeSingleOut(EQUAL, [left, right], []);
 
-    public static IValue Erf(IValue x)
+    public static Variable Erf(Variable x)
         => NodeBuilder.BuildNodeSingleOut(ERF, [x], []);
 
-    public static IValue Exp(IValue x)
+    public static Variable Exp(Variable x)
         => NodeBuilder.BuildNodeSingleOut(EXP, [x], []);
 
-    public static IValue Expand(IValue input, IValue shape)
+    public static Variable Expand(Variable input, Variable shape)
         => NodeBuilder.BuildNodeSingleOut(EXPAND, [input, shape], []);
 
-    public static IValue EyeLike(IValue input, DType? dtype = null, long? k = 0)
+    public static Variable EyeLike(Variable input, DType? dtype = null, long? k = 0)
         => NodeBuilder.BuildNodeSingleOut(EYE_LIKE, [input], [(AttrDtype, dtype), (AttrK, k)]);
 
-    public static IValue Flatten(IValue input, long? axis = null)
+    public static Variable Flatten(Variable input, long? axis = null)
         => NodeBuilder.BuildNodeSingleOut(FLATTEN, [input], [(AttrAxis, axis)]);
 
-    public static IValue Floor(IValue x)
+    public static Variable Floor(Variable x)
         => NodeBuilder.BuildNodeSingleOut(FLOOR, [x], []);
 
-    public static (IValue y, IValue yH) Gru(IValue x, IValue w, IValue r, 
-        IValue? b, IValue? sequenceLens, IValue? initialH,
+    public static (Variable y, Variable yH) Gru(Variable x, Variable w, Variable r, 
+        Variable? b, Variable? sequenceLens, Variable? initialH,
         float[]? activationAlpha, float[]? activationBeta, string[]? activations,
         float? clip, GRUDirection? direction, long? hiddenSize,
         bool? layout, bool? linearBeforeReset = null)
@@ -111,48 +111,48 @@ public static partial class OnnxOp
         return (retval[0], retval[1]);
     }
 
-    public static IValue Gather(IValue data, IValue indices, long? axis = null)
+    public static Variable Gather(Variable data, Variable indices, long? axis = null)
         => NodeBuilder.BuildNodeSingleOut(GATHER, [data, indices], [(AttrAxis, axis)]);
 
-    public static IValue GatherElements(IValue data, IValue indices, long? axis = null)
+    public static Variable GatherElements(Variable data, Variable indices, long? axis = null)
         => NodeBuilder.BuildNodeSingleOut(GATHER_ELEMENTS, [data, indices], [(AttrAxis, axis)]);
 
-    public static IValue GatherND(IValue data, IValue indices, long? batchDims = null)
+    public static Variable GatherND(Variable data, Variable indices, long? batchDims = null)
         => NodeBuilder.BuildNodeSingleOut(GATHER_ND, [data, indices], [(AttrBatchDims, batchDims)]);
 
-    public static IValue Gelu(IValue x, GeluApproximate? approximate = null)
+    public static Variable Gelu(Variable x, GeluApproximate? approximate = null)
         => NodeBuilder.BuildNodeSingleOut(GELU, [x], [(AttrApproximate, approximate)]);
 
-    public static IValue GlobalAveragePool(IValue x)
+    public static Variable GlobalAveragePool(Variable x)
         => NodeBuilder.BuildNodeSingleOut(GLOBAL_AVERAGE_POOL, [x], []);
 
-    public static IValue GlobalLpPool(IValue x, long? p = null)
+    public static Variable GlobalLpPool(Variable x, long? p = null)
         => NodeBuilder.BuildNodeSingleOut(GLOBAL_LP_POOL, [x], [(AttrP, p)]);
 
-    public static IValue GlobalMaxPool(IValue x)
+    public static Variable GlobalMaxPool(Variable x)
         => NodeBuilder.BuildNodeSingleOut(GLOBAL_MAX_POOL, [x], []);
 
-    public static IValue Greater(IValue left, IValue right)
+    public static Variable Greater(Variable left, Variable right)
         => NodeBuilder.BuildNodeSingleOut(GREATER, [left, right], []);
 
-    public static IValue GreaterOrEqual(IValue left, IValue right)
+    public static Variable GreaterOrEqual(Variable left, Variable right)
         => NodeBuilder.BuildNodeSingleOut(GREATER_OR_EQUAL, [left, right], []);
 
-    public static IValue GridSample(IValue x, IValue grid, bool? alignCorners,
+    public static Variable GridSample(Variable x, Variable grid, bool? alignCorners,
         GridSampleMode? mode, GridSamplePaddingMode? paddingMode = null)
         => NodeBuilder.BuildNodeSingleOut(GRID_SAMPLE, [x, grid], [
             (AttrAlignCorners, alignCorners),
             (AttrMode, mode),
             (AttrPaddingMode, paddingMode)]);
 
-    public static IValue GroupNormalization(IValue x, IValue scale, IValue bias,
+    public static Variable GroupNormalization(Variable x, Variable scale, Variable bias,
         float? epsilon, long? numGroups, long? stashType = null)
         => NodeBuilder.BuildNodeSingleOut(GROUP_NORMALIZATION, [x, scale, bias], [
             (AttrEpsilon, epsilon),
             (AttrNumGroups, numGroups),
             (AttrStashType, stashType)]);
 
-    public static IValue Gemm(IValue a, IValue b, IValue? c = null,
+    public static Variable Gemm(Variable a, Variable b, Variable? c = null,
         float? alpha = null, float? beta = null, long? transA = null, long? transB = null)
         => NodeBuilder.BuildNodeSingleOut(GEMM, [a, b, c], [
             (AttrAlpha, alpha),
@@ -160,7 +160,7 @@ public static partial class OnnxOp
             (AttrTransA, transA),
             (AttrTransB, transB)]);
 
-    public static IValue InstanceNormalization(IValue x, IValue scale, IValue bias,
+    public static Variable InstanceNormalization(Variable x, Variable scale, Variable bias,
         float? epsilon = null)
         => NodeBuilder.BuildNodeSingleOut(INSTANCE_NORMALIZATION, [x, scale, bias], [
             (AttrEpsilon, epsilon)]);
