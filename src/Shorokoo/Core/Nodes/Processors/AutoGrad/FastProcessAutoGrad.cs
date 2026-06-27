@@ -414,12 +414,11 @@ namespace Shorokoo.Core.Nodes.Processors.AutoGrad
                 if (inputs[i] is not FastTensorKey k) continue;
                 if (inputGrads[i] is null) continue;
 
-                // Gradient ops return value-struct handles; store the backing Immutable* graph value
-                // so downstream gradient ops that read these as Variable see an immutable.
-                var grad = Shorokoo.Core.VariableHandle.Normalize(inputGrads[i]!)!;
+                // Gradient ops already return graph nodes.
+                var grad = inputGrads[i]!;
 
                 if (gradByKey.TryGetValue(k, out var existing))
-                    gradByKey[k] = Shorokoo.Core.VariableHandle.Normalize(AutoDiffEngine.AccumulateGradients(existing, grad))!;
+                    gradByKey[k] = AutoDiffEngine.AccumulateGradients(existing, grad);
                 else
                     gradByKey[k] = grad;
             }

@@ -45,9 +45,9 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<float32> RnnRevLoss(Variable x)
         {
             var (y, yh) = OnnxOp.Rnn(x,
-                Shorokoo.Core.VariableHandle.Normalize(RecurrentTestData.RnnWConst())!,
-                Shorokoo.Core.VariableHandle.Normalize(RecurrentTestData.RnnRConst())!,
-                Shorokoo.Core.VariableHandle.Normalize(RecurrentTestData.RnnBConst())!, null, null,
+                RecurrentTestData.RnnWConst(),
+                RecurrentTestData.RnnRConst(),
+                RecurrentTestData.RnnBConst(), null, null,
                 null, null, null, null, RNNDirection.Reverse, 2L, false);
             return ((Tensor<float32>)y).Reduce(ReduceKind.Sum, keepDims: false).Scalar()
                  + ((Tensor<float32>)yh).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
@@ -56,9 +56,9 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<float32> GruRevLoss(Variable x)
         {
             var (y, yh) = OnnxOp.Gru(x,
-                Shorokoo.Core.VariableHandle.Normalize(RecurrentTestData.GruWConst())!,
-                Shorokoo.Core.VariableHandle.Normalize(RecurrentTestData.GruRConst())!,
-                Shorokoo.Core.VariableHandle.Normalize(RecurrentTestData.GruBConst())!, null, null,
+                RecurrentTestData.GruWConst(),
+                RecurrentTestData.GruRConst(),
+                RecurrentTestData.GruBConst(), null, null,
                 null, null, null, null, GRUDirection.Reverse, 2L, false, null);
             return ((Tensor<float32>)y).Reduce(ReduceKind.Sum, keepDims: false).Scalar()
                  + ((Tensor<float32>)yh).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
@@ -67,9 +67,9 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<float32> LstmRevLoss(Variable x)
         {
             var (y, yh, yc) = OnnxOp.Lstm(x,
-                Shorokoo.Core.VariableHandle.Normalize(RecurrentTestData.LstmWConst())!,
-                Shorokoo.Core.VariableHandle.Normalize(RecurrentTestData.LstmRConst())!,
-                Shorokoo.Core.VariableHandle.Normalize(RecurrentTestData.LstmBConst())!, null, null, null, null,
+                RecurrentTestData.LstmWConst(),
+                RecurrentTestData.LstmRConst(),
+                RecurrentTestData.LstmBConst(), null, null, null, null,
                 null, null, null, null, LSTMDirection.Reverse, 2L, null, false);
             return ((Tensor<float32>)y).Reduce(ReduceKind.Sum, keepDims: false).Scalar()
                  + ((Tensor<float32>)yh).Reduce(ReduceKind.Sum, keepDims: false).Scalar()
@@ -132,11 +132,11 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<bit> Inline(Scalar<float32> xv)
         {
             var w = (Tensor<float32>)OnnxOp.Concat(
-                [Shorokoo.Core.VariableHandle.Normalize(RecurrentTestData.RnnWConst())!,
-                 Shorokoo.Core.VariableHandle.Normalize(RecurrentTestData.RnnWConst())!], axis: 0);
+                [RecurrentTestData.RnnWConst(),
+                 RecurrentTestData.RnnWConst()], axis: 0);
             var r = (Tensor<float32>)OnnxOp.Concat(
-                [Shorokoo.Core.VariableHandle.Normalize(RecurrentTestData.RnnRConst())!,
-                 Shorokoo.Core.VariableHandle.Normalize(RecurrentTestData.RnnRConst())!], axis: 0);
+                [RecurrentTestData.RnnRConst(),
+                 RecurrentTestData.RnnRConst()], axis: 0);
             var (_, yh) = OnnxOp.Rnn(RecurrentTestData.BuildX(xv, 2), w, r, null, null, null,
                 null, null, null, null, RNNDirection.Bidirectional, 2L, false);
             var loss = ((Tensor<float32>)yh).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
@@ -154,8 +154,8 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<bit> Inline(Scalar<float32> xv)
         {
             var (_, yh) = OnnxOp.Gru(RecurrentTestData.BuildX(xv, 2),
-                Shorokoo.Core.VariableHandle.Normalize(RecurrentTestData.GruWConst())!,
-                Shorokoo.Core.VariableHandle.Normalize(RecurrentTestData.GruRConst())!, null, null, null,
+                RecurrentTestData.GruWConst(),
+                RecurrentTestData.GruRConst(), null, null, null,
                 null, null, null, 1.0f, GRUDirection.Forward, 2L, false, null);
             var loss = ((Tensor<float32>)yh).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var grad = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(xv, loss);
@@ -174,8 +174,8 @@ namespace Shorokoo.Tests.Modules
             var p = OnnxOp.Reshape(Vector(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f),
                 Vector(1L, 6L), allowZero: false);  // [D, 3H] with H=2
             var (_, yh, _) = OnnxOp.Lstm(RecurrentTestData.BuildX(xv, 2),
-                Shorokoo.Core.VariableHandle.Normalize(RecurrentTestData.LstmWConst())!,
-                Shorokoo.Core.VariableHandle.Normalize(RecurrentTestData.LstmRConst())!, null, null,
+                RecurrentTestData.LstmWConst(),
+                RecurrentTestData.LstmRConst(), null, null,
                 null, null, p, null, null, null, null, LSTMDirection.Forward, 2L, null, false);
             var loss = ((Tensor<float32>)yh).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var grad = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(xv, loss);

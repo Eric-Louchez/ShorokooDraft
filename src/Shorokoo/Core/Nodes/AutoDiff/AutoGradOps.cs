@@ -33,6 +33,6 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             => InternalOp.AutoGrad(inputs, loss);
 
         public static Variable?[] AutoGrad<T>(IValue?[] inputs, Scalar<T> loss) where T : FloatLike
-            => InternalOp.AutoGrad([.. System.Linq.Enumerable.Select(inputs, v => Shorokoo.Core.VariableHandle.Normalize(v))], loss);
+            => InternalOp.AutoGrad([.. System.Linq.Enumerable.Select(inputs, v => v?.Immutable)], loss);
     }
 }

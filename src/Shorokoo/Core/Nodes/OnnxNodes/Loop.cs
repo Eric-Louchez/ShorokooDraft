@@ -909,8 +909,8 @@ namespace Shorokoo
         {
             Debug.Assert(!this.IsLocalScanVariable);
             Debug.Assert(this.ScanInput is null);
-            // Store the Immutable* graph value (these are matched against node outputs elsewhere).
-            this.ScanInput = Shorokoo.Core.VariableHandle.Normalize(scanInput);
+            // Store the graph node (these are matched against node outputs elsewhere).
+            this.ScanInput = scanInput;
             this.IsLocalScanVariable = true;
         }
 

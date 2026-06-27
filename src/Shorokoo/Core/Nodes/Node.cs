@@ -296,13 +296,6 @@ namespace Shorokoo.Core.Nodes
             // Loops do a lot of strange things that override the normal way nodes are constructed.
             (this.FullInputs, this.FullOutputs) = LoopAPI.ProcessNode(this);
 
-            // Graph values must be Immutable* (reference identity drives key assignment); normalise
-            // any value-struct handle that LoopAPI's variable remapping may have introduced.
-            this.FullInputs = this.FullInputs.ToImmutableDictionary(
-                kv => kv.Key, kv => kv.Value.Select(v => v is null ? null : Shorokoo.Core.VariableHandle.Normalize(v)).ToArray());
-            this.FullOutputs = this.FullOutputs.ToImmutableDictionary(
-                kv => kv.Key, kv => kv.Value.Select(v => v is null ? null : Shorokoo.Core.VariableHandle.Normalize(v)).ToArray());
-
             this.inputs = null;
 
             // Assign TensorKeys to all outputs after FullOutputs is finalized

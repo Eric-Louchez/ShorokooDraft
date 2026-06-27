@@ -163,8 +163,8 @@ namespace Shorokoo
         public static void StateUpdate<T>(T originalState, T updatedState) where T : IValue
         {
             // Unwrap the user-facing handles to their backing graph-side Variable nodes.
-            var originalVar = VariableHandle.Normalize(originalState);
-            var updatedVar = VariableHandle.Normalize(updatedState);
+            var originalVar = originalState.Immutable;
+            var updatedVar = updatedState.Immutable;
 
             if (originalVar is null || updatedVar is null)
             {
