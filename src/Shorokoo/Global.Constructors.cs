@@ -816,6 +816,8 @@ namespace Shorokoo
         /// recorded as declarative metadata on a scalar hyperparameter input so it survives serialization.</param>
         public static IModuleParam ModuleParamInputBasedOn(Type type, InputType inputType, string? paramName, float? hyperDefaultValue = null)
         {
+            Shorokoo.Core.ModuleHelper.RejectVariableParam(type);
+
             if (type.IsAssignableTo(typeof(IModel)))
                 return (IModel)type.GetConstructor([typeof(InputType)]).AssertNotNull().Invoke([inputType]);
             else if (type.IsAssignableTo(typeof(IModule)))

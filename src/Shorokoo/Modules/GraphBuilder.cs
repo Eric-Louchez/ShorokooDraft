@@ -137,6 +137,10 @@ namespace Shorokoo.Core
             // should not affect subsequent module/initializer graph builds
             Shorokoo.Core.InternalGlobals.GetAndClearStateUpdates();
 
+            // Modules speak in value handles, not the internal graph node type. (Inputs are validated
+            // per-parameter inside CreateInputParams.)
+            ModuleHelper.RejectVariableParam(methodInfo.ReturnType);
+
             // Create input parameters based on the method signature
             var fnInputs = ModuleHelper.CreateInputParams(methodInfo.GetParameters());
 

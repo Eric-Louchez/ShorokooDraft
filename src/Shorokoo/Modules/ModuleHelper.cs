@@ -173,8 +173,25 @@ namespace Shorokoo.Core
                 $"{signatureInputPart} > {signatureOutputPart}");
         }
 
+        /// <summary>
+        /// Reject the internal graph node type <see cref="Variable"/> in a module signature: modules
+        /// must declare their inputs and outputs with the user-facing value handles
+        /// (<see cref="Tensor{T}"/>, <see cref="Vector{T}"/>, <see cref="Scalar{T}"/>,
+        /// <see cref="OptionalTensor{T}"/>, <see cref="TensorSequence{T}"/>, <see cref="TensorStruct{T}"/>).
+        /// <see cref="Variable"/> is the graph's internal representation only — the framework converts
+        /// to and from it behind the module boundary, never across it.
+        /// </summary>
+        internal static void RejectVariableParam(Type type)
+        {
+            if (typeof(Variable).IsAssignableFrom(type))
+                throw new InvalidTensorOperationException(ErrorCodes.FW002, "module signature", type.Name,
+                    "the internal graph node type 'Variable' cannot be a module input or output; use a value handle " +
+                    "(Tensor<T>, Vector<T>, Scalar<T>, OptionalTensor<T>, TensorSequence<T>, TensorStruct<T>) instead");
+        }
+
         internal static Variable DefaultVariable(Type type)
         {
+            RejectVariableParam(type);
             if (type.IsAssignableTo(typeof(ITensorStruct)))
             {
                 var (structDef, structDType) = StructDefExtractor.ExtractFromTensorStructType(type, "default value creation");

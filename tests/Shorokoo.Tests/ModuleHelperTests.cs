@@ -43,6 +43,17 @@ public class ModuleHelperCoverageTests
         Assert.Throws<UnsupportedDTypeException>(() => ModuleHelper.DefaultVariable(typeof(int)));
 
         // ──────────────────────────────────────────────────────────────────
+        // Variable is the internal graph node type — modules must declare their inputs/outputs with
+        // value handles (Tensor<T>, …), never Variable. Rejected at every signature chokepoint.
+        // ──────────────────────────────────────────────────────────────────
+        Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.RejectVariableParam(typeof(Variable)));
+        ModuleHelper.RejectVariableParam(typeof(Scalar<float32>));   // a value handle is accepted (no throw)
+        Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.DefaultVariable(typeof(Variable)));
+        Assert.Throws<InvalidTensorOperationException>(() => ModuleParamInputBasedOn(typeof(Variable), InputType.ReadyInput, "x"));
+        Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.CreateFunctionSignature([], [typeof(Variable)], [typeof(Scalar<float32>)]));
+        Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.CreateFunctionSignature([], [typeof(Scalar<float32>)], [typeof(Variable)]));
+
+        // ──────────────────────────────────────────────────────────────────
         // ToSignatureStringWithOverride — each variable-type arm
         // ──────────────────────────────────────────────────────────────────
         var tensor = InputTensor<float32>("t", rank: 2);
