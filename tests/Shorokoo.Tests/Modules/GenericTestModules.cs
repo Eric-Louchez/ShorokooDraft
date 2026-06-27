@@ -500,7 +500,7 @@ namespace Shorokoo.Tests.Modules
             var tensorStruct = InternalOp.TensorStructCreate(dtype, [inputF32]);
 
             // Extract the field back out
-            var extracted = (Tensor<float32>)(ImmutableTensor<float32>)InternalOp.TensorStructGetField(tensorStruct, "Data", DType.Float32, null, DataStructure.Tensor);
+            var extracted = (Tensor<float32>)(ImmutableTensor)InternalOp.TensorStructGetField(tensorStruct, "Data", DType.Float32, null, DataStructure.Tensor);
 
             // Cast back to generic type T
             return extracted.Cast<T>();
@@ -769,7 +769,7 @@ namespace Shorokoo.Tests.Modules
             }
 
             var picked = OnnxOp.SequenceAt(seq, Scalar(0L));
-            var first = (Scalar<float32>)(ImmutableScalar<float32>)InternalOp.TensorStructGetField(picked, "First", DType.Float32, 0, DataStructure.Tensor);
+            var first = (Scalar<float32>)(ImmutableScalar)InternalOp.TensorStructGetField(picked, "First", DType.Float32, 0, DataStructure.Tensor);
             return first;
         }
     }
@@ -796,7 +796,7 @@ namespace Shorokoo.Tests.Modules
 
             IValue picked = cond.IfElse(thenSeq, elseSeq);
             var firstStruct = OnnxOp.SequenceAt(picked, Scalar(0L));
-            var first = (Scalar<float32>)(ImmutableScalar<float32>)InternalOp.TensorStructGetField(firstStruct, "First", DType.Float32, 0, DataStructure.Tensor);
+            var first = (Scalar<float32>)(ImmutableScalar)InternalOp.TensorStructGetField(firstStruct, "First", DType.Float32, 0, DataStructure.Tensor);
             return first;
         }
     }
@@ -826,7 +826,7 @@ namespace Shorokoo.Tests.Modules
                 (thenStruct, thenPlain),
                 (elseStruct, elsePlain));
 
-            var pickedFirst = (Scalar<float32>)(ImmutableScalar<float32>)InternalOp.TensorStructGetField(
+            var pickedFirst = (Scalar<float32>)(ImmutableScalar)InternalOp.TensorStructGetField(
                 pickedStruct, "First", DType.Float32, 0, DataStructure.Tensor);
             return pickedFirst + pickedPlain;
         }
@@ -855,14 +855,14 @@ namespace Shorokoo.Tests.Modules
             IValue? scanned = null;
             foreach (var ctx in LoopAPI.Iterate(Scalar(3L)))
             {
-                var first = (Scalar<float32>)(ImmutableScalar<float32>)InternalOp.TensorStructGetField(
+                var first = (Scalar<float32>)(ImmutableScalar)InternalOp.TensorStructGetField(
                     pair, "First", DType.Float32, 0, DataStructure.Tensor);
-                var second = (Scalar<float32>)(ImmutableScalar<float32>)InternalOp.TensorStructGetField(
+                var second = (Scalar<float32>)(ImmutableScalar)InternalOp.TensorStructGetField(
                     pair, "Second", DType.Float32, 0, DataStructure.Tensor);
                 pair = InternalOp.TensorStructCreate(dtype, [first + Scalar(1.0f), second + Scalar(2.0f)]);
-                scanned = (ImmutableVector<float32>)ctx.Scan(first + second);
+                scanned = (ImmutableVector)ctx.Scan(first + second);
             }
-            return (Tensor<float32>)(ImmutableTensor<float32>)scanned!;
+            return (Tensor<float32>)(ImmutableTensor)scanned!;
         }
     }
 
@@ -909,9 +909,9 @@ namespace Shorokoo.Tests.Modules
             foreach (var ctx in LoopAPI.Iterate(Scalar(3L)))
             {
                 acc = acc + Scalar(1.0f);
-                scanned = (ImmutableVector<float32>)ctx.Scan(acc);
+                scanned = (ImmutableVector)ctx.Scan(acc);
             }
-            return (Tensor<float32>)(ImmutableTensor<float32>)scanned!;
+            return (Tensor<float32>)(ImmutableTensor)scanned!;
         }
     }
 

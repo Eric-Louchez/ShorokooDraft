@@ -288,11 +288,11 @@ public class ModulesCoverageTests
         Assert.Equal(Shorokoo.Core.Nodes.OnnxNodes.FunctionType.Module, fn.FunctionType);
 
         // Outer graph: 1 model-tensor input → fn.Call(input) → output.
-        var input = (Tensor<float32>)(ImmutableTensor<float32>)Shorokoo.Core.Nodes.NodeDefinitions.InternalOp.ModuleTensorInput(
+        var input = (Tensor<float32>)(ImmutableTensor)Shorokoo.Core.Nodes.NodeDefinitions.InternalOp.ModuleTensorInput(
             DType.Float32, rank: 1, Shorokoo.Core.Nodes.NodeDefinitions.InputType.ModelInput,
             targetFunction: null, defaultName: "input");
         var callResult = fn.Call(input);
-        var output = (Tensor<float32>)(ImmutableTensor<float32>)callResult[0];
+        var output = (Tensor<float32>)(ImmutableTensor)callResult[0];
 
         var graph = new FastComputationGraph(
             System.Collections.Immutable.ImmutableArray.Create<Shorokoo.IValue>(input),

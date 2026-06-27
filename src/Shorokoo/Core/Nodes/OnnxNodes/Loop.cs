@@ -107,7 +107,7 @@ namespace Shorokoo
         {
             // Key the loop-variable dictionaries by the Immutable* graph value (they are populated
             // with node outputs, which are immutables); a struct handle would not match.
-            ImmutableTensor<T> retVal = (ImmutableTensor<T>)OnnxOp.LoopScanZombie(toScan);
+            ImmutableTensor retVal = (ImmutableTensor)OnnxOp.LoopScanZombie(toScan);
 
             if (this.CurrentPass == 1)
             {
@@ -127,7 +127,7 @@ namespace Shorokoo
 
         public Vector<T> Scan<T>(Scalar<T> toScan) where T : IVarType
         {
-            return (ImmutableVector<T>)this.Scan<T>((ImmutableTensor<T>)toScan);
+            return (ImmutableVector)this.Scan<T>((ImmutableTensor)toScan);
         }
 
         public void ContinueWhile(Scalar<bit> breakWhenTensor)
@@ -224,7 +224,7 @@ namespace Shorokoo
             if (dctLoopIndexVariables.ContainsKey(CurrentPass))
                 return dctLoopIndexVariables[CurrentPass];
 
-            Scalar<int64> indexVariable = (ImmutableScalar<int64>)OnnxOp.LoopIndexVariable();
+            Scalar<int64> indexVariable = (ImmutableScalar)OnnxOp.LoopIndexVariable();
             dctLoopIndexVariables[CurrentPass] = indexVariable;
             return indexVariable;
         }
@@ -379,7 +379,7 @@ namespace Shorokoo
                         if ((nodeIndex, outputIndex) == (0, 0))
                         {
                             Debug.Assert(loopVariable.FirstPassOutput.OwningNode.NodeDef.FullNodeOpName == OpCodes.LOOP_INDEX_VARIABLE);
-                            Scalar<int64> actualIterationIndexVariable = (ImmutableScalar<int64>)this.OpenLoopNode.AssertNotNull().Outputs[0].AssertNotNull();
+                            Scalar<int64> actualIterationIndexVariable = (ImmutableScalar)this.OpenLoopNode.AssertNotNull().Outputs[0].AssertNotNull();
                             loopVariable.SetThirdPassOutput(actualIterationIndexVariable);
                             outputMapping.Add((outputVariable, actualIterationIndexVariable));
                         }

@@ -146,7 +146,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen((Scalar<bit>)condition);
             var results = OnnxOp.IfClose([.. whenTrue.Cast<IValue>()], [.. whenFalse.Cast<IValue>()], ifOpen);
 
-            return (ImmutableTensor<T>)results[0];
+            return (ImmutableTensor)results[0];
         }
 
         public static IValue<T> IfElse<T>(Scalar<bit> condition, IValue<T>[] whenTrue, IValue<T>[] whenFalse)

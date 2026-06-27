@@ -52,15 +52,15 @@ namespace Shorokoo.Tests.Modules
                 x3, Vector(1f, 1f, 1f, 1f), Vector(0f, 0f, 0f, 0f));
 
             var xi = Vector(1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f).Reshape(Vector(1L, 2L, 2L, 2L));
-            var instNorm = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.InstanceNormalization(
+            var instNorm = (Tensor<float32>)(ImmutableTensor)OnnxOp.InstanceNormalization(
                 xi, Vector(1f, 2f), Vector(0f, 1f), epsilon: 1e-5f);
 
             var xg = Vector(1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f, 11f, 12f, 13f, 14f, 15f, 16f)
                 .Reshape(Vector(1L, 4L, 2L, 2L));
             var groupNorm = NN.GroupNormalization(xg,
                 Vector(1f, 1f, 1f, 1f), Vector(0f, 0f, 0f, 0f), numGroups: 2);
-            var lrn = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Lrn(xg, alpha: 1e-4f, beta: 0.75f, bias: 1f, size: 3L);
-            var lpNorm = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.LpNormalization(x, axis: 0, p: 1);
+            var lrn = (Tensor<float32>)(ImmutableTensor)OnnxOp.Lrn(xg, alpha: 1e-4f, beta: 0.75f, bias: 1f, size: 3L);
+            var lpNorm = (Tensor<float32>)(ImmutableTensor)OnnxOp.LpNormalization(x, axis: 0, p: 1);
             var mvn = x3.MeanVarianceNormalization(new long[] { 0, 2 });
 
             var mismatch =
@@ -87,7 +87,7 @@ namespace Shorokoo.Tests.Modules
 
         // NaN-safe: Not(<= tol) counts a NaN diff as a mismatch; a plain "> tol" would pass it (IEEE).
         private static Scalar<int64> FloatMismatch(Tensor<float32> actual, Vector<float32> expected)
-            => ((Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
+            => ((Tensor<bit>)(ImmutableTensor)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         private static Scalar<int64> ShapeMismatch(ITensor t, Vector<int64> expected)
@@ -124,7 +124,7 @@ namespace Shorokoo.Tests.Modules
 
         // NaN-safe: Not(<= tol) counts a NaN diff as a mismatch; a plain "> tol" would pass it (IEEE).
         private static Scalar<int64> FloatMismatch(Tensor<float32> actual, Vector<float32> expected)
-            => ((Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
+            => ((Tensor<bit>)(ImmutableTensor)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         private static Scalar<int64> ShapeMismatch(ITensor t, Vector<int64> expected)
@@ -165,11 +165,11 @@ namespace Shorokoo.Tests.Modules
                 ShapeMismatch(logProbMean!, Vector(2L, 3L)) +
                 ShapeMismatch(nllNone, Vector(2L)) +
                 IntMismatch(nllSum.ShapeTensor().ShapeTensor(), Vector(0L)) +
-                FloatMismatch(Flat((Tensor<float32>)(ImmutableTensor<float32>)drop1), flatScores) +
-                IntMismatch(FlatI(((Tensor<bit>)(ImmutableTensor<bit>)mask1!).Cast<int64>()), Vector(1L, 1L, 1L, 1L, 1L, 1L)) +
-                ShapeMismatch((Tensor<bit>)(ImmutableTensor<bit>)mask1!, Vector(2L, 3L)) +
-                FloatMismatch(Flat((Tensor<float32>)(ImmutableTensor<float32>)drop2), flatScores) +
-                IntMismatch(FlatI(((Tensor<bit>)(ImmutableTensor<bit>)mask2!).Cast<int64>()), Vector(1L, 1L, 1L, 1L, 1L, 1L));
+                FloatMismatch(Flat((Tensor<float32>)(ImmutableTensor)drop1), flatScores) +
+                IntMismatch(FlatI(((Tensor<bit>)(ImmutableTensor)mask1!).Cast<int64>()), Vector(1L, 1L, 1L, 1L, 1L, 1L)) +
+                ShapeMismatch((Tensor<bit>)(ImmutableTensor)mask1!, Vector(2L, 3L)) +
+                FloatMismatch(Flat((Tensor<float32>)(ImmutableTensor)drop2), flatScores) +
+                IntMismatch(FlatI(((Tensor<bit>)(ImmutableTensor)mask2!).Cast<int64>()), Vector(1L, 1L, 1L, 1L, 1L, 1L));
             return mismatch < Scalar(1L);
         }
 
@@ -178,7 +178,7 @@ namespace Shorokoo.Tests.Modules
 
         // NaN-safe: Not(<= tol) counts a NaN diff as a mismatch; a plain "> tol" would pass it (IEEE).
         private static Scalar<int64> FloatMismatch(Tensor<float32> actual, Vector<float32> expected)
-            => ((Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
+            => ((Tensor<bit>)(ImmutableTensor)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         private static Scalar<int64> IntMismatch(Tensor<int64> actual, Vector<int64> expected)
@@ -206,25 +206,25 @@ namespace Shorokoo.Tests.Modules
             var aT = Vector(1f, 4f, 2f, 5f, 3f, 6f).Reshape(Vector(3L, 2L));
 
             var mm = g.MatMul(m32);
-            var mv = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.MatMul(v3, m32);   // [K]×[K,N] → [N]
-            var vm = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.MatMul(g, v3);     // [M,K]×[K] → [M]
-            var vv = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.MatMul(v3, v3);    // [K]×[K] → scalar
-            var bm = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.MatMul(b3, m32);   // batched broadcast
+            var mv = (Tensor<float32>)(ImmutableTensor)OnnxOp.MatMul(v3, m32);   // [K]×[K,N] → [N]
+            var vm = (Tensor<float32>)(ImmutableTensor)OnnxOp.MatMul(g, v3);     // [M,K]×[K] → [M]
+            var vv = (Tensor<float32>)(ImmutableTensor)OnnxOp.MatMul(v3, v3);    // [K]×[K] → scalar
+            var bm = (Tensor<float32>)(ImmutableTensor)OnnxOp.MatMul(b3, m32);   // batched broadcast
 
-            var gemmC = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Gemm(g, m32, Vector(1f, 2f));
-            var gemmTB = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Gemm(g, bT, null, transB: 1);
-            var gemmTA = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Gemm(aT, m32, null, transA: 1);
-            var gemmAB = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Gemm(g, m32, Scalar(1f), alpha: 0.5f, beta: 2f);
+            var gemmC = (Tensor<float32>)(ImmutableTensor)OnnxOp.Gemm(g, m32, Vector(1f, 2f));
+            var gemmTB = (Tensor<float32>)(ImmutableTensor)OnnxOp.Gemm(g, bT, null, transB: 1);
+            var gemmTA = (Tensor<float32>)(ImmutableTensor)OnnxOp.Gemm(aT, m32, null, transA: 1);
+            var gemmAB = (Tensor<float32>)(ImmutableTensor)OnnxOp.Gemm(g, m32, Scalar(1f), alpha: 0.5f, beta: 2f);
 
             var aq = Vector((sbyte)1, (sbyte)2, (sbyte)3, (sbyte)4).Reshape(Vector(2L, 2L));
             var bq = Vector((sbyte)5, (sbyte)6, (sbyte)7, (sbyte)8).Reshape(Vector(2L, 2L));
-            var mmi = (Tensor<int32>)(ImmutableTensor<int32>)OnnxOp.MatMulInteger(aq, bq, Scalar((sbyte)1), Scalar((sbyte)2));
-            var mmiNoZp = (Tensor<int32>)(ImmutableTensor<int32>)OnnxOp.MatMulInteger(aq, bq);
-            var mmiVec = (Tensor<int32>)(ImmutableTensor<int32>)OnnxOp.MatMulInteger(Vector((sbyte)1, (sbyte)2), bq);
+            var mmi = (Tensor<int32>)(ImmutableTensor)OnnxOp.MatMulInteger(aq, bq, Scalar((sbyte)1), Scalar((sbyte)2));
+            var mmiNoZp = (Tensor<int32>)(ImmutableTensor)OnnxOp.MatMulInteger(aq, bq);
+            var mmiVec = (Tensor<int32>)(ImmutableTensor)OnnxOp.MatMulInteger(Vector((sbyte)1, (sbyte)2), bq);
 
             var qa = Vector((sbyte)1, (sbyte)2, (sbyte)3, (sbyte)4, (sbyte)5, (sbyte)6).Reshape(Vector(2L, 3L));
             var qb = Vector((sbyte)1, (sbyte)0, (sbyte)0, (sbyte)1, (sbyte)1, (sbyte)1).Reshape(Vector(3L, 2L));
-            var qlmm = (Tensor<int8>)(ImmutableTensor<int8>)OnnxOp.QLinearMatMul(
+            var qlmm = (Tensor<int8>)(ImmutableTensor)OnnxOp.QLinearMatMul(
                 qa, Scalar(0.5f), Scalar((sbyte)0),
                 qb, Scalar(0.25f), Scalar((sbyte)0),
                 Scalar(0.5f), Scalar((sbyte)0));
@@ -258,7 +258,7 @@ namespace Shorokoo.Tests.Modules
 
         // NaN-safe: Not(<= tol) counts a NaN diff as a mismatch; a plain "> tol" would pass it (IEEE).
         private static Scalar<int64> FloatMismatch(Tensor<float32> actual, Vector<float32> expected)
-            => ((Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
+            => ((Tensor<bit>)(ImmutableTensor)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         private static Scalar<int64> IntMismatch(Tensor<int64> actual, Vector<int64> expected)
@@ -285,12 +285,12 @@ namespace Shorokoo.Tests.Modules
                 2f, 1f, 0f, 0f, 1f, 0f, 1f, 0f, 1f).Reshape(Vector(2L, 3L, 3L));
             var d22 = Vector(3f, 1f, 1f, 2f).Reshape(Vector(2L, 2L));
 
-            var eMatMul = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IValue[] { x, k34 }, "ij,jk->ik");
-            var eTrans = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IValue[] { x }, "ij->ji");
-            var eReduce = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IValue[] { x }, "ij->i");
-            var eDiag = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IValue[] { sq33 }, "ii->i");
-            var eImplicit = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IValue[] { x, k34 }, "ij,jk");
-            var eBatch = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IValue[] { b223, b232 }, "bij,bjk->bik");
+            var eMatMul = (Tensor<float32>)(ImmutableTensor)OnnxOp.Einsum(new IValue[] { x, k34 }, "ij,jk->ik");
+            var eTrans = (Tensor<float32>)(ImmutableTensor)OnnxOp.Einsum(new IValue[] { x }, "ij->ji");
+            var eReduce = (Tensor<float32>)(ImmutableTensor)OnnxOp.Einsum(new IValue[] { x }, "ij->i");
+            var eDiag = (Tensor<float32>)(ImmutableTensor)OnnxOp.Einsum(new IValue[] { sq33 }, "ii->i");
+            var eImplicit = (Tensor<float32>)(ImmutableTensor)OnnxOp.Einsum(new IValue[] { x, k34 }, "ij,jk");
+            var eBatch = (Tensor<float32>)(ImmutableTensor)OnnxOp.Einsum(new IValue[] { b223, b232 }, "bij,bjk->bik");
             var detBatch = NN.DeterminantMatrix(d233);
             var detSingle = NN.DeterminantMatrix(d22);
 
@@ -323,10 +323,10 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Tensor<float32> q)
         {
-            var qt = (Tensor<int8>)(ImmutableTensor<int8>)OnnxOp.QuantizeLinear(q, Scalar(0.5f), Scalar((sbyte)1));
-            var qa = (Tensor<int8>)(ImmutableTensor<int8>)OnnxOp.QuantizeLinear(q,
+            var qt = (Tensor<int8>)(ImmutableTensor)OnnxOp.QuantizeLinear(q, Scalar(0.5f), Scalar((sbyte)1));
+            var qa = (Tensor<int8>)(ImmutableTensor)OnnxOp.QuantizeLinear(q,
                 Vector(0.5f, 0.25f).Tensor(), Vector((sbyte)0, (sbyte)10), axis: 0);
-            var qs = (Tensor<int8>)(ImmutableTensor<int8>)OnnxOp.QuantizeLinear(
+            var qs = (Tensor<int8>)(ImmutableTensor)OnnxOp.QuantizeLinear(
                 Vector(100f, -100f), Scalar(0.5f), Scalar((sbyte)0));
             // No zero point: output dtype comes from the output_dtype attribute (uint8),
             // negative values saturate at 0.
@@ -361,7 +361,7 @@ namespace Shorokoo.Tests.Modules
 
         // NaN-safe: Not(<= tol) counts a NaN diff as a mismatch; a plain "> tol" would pass it (IEEE).
         private static Scalar<int64> FloatMismatch(Tensor<float32> actual, Vector<float32> expected)
-            => ((Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
+            => ((Tensor<bit>)(ImmutableTensor)OnnxOp.Not((actual - expected).Abs() <= Scalar(1e-3f))).Cast<int64>()
                 .Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         private static Scalar<int64> IntMismatch(Tensor<int64> actual, Vector<int64> expected)

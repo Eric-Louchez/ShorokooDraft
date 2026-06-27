@@ -30,14 +30,12 @@ namespace Shorokoo
     }
 
     /// <summary>
-    /// A rank-1 symbolic tensor of element type <typeparamref name="T"/>.
+    /// Non-generic graph node for a rank-1 (vector) symbolic tensor (element type is the runtime DType).
     /// Operations mirror <see cref="Tensor{T}"/> but statically preserve the rank-1 typing; instances can
     /// also be built from C# collection expressions.
     /// </summary>
-    public partial class ImmutableVector<T> : ImmutableTensor<T>, IVector where T : IVarType
+    public partial class ImmutableVector : ImmutableTensor, IVector
     {
-        // The base computes the inferred shape; the former ((Tensor<T>)this) round-trip now wraps a
-        // struct handle that forwards straight back here, so call the base implementation directly.
         public override Vector<int64>? InfShape => base.InfShape;
         internal ImmutableVector(Func<Vector<int64>>? shapeFn, DType dtype, Node owningNode, Function? moduleFn, string? name = null) : base(shapeFn, dtype, owningNode, moduleFn, name, rank: 1) {}
     }
@@ -45,24 +43,24 @@ namespace Shorokoo
     [CollectionBuilder(typeof(Shorokoo.Core.TensorCollectionBuilder), nameof(Shorokoo.Core.TensorCollectionBuilder.CreateVector))]
     public partial struct Vector<T> : IVector, System.Collections.Generic.IEnumerable<VectorExpressionHelper<T>> where T : IVarType
     {
-        private ImmutableVector<T>? inner;
-        internal ImmutableVector<T> Imm => inner ?? throw new InvalidOperationException("default(Vector<T>) is not materialised; build one via a graph op.");
+        private ImmutableVector? inner;
+        internal ImmutableVector Imm => inner ?? throw new InvalidOperationException("default(Vector<T>) is not materialised; build one via a graph op.");
 
-        public static implicit operator Vector<T>(ImmutableVector<T> imm) => new Vector<T> { inner = imm };
-        public static implicit operator ImmutableVector<T>(Vector<T> h) => h.Imm;
+        public static implicit operator Vector<T>(ImmutableVector imm) => new Vector<T> { inner = imm };
+        public static implicit operator ImmutableVector(Vector<T> h) => h.Imm;
         public static implicit operator Tensor<T>(Vector<T> h) => h.Imm;
 
         // ITensor contract — forward to the wrapped immutable.
         public int? Rank => Imm.Rank;
-        public ImmutableVector<int64>? InfShape => Imm.InfShape;
+        public ImmutableVector? InfShape => Imm.InfShape;
         public Vector<int64> DShape => Imm.DShape;
         public Vector<int64> TShape => Imm.TShape;
         public Scalar<int64> TRank => Imm.TRank;
-        public Vector<T> Vec() => Imm.Vec();
-        public Scalar<T> Scalar() => Imm.Scalar();
-        IVector ITensor.Vec() => Imm.Vec();
+        public Vector<T> Vec() => (ImmutableVector)Imm.Vec();
+        public Scalar<T> Scalar() => (ImmutableScalar)Imm.Scalar();
+        IVector ITensor.Vec() => (ImmutableVector)Imm.Vec();
         Vector<V> ITensor.Vec<V>() => Imm.Cast<V>().Vec();
-        IScalar ITensor.Scalar() => Imm.Scalar();
+        IScalar ITensor.Scalar() => (ImmutableScalar)Imm.Scalar();
         Scalar<V> ITensor.Scalar<V>() => Imm.Cast<V>().Scalar();        Tensor<V> ITensor.Cast<V>(bool saturate) => Imm.Cast<V>(saturate);
 
         public Node OwningNode => Imm.OwningNode;
@@ -71,7 +69,7 @@ namespace Shorokoo
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public ImmutableVariable<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
+        public Tensor<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
 #pragma warning disable CS0618
         string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;
 #pragma warning restore CS0618
@@ -488,7 +486,7 @@ namespace Shorokoo
             => ((Tensor<T>)this).AveragePool(kernelShape, roundMode, countIncludePad, dilations, pads, strides).Vec();
 
         /// <summary>Batch normalization using the given scale, bias, mean, and variance (ONNX BatchNormalization).</summary>
-        public ImmutableVector<T> BatchNormalization<T1, T2>(Vector<T1> scale, Vector<T1> bias, Vector<T2> mean, Vector<T2> variance, float epsilon = 1e-05f, float momentum = 0.9f, bool trainingMode = false)
+        public ImmutableVector BatchNormalization<T1, T2>(Vector<T1> scale, Vector<T1> bias, Vector<T2> mean, Vector<T2> variance, float epsilon = 1e-05f, float momentum = 0.9f, bool trainingMode = false)
                 where T1 : FloatLike where T2 : FloatLike
             => ((Tensor<T>)this).BatchNormalization(scale, bias, mean, variance, epsilon, momentum, trainingMode).Vec();
 
@@ -497,7 +495,7 @@ namespace Shorokoo
             => ((Tensor<T>)this).Bernoulli(seed).Vec();
 
         /// <summary>Element-wise Bernoulli sampling, treating each element as a probability, with result element type <typeparamref name="V"/>.</summary>
-        public ImmutableVector<V> Bernoulli<V>(float? seed = null) where V : CommonLike
+        public ImmutableVector Bernoulli<V>(float? seed = null) where V : CommonLike
             => ((Tensor<T>)this).Bernoulli<V>(seed).Vec();
 
         /// <summary>Element-wise CELU activation.</summary>
@@ -533,7 +531,7 @@ namespace Shorokoo
             => ((Tensor<T>)this).Tanh().Vec();
 
         /// <summary>Element-wise power.</summary>
-        public ImmutableVector<T> Pow<T1>(Tensor<T1> power) where T1 : IVarType
+        public ImmutableVector Pow<T1>(Tensor<T1> power) where T1 : IVarType
             => ((Tensor<T>)this).Pow(power).Vec();
 
         /// <summary>Element-wise natural logarithm.</summary>
@@ -550,7 +548,7 @@ namespace Shorokoo
 
         /// <summary>Concatenates this vector with <paramref name="others"/>.</summary>
         public Vector<T> Concat(params Vector<T>[] others)
-            =>  ((ImmutableTensor<T>)OnnxOp.Concat([this, .. others], 0)).Vec();
+            =>  (ImmutableVector)((ImmutableTensor)OnnxOp.Concat([this, .. others], 0)).Vec();
 
         /// <summary>Pads with <paramref name="padLeft"/> elements before and <paramref name="padRight"/> elements after the vector.</summary>
         public Vector<T> Pad(PadMode mode, Scalar<int64> padLeft, Scalar<int64> padRight, Scalar<T> val)
@@ -612,7 +610,7 @@ namespace Shorokoo
 
         /// <summary>Selects elements where <paramref name="condition"/> is true.</summary>
         public Vector<T> Compress(Vector<bit> condition, long axis)
-            => (ImmutableVector<T>)OnnxOp.Compress(this, condition, axis);
+            => (ImmutableVector)OnnxOp.Compress(this, condition, axis);
 
         /// <summary>Element-wise exponential.</summary>
         public Vector<T> Exp()

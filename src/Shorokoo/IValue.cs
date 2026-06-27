@@ -34,7 +34,7 @@ namespace Shorokoo
         public Node ParentNode => this.OwningNode;
         public DType Type { get; }
         public DType DType => this.Type;
-        public ImmutableVariable<V> As<V>() where V : IVarType;
+        public Tensor<V> As<V>() where V : IVarType;
         public Function? ModuleFn { get; }
         
         /// <summary>
@@ -131,21 +131,23 @@ namespace Shorokoo
 
     public static class IValueExtensions
     {
-        public static ImmutableVariable<T> As<T>(this IValue var) where T : IVarType => ((ImmutableVariable<T>)var);
-        public static ImmutableVariable<uint4> uint4(this IValue var) => ((ImmutableVariable<uint4>)var);
-        public static ImmutableVariable<uint8> uint8(this IValue var) => ((ImmutableVariable<uint8>)var);
-        public static ImmutableVariable<uint16> uint16(this IValue var) => ((ImmutableVariable<uint16>)var);
-        public static ImmutableVariable<uint32> uint32(this IValue var) => ((ImmutableVariable<uint32>)var);
-        public static ImmutableVariable<uint64> uint64(this IValue var) => ((ImmutableVariable<uint64>)var);
-        public static ImmutableVariable<int4> int4(this IValue var) => ((ImmutableVariable<int4>)var);
-        public static ImmutableVariable<int8> int8(this IValue var) => ((ImmutableVariable<int8>)var);
-        public static ImmutableVariable<int16> int16(this IValue var) => ((ImmutableVariable<int16>)var);
-        public static ImmutableVariable<int32> int32(this IValue var) => ((ImmutableVariable<int32>)var);
-        public static ImmutableVariable<int64> int64(this IValue var) => ((ImmutableVariable<int64>)var);
-        public static ImmutableVariable<float16> float16(this IValue var) => ((ImmutableVariable<float16>)var);
-        public static ImmutableVariable<bfloat16> bfloat16(this IValue var) => ((ImmutableVariable<bfloat16>)var);
-        public static ImmutableVariable<float32> float32(this IValue var) => ((ImmutableVariable<float32>)var);
-        public static ImmutableVariable<float64> float64(this IValue var) => ((ImmutableVariable<float64>)var);
+        // Element-type reinterprets — produce the typed tensor handle of element type T over the same
+        // graph node (the node itself is non-generic; the runtime dtype is unchanged).
+        public static Tensor<T> As<T>(this IValue var) where T : IVarType => (ImmutableTensor)var;
+        public static Tensor<uint4> uint4(this IValue var) => (ImmutableTensor)var;
+        public static Tensor<uint8> uint8(this IValue var) => (ImmutableTensor)var;
+        public static Tensor<uint16> uint16(this IValue var) => (ImmutableTensor)var;
+        public static Tensor<uint32> uint32(this IValue var) => (ImmutableTensor)var;
+        public static Tensor<uint64> uint64(this IValue var) => (ImmutableTensor)var;
+        public static Tensor<int4> int4(this IValue var) => (ImmutableTensor)var;
+        public static Tensor<int8> int8(this IValue var) => (ImmutableTensor)var;
+        public static Tensor<int16> int16(this IValue var) => (ImmutableTensor)var;
+        public static Tensor<int32> int32(this IValue var) => (ImmutableTensor)var;
+        public static Tensor<int64> int64(this IValue var) => (ImmutableTensor)var;
+        public static Tensor<float16> float16(this IValue var) => (ImmutableTensor)var;
+        public static Tensor<bfloat16> bfloat16(this IValue var) => (ImmutableTensor)var;
+        public static Tensor<float32> float32(this IValue var) => (ImmutableTensor)var;
+        public static Tensor<float64> float64(this IValue var) => (ImmutableTensor)var;
 
         public static DataStructure Structure(this IValue var)
             => var is ITensorStruct ? DataStructure.TensorStruct :

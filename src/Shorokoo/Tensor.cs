@@ -52,7 +52,7 @@ namespace Shorokoo
     }
 
     /// <summary>
-    /// A symbolic tensor of element type <typeparamref name="T"/> - the main user-facing tensor type.
+    /// Non-generic graph node for a symbolic tensor (element type is the runtime DType).
     /// Operations do not compute values; they add ONNX-style nodes to the computation graph, which is
     /// executed on demand via <c>Eval()</c>.
     /// </summary>
@@ -61,8 +61,7 @@ namespace Shorokoo
     /// IValue). Holds shape state and the minimal ITensor contract; the full user-facing op
     /// surface lives on the value-type handle <see cref="Tensor{T}"/>.
     /// </summary>
-    public partial class ImmutableTensor<T> : ImmutableVariable<T>, ITensor
-         where T : IVarType
+    public partial class ImmutableTensor : Variable, ITensor
     {
         #region Data Member
 
@@ -71,7 +70,7 @@ namespace Shorokoo
 
         /// <summary>The dynamic shape: a rank-1 tensor produced in-graph by an ONNX Shape node.</summary>
         public virtual Vector<int64> DShape =>
-            (ImmutableVector<int64>)OnnxOp.Shape(this, null, null);
+            (ImmutableVector)OnnxOp.Shape(this, null, null);
 
         private Vector<int64>? infShapeTensor = null;
 
@@ -100,70 +99,52 @@ namespace Shorokoo
         #endregion
         #region ITensor contract
 
-        IVector ITensor.Vec() => this.Vec();
+        // The node carries no element type parameter — the runtime element type is the DType. The
+        // non-generic reinterprets return the node (as the kind interface); the generic, element-typed
+        // reinterprets live on the value-struct handles. Vec<V>()/Scalar<V>() route through Cast<V>().
         Vector<V> ITensor.Vec<V>() => this.Cast<V>().Vec();
-        IScalar ITensor.Scalar() => this.Scalar();
         Scalar<V> ITensor.Scalar<V>() => this.Cast<V>().Scalar();
 
+        /// <summary>Reinterprets this tensor as a rank-1 vector, inserting an Identity node when needed.</summary>
+        public IVector Vec()
+            => this is ImmutableVector vec ? vec : (ImmutableVector)OnnxOp.Identity(this, rank: 1);
 
-        /// <summary>Reinterprets this tensor as a rank-1 <see cref="Vector{T}"/>, inserting an Identity node when needed.</summary>
-        public new Vector<T> Vec()
-        {
-            if (this is ImmutableVector<T> vec)
-            {
-                return vec;
-            }
-            else
-            {
-                return (ImmutableVector<T>)OnnxOp.Identity(this, rank: 1);
-            }
-        }
+        /// <summary>Reinterprets this tensor as a rank-0 scalar, inserting an Identity node when needed.</summary>
+        public IScalar Scalar()
+            => this is ImmutableScalar scalar ? scalar : (ImmutableScalar)OnnxOp.Identity(this, rank: 0);
 
-        /// <summary>Reinterprets this tensor as a rank-0 <see cref="Scalar{T}"/>, inserting an Identity node when needed.</summary>
-        public new Scalar<T> Scalar()
-        {
-            if (this is ImmutableScalar<T> scalar)
-            {
-                return scalar;
-            }
-            else
-            {
-                return (ImmutableScalar<T>)OnnxOp.Identity(this, rank: 0);
-            }
-        }
-
-/// <summary>Casts the element type to <typeparamref name="V"/>; returns this tensor unchanged when the types already match.</summary>
+        /// <summary>Casts the element type to <typeparamref name="V"/>; returns this tensor unchanged when the types already match.</summary>
         public Tensor<V> Cast<V>(bool saturate = true) where V : IVarType
-            => typeof(V) == typeof(T) ? 
-                (ImmutableTensor<V>)(ITensor)this :
-                (ImmutableTensor<V>)OnnxOp.Cast(this, saturate ? null : saturate, OnnxUtils.GetDType<V>());
+            => OnnxUtils.GetDType<V>() == this.Type ?
+                (Tensor<V>)this :
+                (ImmutableTensor)OnnxOp.Cast(this, saturate ? null : saturate, OnnxUtils.GetDType<V>());
         #endregion
     }
 
     /// <summary>
     /// Value-type handle for a tensor — the user-facing <c>Tensor&lt;T&gt;</c>. Wraps an
-    /// <see cref="ImmutableTensor{T}"/> directly (value-copy semantics for the Module DSL) and
+    /// <see cref="ImmutableTensor"/> directly (value-copy semantics for the Module DSL) and
     /// carries the full op/operator surface. This pass only makes mutation possible — behaviour is
     /// unchanged (de-facto immutable). A defaulted handle materialises an empty rank-1 vector.
     /// </summary>
     [CollectionBuilder(typeof(Shorokoo.Core.TensorCollectionBuilder), nameof(Shorokoo.Core.TensorCollectionBuilder.Create))]
     public partial struct Tensor<T> : ITensor, System.Collections.Generic.IEnumerable<Shorokoo.Core.TensorExpressionHelper<T>> where T : IVarType
     {
-        private ImmutableTensor<T>? inner;
-        internal ImmutableTensor<T> Imm => inner ?? throw new InvalidOperationException("default(Tensor<T>) is not materialised; build one via a graph op.");
+        private ImmutableTensor? inner;
+        internal ImmutableTensor Imm => inner ?? throw new InvalidOperationException("default(Tensor<T>) is not materialised; build one via a graph op.");
 
-        public static implicit operator Tensor<T>(ImmutableTensor<T> imm) => new Tensor<T> { inner = imm };
-        public static implicit operator ImmutableTensor<T>(Tensor<T> h) => h.Imm;
+        public static implicit operator Tensor<T>(ImmutableTensor imm) => new Tensor<T> { inner = imm };
+        public static implicit operator ImmutableTensor(Tensor<T> h) => h.Imm;
 
         // ITensor contract — forward to the wrapped immutable.
         public int? Rank => Imm.Rank;
-        public ImmutableVector<int64>? InfShape => Imm.InfShape;
+        public ImmutableVector? InfShape => Imm.InfShape;
         public Vector<int64> DShape => Imm.DShape;
         public Vector<int64> TShape => Imm.TShape;
         public Scalar<int64> TRank => Imm.TRank;
-        IVector ITensor.Vec() => Imm.Vec();
+        IVector ITensor.Vec() => (ImmutableVector)Imm.Vec();
         Vector<V> ITensor.Vec<V>() => Imm.Cast<V>().Vec();
-        IScalar ITensor.Scalar() => Imm.Scalar();
+        IScalar ITensor.Scalar() => (ImmutableScalar)Imm.Scalar();
         Scalar<V> ITensor.Scalar<V>() => Imm.Cast<V>().Scalar();
 
         // IValue surface — forward to the wrapped immutable.
@@ -173,14 +154,14 @@ namespace Shorokoo
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public ImmutableVariable<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
+        public Tensor<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
 #pragma warning disable CS0618
         string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;
 #pragma warning restore CS0618
 
         // user-facing reinterpret casts (forward to the immutable, which handles already-typed nodes)
-        public Vector<T> Vec() => Imm.Vec();
-        public Scalar<T> Scalar() => Imm.Scalar();
+        public Vector<T> Vec() => (ImmutableVector)Imm.Vec();
+        public Scalar<T> Scalar() => (ImmutableScalar)Imm.Scalar();
 
         // == builds an Equal graph node (see operators); Equals/GetHashCode use the wrapped node.
         public override bool Equals(object? obj) => obj is Tensor<T> t && Equals(Imm, t.Imm);
@@ -248,85 +229,85 @@ namespace Shorokoo
         /// <summary>Element-wise addition.</summary>
         public static Tensor<T> operator +(Tensor<T> left, Tensor<T> right)
         {
-            left.Imm.ThrowIsNumLike();
+            left.ThrowIsNumLike();
 
-            return (ImmutableTensor<T>)OnnxOp.Add(left, right);
+            return (ImmutableTensor)OnnxOp.Add(left, right);
         }
 
         /// <summary>Element-wise subtraction.</summary>
         public static Tensor<T> operator -(Tensor<T> left, Tensor<T> right)
         {
-            return (ImmutableTensor<T>)OnnxOp.Sub(left, right);
+            return (ImmutableTensor)OnnxOp.Sub(left, right);
         }
 
         /// <summary>Element-wise multiplication.</summary>
         public static Tensor<T> operator *(Tensor<T> left, Tensor<T> right)
         {
-            return (ImmutableTensor<T>)OnnxOp.Mul(left, right);
+            return (ImmutableTensor)OnnxOp.Mul(left, right);
         }
 
         /// <summary>Element-wise division.</summary>
         public static Tensor<T> operator /(Tensor<T> left, Tensor<T> right)
         {
-            return (ImmutableTensor<T>)OnnxOp.Div(left, right);
+            return (ImmutableTensor)OnnxOp.Div(left, right);
         }
 
         /// <summary>Element-wise modulo.</summary>
         public static Tensor<T> operator %(Tensor<T> left, Tensor<T> right)
-            => (ImmutableTensor<T>)OnnxOp.Mod(left, right);
+            => (ImmutableTensor)OnnxOp.Mod(left, right);
 
         /// <summary>Element-wise XOR: logical for bit tensors, bitwise otherwise.</summary>
         public static Tensor<T> operator ^(Tensor<T> left, Tensor<T> right)
             => typeof(T) == typeof(bit) ?
-                (ImmutableTensor<T>)OnnxOp.Xor(left, right) :
-                (ImmutableTensor<T>)OnnxOp.BitwiseXor(left, right);
+                (ImmutableTensor)OnnxOp.Xor(left, right) :
+                (ImmutableTensor)OnnxOp.BitwiseXor(left, right);
 
         /// <summary>Element-wise AND: logical for bit tensors, bitwise otherwise.</summary>
         public static Tensor<T> operator &(Tensor<T> left, Tensor<T> right)
             => typeof(T) == typeof(bit) ?
-                (ImmutableTensor<T>)OnnxOp.And(left, right) :
-                (ImmutableTensor<T>)OnnxOp.BitwiseAnd(left, right);
+                (ImmutableTensor)OnnxOp.And(left, right) :
+                (ImmutableTensor)OnnxOp.BitwiseAnd(left, right);
 
         /// <summary>Element-wise OR: logical for bit tensors, bitwise otherwise.</summary>
         public static Tensor<T> operator |(Tensor<T> left, Tensor<T> right)
             => typeof(T) == typeof(bit) ?
-                (ImmutableTensor<T>)OnnxOp.Or(left, right) :
-                (ImmutableTensor<T>)OnnxOp.BitwiseOr(left, right);
+                (ImmutableTensor)OnnxOp.Or(left, right) :
+                (ImmutableTensor)OnnxOp.BitwiseOr(left, right);
 
         /// <summary>Element-wise left bit-shift.</summary>
         public static Tensor<T> operator <<(Tensor<T> left, Tensor<T> right)
-            => (ImmutableTensor<T>)OnnxOp.BitShift(left, right, BitShiftDirection.Left);
+            => (ImmutableTensor)OnnxOp.BitShift(left, right, BitShiftDirection.Left);
 
         /// <summary>Element-wise right bit-shift.</summary>
         public static Tensor<T> operator >>(Tensor<T> left, Tensor<T> right)
-            => (ImmutableTensor<T>)OnnxOp.BitShift(left, right, BitShiftDirection.Right);
+            => (ImmutableTensor)OnnxOp.BitShift(left, right, BitShiftDirection.Right);
 
         /// <summary>Element-wise negation.</summary>
         public static Tensor<T> operator -(Tensor<T> input)
         {
-            return (ImmutableTensor<T>)OnnxOp.Neg(input);
+            return (ImmutableTensor)OnnxOp.Neg(input);
         }
 
         /// <summary>Element-wise NOT: logical for bit tensors, bitwise otherwise.</summary>
         public static Tensor<T> operator !(Tensor<T> input)
             => typeof(T) == typeof(bit) ?
-                (ImmutableTensor<T>)OnnxOp.Not(input) :
-                (ImmutableTensor<T>)OnnxOp.BitwiseNot(input);
+                (ImmutableTensor)OnnxOp.Not(input) :
+                (ImmutableTensor)OnnxOp.BitwiseNot(input);
 
         /// <summary>Element-wise greater-than, yielding a bit tensor.</summary>
-        public static Tensor<bit> operator >(Tensor<T> left, Tensor<T> right) => (ImmutableTensor<bit>)OnnxOp.Greater(left, right);
+        public static Tensor<bit> operator >(Tensor<T> left, Tensor<T> right) => (ImmutableTensor)OnnxOp.Greater(left, right);
 
         /// <summary>Element-wise greater-or-equal, yielding a bit tensor.</summary>
-        public static Tensor<bit> operator >=(Tensor<T> left, Tensor<T> right) => (ImmutableTensor<bit>)OnnxOp.GreaterOrEqual(left, right);
+        public static Tensor<bit> operator >=(Tensor<T> left, Tensor<T> right) => (ImmutableTensor)OnnxOp.GreaterOrEqual(left, right);
 
         /// <summary>Element-wise less-than, yielding a bit tensor.</summary>
-        public static Tensor<bit> operator <(Tensor<T> left, Tensor<T> right) => (ImmutableTensor<bit>)OnnxOp.Less(left, right);
+        public static Tensor<bit> operator <(Tensor<T> left, Tensor<T> right) => (ImmutableTensor)OnnxOp.Less(left, right);
 
         /// <summary>Element-wise less-or-equal, yielding a bit tensor.</summary>
-        public static Tensor<bit> operator <=(Tensor<T> left, Tensor<T> right) => (ImmutableTensor<bit>)OnnxOp.LessOrEqual(left, right);
+        public static Tensor<bit> operator <=(Tensor<T> left, Tensor<T> right) => (ImmutableTensor)OnnxOp.LessOrEqual(left, right);
 
         /// <summary>Element-wise equality, yielding a bit tensor (not reference equality).</summary>
-        public static Tensor<bit> operator ==(Tensor<T> left, Tensor<T> right) => (ImmutableTensor<bit>)OnnxOp.Equal(left, right);
+        public static Tensor<bit> operator ==(Tensor<T> left, Tensor<T> right) => (ImmutableTensor)OnnxOp.Equal(left, right);
 
         /// <summary>Element-wise inequality, yielding a bit tensor.</summary>
         public static Tensor<bit> operator !=(Tensor<T> left, Tensor<T> right) => !(left == right);
@@ -415,19 +396,19 @@ namespace Shorokoo
         /// <summary>Splits into <paramref name="numOutputs"/> equal parts along <paramref name="axis"/>.</summary>
         public Tensor<T>[] Split(long numOutputs, long axis = 0)
         {
-            return OnnxOp.Split(this, null, axis: axis, numOutputs: numOutputs, variadicOutputCount: numOutputs).Select(v => (Tensor<T>)(ImmutableTensor<T>)v).ToArray();
+            return OnnxOp.Split(this, null, axis: axis, numOutputs: numOutputs, variadicOutputCount: numOutputs).Select(v => (Tensor<T>)(ImmutableTensor)v).ToArray();
         }
 
         /// <summary>Splits along <paramref name="axis"/> into parts of the given sizes.</summary>
         public Tensor<T>[] Split(long[] splits, long axis = 0)
         {
-            return OnnxOp.Split(this, Vector(splits), axis: axis, numOutputs: null, variadicOutputCount: splits.Length).Select(v => (Tensor<T>)(ImmutableTensor<T>)v).ToArray();
+            return OnnxOp.Split(this, Vector(splits), axis: axis, numOutputs: null, variadicOutputCount: splits.Length).Select(v => (Tensor<T>)(ImmutableTensor)v).ToArray();
         }
 
         /// <summary>Splits along <paramref name="axis"/>: by <paramref name="splits"/> sizes when given, otherwise into <paramref name="numOutputs"/> equal parts.</summary>
         public Tensor<T>[] Split(Vector<int64>? splits, long axis, long numOutputs)
         {
-            return OnnxOp.Split(this, splits, axis: axis, numOutputs: splits is null ? numOutputs : null, variadicOutputCount: numOutputs).Select(v => (Tensor<T>)(ImmutableTensor<T>)v).ToArray();
+            return OnnxOp.Split(this, splits, axis: axis, numOutputs: splits is null ? numOutputs : null, variadicOutputCount: numOutputs).Select(v => (Tensor<T>)(ImmutableTensor)v).ToArray();
         }
 
         /// <summary>Resizes to the target <paramref name="sizes"/> (ONNX Resize).</summary>
@@ -441,7 +422,7 @@ namespace Shorokoo
             float? cubicCoefficient = null,
             bool? excludeOutside = null)
         {
-            return (ImmutableTensor<T>)OnnxOp.Resize(
+            return (ImmutableTensor)OnnxOp.Resize(
                 this, null, null, sizes, antiaAlias, axes, transformMode, cubicCoefficient, excludeOutside, null, 
                 aspectRatio, 
                 mode, nearestMode);
@@ -457,7 +438,7 @@ namespace Shorokoo
             float? cubicCoefficient = null,
             bool? excludeOutside = null)
         {
-            return (ImmutableTensor<T>)OnnxOp.Resize(
+            return (ImmutableTensor)OnnxOp.Resize(
                 this, null, scales, null, antiaAlias, axes, transformMode, cubicCoefficient, excludeOutside, null,
                 null, mode, nearestMode);
         }
@@ -468,34 +449,34 @@ namespace Shorokoo
             // Absent axes propagate as an absent (optional) input: ONNX then squeezes ALL
             // size-1 dims. (Previously substituted axes=[-1] — squeeze only the LAST dim,
             // and an ORT shape-inference error when that dim isn't 1.)
-            return (ImmutableTensor<T>)OnnxOp.Squeeze(this, axes);
+            return (ImmutableTensor)OnnxOp.Squeeze(this, axes);
         }
 
         /// <summary>Slices along the given axes using start/end indices and optional steps (ONNX Slice).</summary>
         public Tensor<T> Slice(Vector<int64> start, Vector<int64> end, Vector<int64>? axes = null, Vector<int64>? steps = null)
-            => (ImmutableTensor<T>)OnnxOp.Slice(this, start, end, axes, steps);
+            => (ImmutableTensor)OnnxOp.Slice(this, start, end, axes, steps);
 
         /// <summary>Softmax normalization along <paramref name="axis"/> (defaults to the last axis).</summary>
         public Tensor<T> Softmax(long? axis = null)
-            => (ImmutableTensor<T>)OnnxOp.Softmax(this, axis);
+            => (ImmutableTensor)OnnxOp.Softmax(this, axis);
 
         /// <summary>Inserts a size-1 dimension at <paramref name="axis"/>.</summary>
         public Tensor<T> Unsqueeze(long axis)
-            => (ImmutableTensor<T>)OnnxOp.Unsqueeze(this, Vector(axis));
+            => (ImmutableTensor)OnnxOp.Unsqueeze(this, Vector(axis));
 
         /// <summary>Inserts size-1 dimensions at the given axes.</summary>
         public Tensor<T> Unsqueeze(Vector<int64> axes)
-            => (ImmutableTensor<T>)OnnxOp.Unsqueeze(this, axes);
+            => (ImmutableTensor)OnnxOp.Unsqueeze(this, axes);
 
         /// <summary>Appends a trailing size-1 dimension (axis -1).</summary>
         public Tensor<T> Unsqueeze()
-            => (ImmutableTensor<T>)OnnxOp.Unsqueeze(this, Vector(-1L));
+            => (ImmutableTensor)OnnxOp.Unsqueeze(this, Vector(-1L));
 
         /// <summary>The shape - optionally the dims[start:end] slice of it - as an in-graph vector.</summary>
         public Vector<int64> ShapeTensor(long? start = null, long? end = null)
             // OnnxOp.Shape declares (data, end, start) — name the args; passing positionally
             // swapped start/end (e.g. ShapeTensor(1) sliced dims[:1] instead of dims[1:]).
-            => ((ImmutableTensor<int64>)OnnxOp.Shape(this, end: end, start: start)).Vec();
+            => (ImmutableVector)((ImmutableTensor)OnnxOp.Shape(this, end: end, start: start)).Vec();
 
         /// <summary>The element count: the product of the dimensions, optionally restricted to dims[start:end].</summary>
         public Scalar<int64> SizeTensor(long? start = null, long? end = null)
@@ -507,17 +488,17 @@ namespace Shorokoo
 
         /// <summary>Gathers entries along <paramref name="axis"/> using the given indices (ONNX Gather).</summary>
         public Tensor<T> Gather(Tensor<int64> indices, long? axis)
-            => (ImmutableTensor<T>)OnnxOp.Gather(this, indices, axis);
+            => (ImmutableTensor)OnnxOp.Gather(this, indices, axis);
 
         /// <summary>Gathers slices using multi-dimensional indices (ONNX GatherND).</summary>
         public Tensor<T> GatherND(Tensor<int64> indices, long? batchDims)
-            => (ImmutableTensor<T>)OnnxOp.GatherND(this, indices, batchDims);
+            => (ImmutableTensor)OnnxOp.GatherND(this, indices, batchDims);
 
         /// <summary>Casts the element type to <typeparamref name="V"/>; returns this tensor unchanged when the types already match.</summary>
         public Tensor<V> Cast<V>(bool saturate = true) where V : IVarType
             => typeof(V) == typeof(T) ?
                 (Tensor<V>)(object)this :
-                (ImmutableTensor<V>)OnnxOp.Cast(this, saturate ? null : saturate, OnnxUtils.GetDType<V>());
+                (ImmutableTensor)OnnxOp.Cast(this, saturate ? null : saturate, OnnxUtils.GetDType<V>());
 
         /// <summary>Creates a tensor of the given shape filled with the scalar value <paramref name="val"/> (ONNX ConstantOfShape).</summary>
         public static Tensor<T> Fill(Vector<int64> shape, TensorData val)
@@ -526,7 +507,7 @@ namespace Shorokoo
             // - shape: A 1D tensor indicating the shape of the output
             // - val: A scalar TensorData that will be broadcasted to fill the entire output
             // The issue was using pre-shaped TensorData instead of scalar fill value
-            return (ImmutableTensor<T>)OnnxOp.ConstantOfShape(shape, val);
+            return (ImmutableTensor)OnnxOp.ConstantOfShape(shape, val);
         }
         
         /// <summary>Reduction (e.g. sum, mean, max) over <paramref name="axes"/> - all axes when null - keeping reduced dimensions by default.</summary>
@@ -535,70 +516,70 @@ namespace Shorokoo
 
         /// <summary>Tiles the tensor by repeating it <paramref name="repeats"/> times along each axis.</summary>
         public Tensor<T> Tile(Tensor<int64> repeats)
-            => (ImmutableTensor<T>)OnnxOp.Tile(this, repeats);
+            => (ImmutableTensor)OnnxOp.Tile(this, repeats);
 
         /// <summary>Element-wise maximum of this tensor and <paramref name="others"/>.</summary>
         public Tensor<T> Max(params Tensor<T>[] others)
-            => (ImmutableTensor<T>)OnnxOp.Max([this, .. others]);
+            => (ImmutableTensor)OnnxOp.Max([this, .. others]);
 
         /// <summary>Element-wise minimum of this tensor and <paramref name="others"/>.</summary>
         public Tensor<T> Min(params Tensor<T>[] others)
-            => (ImmutableTensor<T>)OnnxOp.Min([this, .. others]);
+            => (ImmutableTensor)OnnxOp.Min([this, .. others]);
 
         /// <summary>Element-wise floor.</summary>
         public Tensor<T> Floor()
-            => (ImmutableTensor<T>)OnnxOp.Floor(this);
+            => (ImmutableTensor)OnnxOp.Floor(this);
 
         /// <summary>Matrix product with <paramref name="other"/> (ONNX MatMul).</summary>
         public Tensor<T> MatMul(Tensor<T> other)
-            => (ImmutableTensor<T>)OnnxOp.MatMul(this, other);
+            => (ImmutableTensor)OnnxOp.MatMul(this, other);
 
         /// <summary>Element-wise absolute value.</summary>
         public Tensor<T> Abs()
-            => (ImmutableTensor<T>)OnnxOp.Abs(this);
+            => (ImmutableTensor)OnnxOp.Abs(this);
 
         /// <summary>Element-wise arccosine.</summary>
         public Tensor<T> Acos()
-            => (ImmutableTensor<T>)OnnxOp.Acos(this);
+            => (ImmutableTensor)OnnxOp.Acos(this);
 
         /// <summary>Element-wise inverse hyperbolic cosine.</summary>
         public Tensor<T> Acosh()
-            => (ImmutableTensor<T>)OnnxOp.Acosh(this);
+            => (ImmutableTensor)OnnxOp.Acosh(this);
 
         /// <summary>Element-wise arcsine.</summary>
         public Tensor<T> Asin()
-            => (ImmutableTensor<T>)OnnxOp.Asin(this);
+            => (ImmutableTensor)OnnxOp.Asin(this);
 
         /// <summary>Element-wise inverse hyperbolic sine.</summary>
         public Tensor<T> Asinh()
-            => (ImmutableTensor<T>)OnnxOp.Asinh(this);
+            => (ImmutableTensor)OnnxOp.Asinh(this);
 
         /// <summary>Element-wise arctangent.</summary>
         public Tensor<T> Atan()
-            => (ImmutableTensor<T>)OnnxOp.Atan(this);
+            => (ImmutableTensor)OnnxOp.Atan(this);
 
         /// <summary>Element-wise inverse hyperbolic tangent.</summary>
         public Tensor<T> Atanh()
-            => (ImmutableTensor<T>)OnnxOp.Atanh(this);
+            => (ImmutableTensor)OnnxOp.Atanh(this);
 
         /// <summary>Indices of the maximum values along <paramref name="axis"/>.</summary>
         public Tensor<int64> ArgMax(long axis = 0, bool keepdims = false, bool selectLastIndex = false)
-            => (ImmutableTensor<int64>)OnnxOp.ArgMax(this, axis == 0 ? null : axis, keepdims ? null : keepdims, selectLastIndex ? selectLastIndex : null);
+            => (ImmutableTensor)OnnxOp.ArgMax(this, axis == 0 ? null : axis, keepdims ? null : keepdims, selectLastIndex ? selectLastIndex : null);
 
         /// <summary>Indices of the minimum values along <paramref name="axis"/>.</summary>
         public Tensor<int64> ArgMin(long axis = 0, bool keepdims = false, bool selectLastIndex = false)
-            => (ImmutableTensor<int64>)OnnxOp.ArgMin(this, axis == 0 ? null : axis, keepdims ? null : keepdims, selectLastIndex ? selectLastIndex : null);
+            => (ImmutableTensor)OnnxOp.ArgMin(this, axis == 0 ? null : axis, keepdims ? null : keepdims, selectLastIndex ? selectLastIndex : null);
 
         /// <summary>Average pooling with the given kernel shape (ONNX AveragePool).</summary>
         public Tensor<T> AveragePool(long[] kernelShape, RoundMode roundMode = RoundMode.Floor, bool countIncludePad = false, long[]? dilations = null, long[]? pads = null, long[]? strides = null)
-            => (ImmutableTensor<T>)OnnxOp.AveragePool(this, null, roundMode == RoundMode.Floor ? null : true, countIncludePad, dilations, kernelShape, pads, strides);
+            => (ImmutableTensor)OnnxOp.AveragePool(this, null, roundMode == RoundMode.Floor ? null : true, countIncludePad, dilations, kernelShape, pads, strides);
 
         /// <summary>Batch normalization using the given scale, bias, mean, and variance (ONNX BatchNormalization).</summary>
         public Tensor<T> BatchNormalization<T1, T2>(Vector<T1> scale, Vector<T1> bias, Vector<T2> mean, Vector<T2> variance, float epsilon = 1e-05f, float momentum = 0.9f, bool trainingMode = false)
                 where T1 : FloatLike where T2 : FloatLike
         {
             var retval = OnnxOp.BatchNormalization(this, scale, bias, mean, variance, epsilon == 1e-05f ? null : epsilon, momentum == 0.9f ? null : momentum, trainingMode == false ? null : trainingMode);
-            return (ImmutableTensor<T>)retval;
+            return (ImmutableTensor)retval;
         }
 
         /// <summary>Batch normalization that also returns the updated running mean and variance.</summary>
@@ -606,130 +587,130 @@ namespace Shorokoo
                 where T1 : FloatLike where T2 : FloatLike
         {
             var retval = OnnxOp.BatchNormalizationFullOutputs(this, scale, bias, mean, variance, epsilon == 1e-05f ? null : epsilon, momentum == 0.9f ? null : momentum, trainingMode == false ? null : trainingMode);
-            return ((ImmutableTensor<T>)retval.y, retval.runningMean.As<T2>().Vec(), retval.runningVariance.As<T2>().Vec());
+            return ((ImmutableTensor)retval.y, retval.runningMean.As<T2>().Vec(), retval.runningVariance.As<T2>().Vec());
         }
 
         /// <summary>Element-wise Bernoulli sampling, treating each element as a probability.</summary>
         public Tensor<T> Bernoulli(float? seed = null)
-            => (ImmutableTensor<T>)OnnxOp.Bernoulli(this, null, seed);
+            => (ImmutableTensor)OnnxOp.Bernoulli(this, null, seed);
 
         /// <summary>Element-wise Bernoulli sampling, treating each element as a probability, with result element type <typeparamref name="V"/>.</summary>
         public Tensor<V> Bernoulli<V>(float? seed = null) where V : CommonLike
-            => (ImmutableTensor<V>)OnnxOp.Bernoulli(this, OnnxUtils.GetDType<V>(), seed);
+            => (ImmutableTensor)OnnxOp.Bernoulli(this, OnnxUtils.GetDType<V>(), seed);
 
         /// <summary>Element-wise ceiling.</summary>
         public Tensor<T> Ceiling()
-            => (ImmutableTensor<T>)OnnxOp.Ceil(this);
+            => (ImmutableTensor)OnnxOp.Ceil(this);
 
         /// <summary>Element-wise CELU activation.</summary>
         public Tensor<T> Celu(float alpha = 1.0f)
-            => (ImmutableTensor<T>)OnnxOp.Celu(this, alpha == 1.0f ? null : alpha);
+            => (ImmutableTensor)OnnxOp.Celu(this, alpha == 1.0f ? null : alpha);
 
         /// <summary>Center-crops or pads to the given dimensions (ONNX CenterCropPad).</summary>
         public Tensor<T> CenterCropPad(Vector<int64> newDims, long[]? axes = null)
-            => (ImmutableTensor<T>)OnnxOp.CenterCropPad(this, newDims, axes);
+            => (ImmutableTensor)OnnxOp.CenterCropPad(this, newDims, axes);
 
         /// <summary>Center-crops or pads to the given dimensions (ONNX CenterCropPad).</summary>
         public Tensor<T> CenterCropPad(Vector<int32> newDims, long[]? axes = null)
-            => (ImmutableTensor<T>)OnnxOp.CenterCropPad(this, newDims, axes);
+            => (ImmutableTensor)OnnxOp.CenterCropPad(this, newDims, axes);
 
         /// <summary>Element-wise cosine.</summary>
         public Tensor<T> Cos()
-            => (ImmutableTensor<T>)OnnxOp.Cos(this);
+            => (ImmutableTensor)OnnxOp.Cos(this);
 
         /// <summary>Element-wise hyperbolic cosine.</summary>
         public Tensor<T> Cosh()
-            => (ImmutableTensor<T>)OnnxOp.Cosh(this);
+            => (ImmutableTensor)OnnxOp.Cosh(this);
 
         /// <summary>Cumulative sum along <paramref name="axis"/>.</summary>
         public Tensor<T> CumSum<V>(Scalar<V> axis, bool exclusive = false, bool reverse = false) where V : IndexLike
-            => (ImmutableTensor<T>)OnnxOp.CumSum(this, axis, exclusive, reverse);
+            => (ImmutableTensor)OnnxOp.CumSum(this, axis, exclusive, reverse);
 
         /// <summary>Rearranges channel data into spatial blocks (ONNX DepthToSpace).</summary>
         public Tensor<T> DepthToSpace(long blockSize, DepthColumnRowMode mode = DepthColumnRowMode.DCR)
-            => (ImmutableTensor<T>)OnnxOp.DepthToSpace(this, blockSize, mode);
+            => (ImmutableTensor)OnnxOp.DepthToSpace(this, blockSize, mode);
 
         //public Tensor<T> Dropout<V>(Scalar<V> ratio, Scalar<bit> trainingMode, long? seed = null) where V : FloatLike
-        //    => (ImmutableTensor<T>)OnnxOp.Dropout(this, ratio, trainingMode, seed);
+        //    => (ImmutableTensor)OnnxOp.Dropout(this, ratio, trainingMode, seed);
 
         /// <summary>Element-wise ELU activation.</summary>
         public Tensor<T> Elu(float alpha = 1.0f)
-            => (ImmutableTensor<T>)OnnxOp.Elu(this, alpha == 1.0f ? null : alpha);
+            => (ImmutableTensor)OnnxOp.Elu(this, alpha == 1.0f ? null : alpha);
 
         /// <summary>Element-wise GELU activation.</summary>
         public Tensor<T> Gelu(GeluApproximate approximate = GeluApproximate.None)
-            => (ImmutableTensor<T>)OnnxOp.Gelu(this, approximate);
+            => (ImmutableTensor)OnnxOp.Gelu(this, approximate);
 
         /// <summary>Element-wise leaky ReLU activation.</summary>
         public Tensor<T> LeakyRelu(float alpha = 0.01f)
-            => (ImmutableTensor<T>)OnnxOp.LeakyRelu(this, alpha);
+            => (ImmutableTensor)OnnxOp.LeakyRelu(this, alpha);
 
         /// <summary>Element-wise ReLU activation.</summary>
         public Tensor<T> Relu()
-            => (ImmutableTensor<T>)OnnxOp.Relu(this);
+            => (ImmutableTensor)OnnxOp.Relu(this);
 
         /// <summary>Element-wise SELU activation.</summary>
         public Tensor<T> Selu(float alpha = 1.67326319217681884765625f, float gamma = 1.0507010221481323242187f)
-            => (ImmutableTensor<T>)OnnxOp.Selu(this, alpha, gamma);
+            => (ImmutableTensor)OnnxOp.Selu(this, alpha, gamma);
 
         /// <summary>Element-wise sine.</summary>
         public Tensor<T> Sin()
-            => (ImmutableTensor<T>)OnnxOp.Sin(this);
+            => (ImmutableTensor)OnnxOp.Sin(this);
 
         /// <summary>Element-wise hyperbolic sine.</summary>
         public Tensor<T> Sinh()
-            => (ImmutableTensor<T>)OnnxOp.Sinh(this);
+            => (ImmutableTensor)OnnxOp.Sinh(this);
 
         /// <summary>Element-wise tangent.</summary>
         public Tensor<T> Tan()
-            => (ImmutableTensor<T>)OnnxOp.Tan(this);
+            => (ImmutableTensor)OnnxOp.Tan(this);
 
         /// <summary>Element-wise hyperbolic tangent.</summary>
         public Tensor<T> Tanh()
-            => (ImmutableTensor<T>)OnnxOp.Tanh(this);
+            => (ImmutableTensor)OnnxOp.Tanh(this);
 
         /// <summary>Element-wise power.</summary>
         public Tensor<T> Pow<T1>(Tensor<T1> power) where T1 : IVarType
-            => (ImmutableTensor<T>)OnnxOp.Pow(this, power);
+            => (ImmutableTensor)OnnxOp.Pow(this, power);
 
         /// <summary>Element-wise natural logarithm.</summary>
         public Tensor<T> Ln()
-            => (ImmutableTensor<T>)OnnxOp.Log(this);
+            => (ImmutableTensor)OnnxOp.Log(this);
 
         /// <summary>Element-wise square root.</summary>
         public Tensor<T> Sqrt()
-            => (ImmutableTensor<T>)OnnxOp.Sqrt(this);
+            => (ImmutableTensor)OnnxOp.Sqrt(this);
 
         /// <summary>Element-wise reciprocal.</summary>
         public Tensor<T> Reciprocal()
-            => (ImmutableTensor<T>)OnnxOp.Reciprocal(this);
+            => (ImmutableTensor)OnnxOp.Reciprocal(this);
 
         /// <summary>Element-wise error function.</summary>
         public Tensor<T> Erf()
-            => (ImmutableTensor<T>)OnnxOp.Erf(this);
+            => (ImmutableTensor)OnnxOp.Erf(this);
 
         /// <summary>Element-wise sign.</summary>
         public Tensor<T> Sign()
-            => (ImmutableTensor<T>)OnnxOp.Sign(this);
+            => (ImmutableTensor)OnnxOp.Sign(this);
         /// <summary>Concatenates this tensor with <paramref name="others"/> along <paramref name="axis"/>.</summary>
         public Tensor<T> Concat(long axis, params Tensor<T>[] others)
-            => (ImmutableTensor<T>)OnnxOp.Concat([this, .. others], axis);
+            => (ImmutableTensor)OnnxOp.Concat([this, .. others], axis);
 
         /// <summary>Reshapes to <paramref name="newShape"/>; a 0 entry copies the corresponding input dimension unless <paramref name="allowZero"/> is true.</summary>
         public Tensor<T> Reshape(Vector<int64> newShape, bool allowZero = false)
-            => (ImmutableTensor<T>)OnnxOp.Reshape(this, newShape, allowZero);
+            => (ImmutableTensor)OnnxOp.Reshape(this, newShape, allowZero);
 
         /// <summary>Permutes the dimensions; with no arguments, reverses them.</summary>
         public Tensor<T> Transpose(params long[] newDims)
-            => (ImmutableTensor<T>)OnnxOp.Transpose(this, newDims.Length == 0 ? null : newDims);
+            => (ImmutableTensor)OnnxOp.Transpose(this, newDims.Length == 0 ? null : newDims);
 
         /// <summary>Pads using separate begin (<paramref name="outerPads"/>) and end (<paramref name="innerPads"/>) pad counts per axis.</summary>
         public Tensor<T> Pad(PadMode mode, Vector<int64> outerPads, Vector<int64> innerPads, Scalar<T>? val = null, Vector<int64>? axes = null)
-            => (ImmutableTensor<T>)OnnxOp.Pad(this, (Vector<int64>)[.. outerPads, .. innerPads], val, axes, mode);
+            => (ImmutableTensor)OnnxOp.Pad(this, (Vector<int64>)[.. outerPads, .. innerPads], val, axes, mode);
 
         /// <summary>Pads using an ONNX-style pads vector (begin counts for all axes, then end counts).</summary>
         public Tensor<T> Pad(PadMode mode, Vector<int64> pads, Scalar<T>? val = null, Vector<int64>? axes = null)
-            => (ImmutableTensor<T>)OnnxOp.Pad(this, pads, val, axes, mode);
+            => (ImmutableTensor)OnnxOp.Pad(this, pads, val, axes, mode);
 
         /// <summary>Broadcasts to the given shape.</summary>
         public Tensor<T> Expand(params long[] shape)
@@ -737,65 +718,65 @@ namespace Shorokoo
 
         /// <summary>Broadcasts to the given shape (ONNX Expand).</summary>
         public Tensor<T> Expand(Vector<int64> shape)
-            => (ImmutableTensor<T>)OnnxOp.Expand(this, shape);
+            => (ImmutableTensor)OnnxOp.Expand(this, shape);
 
         /// <summary>Element-wise sigmoid.</summary>
         public Tensor<T> Sigmoid()
-            => (ImmutableTensor<T>)OnnxOp.Sigmoid(this);
+            => (ImmutableTensor)OnnxOp.Sigmoid(this);
 
         /// <summary>One-hot encoding of the maximum along <paramref name="axis"/> (ONNX Hardmax).</summary>
         public Tensor<T> Hardmax(long? axis = null)
-            => (ImmutableTensor<T>)OnnxOp.Hardmax(this, axis);
+            => (ImmutableTensor)OnnxOp.Hardmax(this, axis);
 
         /// <summary>Element-wise hard sigmoid.</summary>
         public Tensor<T> HardSigmoid(float? alpha = null, float? beta = null)
-            => (ImmutableTensor<T>)OnnxOp.HardSigmoid(this, alpha, beta);
+            => (ImmutableTensor)OnnxOp.HardSigmoid(this, alpha, beta);
 
         /// <summary>Element-wise hard swish.</summary>
         public Tensor<T> HardSwish()
-            => (ImmutableTensor<T>)OnnxOp.HardSwish(this);
+            => (ImmutableTensor)OnnxOp.HardSwish(this);
 
         /// <summary>Element-wise infinity test, yielding a bit tensor.</summary>
         public Tensor<bit> IsInf(bool detectNegative = true, bool detectPositive = true)
-            => (ImmutableTensor<bit>)OnnxOp.IsInf(this,
+            => (ImmutableTensor)OnnxOp.IsInf(this,
                 detectNegative ? null : detectNegative,
                 detectPositive ? null : detectPositive);
 
         /// <summary>Element-wise NaN test, yielding a bit tensor.</summary>
         public Tensor<bit> IsNaN()
-            => (ImmutableTensor<bit>)OnnxOp.IsNaN(this);
+            => (ImmutableTensor)OnnxOp.IsNaN(this);
 
         /// <summary>Log-softmax along <paramref name="axis"/>.</summary>
         public Tensor<T> LogSoftmax(long? axis = null)
-            => (ImmutableTensor<T>)OnnxOp.LogSoftmax(this, axis);
+            => (ImmutableTensor)OnnxOp.LogSoftmax(this, axis);
 
         /// <summary>Normalizes to zero mean and unit variance over <paramref name="axes"/>.</summary>
         public Tensor<T> MeanVarianceNormalization(long[]? axes = null)
-            => (ImmutableTensor<T>)OnnxOp.MeanVarianceNormalization(this, axes);
+            => (ImmutableTensor)OnnxOp.MeanVarianceNormalization(this, axes);
 
         /// <summary>Element-wise Mish activation.</summary>
         public Tensor<T> Mish()
-            => (ImmutableTensor<T>)OnnxOp.Mish(this);
+            => (ImmutableTensor)OnnxOp.Mish(this);
 
         /// <summary>Element-wise rounding to the nearest integer (half to even).</summary>
         public Tensor<T> Round()
-            => (ImmutableTensor<T>)OnnxOp.Round(this);
+            => (ImmutableTensor)OnnxOp.Round(this);
 
         /// <summary>Element-wise shrink thresholding (ONNX Shrink).</summary>
         public Tensor<T> Shrink(float? bias = null, float? lambd = null)
-            => (ImmutableTensor<T>)OnnxOp.Shrink(this, bias, lambd);
+            => (ImmutableTensor)OnnxOp.Shrink(this, bias, lambd);
 
         /// <summary>Element-wise softplus.</summary>
         public Tensor<T> Softplus()
-            => (ImmutableTensor<T>)OnnxOp.Softplus(this);
+            => (ImmutableTensor)OnnxOp.Softplus(this);
 
         /// <summary>Element-wise softsign.</summary>
         public Tensor<T> Softsign()
-            => (ImmutableTensor<T>)OnnxOp.Softsign(this);
+            => (ImmutableTensor)OnnxOp.Softsign(this);
 
         /// <summary>Element-wise thresholded ReLU.</summary>
         public Tensor<T> ThresholdedRelu(float? alpha = null)
-            => (ImmutableTensor<T>)OnnxOp.ThresholdedRelu(this, alpha);
+            => (ImmutableTensor)OnnxOp.ThresholdedRelu(this, alpha);
 
         /// <summary>Top <paramref name="k"/> values and their indices along <paramref name="axis"/>.</summary>
         public (Tensor<T> topK, Tensor<int64> indices) TopK(long k, long axis = -1, bool largest = true, bool sorted = true)
@@ -808,32 +789,32 @@ namespace Shorokoo
         /// <summary>Writes <paramref name="values"/> at <paramref name="indices"/> into a copy of this tensor (ONNX ScatterND).</summary>
         public Tensor<T> ScatterND(Tensor<int64> indices, Tensor<T> values, ScatterNDReduction? reduceMode = ScatterNDReduction.None)
         {
-            return (ImmutableTensor<T>)OnnxOp.ScatterND(this, indices, values, reduceMode);
+            return (ImmutableTensor)OnnxOp.ScatterND(this, indices, values, reduceMode);
         }
 
         /// <summary>Element-wise clamping to [min, max] given as primitive constants.</summary>
         public Tensor<T> Clip(PrimitiveParam min, PrimitiveParam max)
-            => (ImmutableTensor<T>)OnnxOp.Clip(this, (Scalar<T>)min, (Scalar<T>)max);
+            => (ImmutableTensor)OnnxOp.Clip(this, (Scalar<T>)min, (Scalar<T>)max);
 
         /// <summary>Element-wise clamping to [min, max].</summary>
         public Tensor<T> Clip(Scalar<T> min, Scalar<T> max)
-            => (ImmutableTensor<T>)OnnxOp.Clip(this, min, max);
+            => (ImmutableTensor)OnnxOp.Clip(this, min, max);
 
         /// <summary>Selects elements where <paramref name="condition"/> is true, flattening to a rank-1 result.</summary>
         public Vector<T> Compress(Vector<bit> condition)
-            => (ImmutableVector<T>)OnnxOp.Compress(this, condition, null);
+            => (ImmutableVector)OnnxOp.Compress(this, condition, null);
 
         /// <summary>Selects slices along <paramref name="axis"/> where <paramref name="condition"/> is true.</summary>
         public Tensor<T> Compress(Vector<bit> condition, long axis)
-            => (ImmutableTensor<T>)OnnxOp.Compress(this, condition, axis);
+            => (ImmutableTensor)OnnxOp.Compress(this, condition, axis);
 
         /// <summary>Element-wise exponential.</summary>
         public Tensor<T> Exp()
-            => (ImmutableTensor<T>)OnnxOp.Exp(this);
+            => (ImmutableTensor)OnnxOp.Exp(this);
 
         /// <summary>Flattens to 2-D: dimensions before <paramref name="axis"/> collapse into the first dimension, the rest into the second.</summary>
         public Tensor<T> Flatten(long axis = 1)
-            => (ImmutableTensor<T>)OnnxOp.Flatten(this, axis);
+            => (ImmutableTensor)OnnxOp.Flatten(this, axis);
 
         #endregion
     }
@@ -848,16 +829,16 @@ namespace Shorokoo
         /// <summary>Element-wise selection: takes <paramref name="whenTrue"/> where <paramref name="cond"/> is true, otherwise <paramref name="whenFalse"/>.</summary>
         public static Tensor<V> Where<V>(this Tensor<bit> cond, Tensor<V> whenTrue, Tensor<V> whenFalse)
             where V : IVarType
-            => (ImmutableTensor<V>)OnnxOp.Where(cond, whenTrue, whenFalse);
+            => (ImmutableTensor)OnnxOp.Where(cond, whenTrue, whenFalse);
 
         /// <summary>Element-wise selection: takes <paramref name="whenTrue"/> where <paramref name="cond"/> is true, otherwise <paramref name="whenFalse"/>.</summary>
         public static Vector<V> Where<V>(this Vector<bit> cond, Vector<V> whenTrue, Vector<V> whenFalse)
             where V : IVarType
-            => ((ImmutableTensor<V>)OnnxOp.Where(cond, whenTrue, whenFalse)).Vec();
+            => (ImmutableVector)((ImmutableTensor)OnnxOp.Where(cond, whenTrue, whenFalse)).Vec();
 
         /// <summary>Element-wise selection: takes <paramref name="whenTrue"/> where <paramref name="cond"/> is true, otherwise <paramref name="whenFalse"/>.</summary>
         public static Scalar<V> Where<V>(this Scalar<bit> cond, Scalar<V> whenTrue, Scalar<V> whenFalse)
             where V : IVarType
-            => ((ImmutableTensor<V>)OnnxOp.Where(cond, whenTrue, whenFalse)).Scalar();
+            => (ImmutableScalar)((ImmutableTensor)OnnxOp.Where(cond, whenTrue, whenFalse)).Scalar();
     }
 }

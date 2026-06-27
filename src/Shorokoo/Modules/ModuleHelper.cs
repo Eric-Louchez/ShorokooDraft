@@ -117,10 +117,12 @@ namespace Shorokoo.Core
             if (moduleParam is IModule module)
                 return $"[{module.ModuleVariable.ModuleFn!.ModuleSignatureString}]";
 
-            if (moduleParam is ImmutableScalar<IModelVarType> modelVariable)
+            // Model/module params are scalar nodes distinguished by their runtime DType (formerly the
+            // generic ImmutableScalar<IModelVarType> / ImmutableScalar<IModuleVarType>).
+            if (moduleParam is ImmutableScalar modelVariable && modelVariable.Type == DType.Model)
                 return $"[{modelVariable.ModuleFn!.ModelSignatureString}]";
 
-            if (moduleParam is ImmutableScalar<IModuleVarType> moduleVariable)
+            if (moduleParam is ImmutableScalar moduleVariable && moduleVariable.Type == DType.Module)
                 return $"[{moduleVariable.ModuleFn!.ModuleSignatureString}]";
 
             var variable = moduleParam as IValue;
@@ -355,7 +357,7 @@ namespace Shorokoo.Core
             {
                 genericTypeArgs = ExtractGenericTypeArgsFromType(moduleType);
             }
-            return (ImmutableScalar<IModuleVarType>)InternalOp.CreateModule(targetFunction, genericTypeArgs);
+            return (ImmutableScalar)InternalOp.CreateModule(targetFunction, genericTypeArgs);
         }
 
         /// <summary>
@@ -612,7 +614,7 @@ namespace Shorokoo.Core
             {
                 var type = typeForEach;
                 if (type.IsAssignableFrom(typeof(IModel)))
-                    type = typeof(ImmutableScalar<IModelVarType>);
+                    type = typeof(ImmutableScalar);
 
                 if (type.IsAssignableTo(typeof(ITensorStruct)))
                 {

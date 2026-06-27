@@ -197,7 +197,7 @@ namespace Shorokoo.Core.Nodes
 
         public int NumTrailingNullInputs { get; protected set; } = 0;
 
-        public IValue?[] InputsWithTrailingNulls => [.. Inputs, .. Enumerable.Repeat((ImmutableVariable<AnyLike>?)null, this.NumTrailingNullInputs)];
+        public IValue?[] InputsWithTrailingNulls => [.. Inputs, .. Enumerable.Repeat((IValue?)null, this.NumTrailingNullInputs)];
 
         public string? StackTrace { get; protected set; }
 
@@ -263,7 +263,7 @@ namespace Shorokoo.Core.Nodes
 
             if (this.IsOpenNode)
             {
-                this.ConnectingTensor = new ImmutableTensor<invalid>(null, DType.Invalid, this, null, null, null);
+                this.ConnectingTensor = new ImmutableTensor(null, DType.Invalid, this, null, null, null);
             }
 
             if (this.IsCloseNode && this.GraphOpenNode is not null)
@@ -334,7 +334,7 @@ namespace Shorokoo.Core.Nodes
             // Assign keys to connecting tensor first (uses index -1)
             if (this.IsOpenNode && this.ConnectingTensor != null)
             {
-                ((ImmutableVariable<invalid>)this.ConnectingTensor).SetKey(TensorKey.ForConnectingTensor(this.Key));
+                ((Variable)this.ConnectingTensor).SetKey(TensorKey.ForConnectingTensor(this.Key));
             }
 
             // Assign keys to all outputs in order

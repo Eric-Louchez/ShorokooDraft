@@ -271,13 +271,13 @@ public partial class NNLocalResponseNormClosedForm
 
         // Hand reference: pad axis-1 by [2,2], unrolled channel Slice-sum of x² over size=5.
         var x2 = x * x;
-        var padded = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Pad(x2, Vector(2L, 2L), null,
+        var padded = (Tensor<float32>)(ImmutableTensor)OnnxOp.Pad(x2, Vector(2L, 2L), null,
             axes: Vector(1L), mode: PadMode.Constant);
-        var sum = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Slice(padded, Vector(0L), Vector(5L), Vector(1L));
+        var sum = (Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(padded, Vector(0L), Vector(5L), Vector(1L));
         for (long i = 1; i < 5; i++)
-            sum = sum + (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Slice(padded, Vector(i), Vector(5L + i), Vector(1L));
+            sum = sum + (Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(padded, Vector(i), Vector(5L + i), Vector(1L));
         var pool = k + (a / Scalar(5f)) * sum;
-        var yRef = x * (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Pow(pool, -b);
+        var yRef = x * (Tensor<float32>)(ImmutableTensor)OnnxOp.Pow(pool, -b);
 
         var pen = (y - yRef).Abs().Reduce(ReduceKind.Sum, keepDims: false).Scalar();
         var scale = Scalar(1f) + yRef.Abs().Reduce(ReduceKind.Sum, keepDims: false).Scalar();
@@ -342,14 +342,14 @@ public partial class NNLrnHelperArbitrarySizeClosedForm
 
         // Hand reference with the floor/ceil window pads = [leftHalf, rightHalf].
         var x2 = x * x;
-        var padded = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Pad(x2, Vector(leftHalf, rightHalf), null,
+        var padded = (Tensor<float32>)(ImmutableTensor)OnnxOp.Pad(x2, Vector(leftHalf, rightHalf), null,
             axes: Vector(1L), mode: PadMode.Constant);
         const long cDim = 5L;   // C = 5 (known here)
-        var sum = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Slice(padded, Vector(0L), Vector(cDim), Vector(1L));
+        var sum = (Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(padded, Vector(0L), Vector(cDim), Vector(1L));
         for (long i = 1; i < size; i++)
-            sum = sum + (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Slice(padded, Vector(i), Vector(cDim + i), Vector(1L));
+            sum = sum + (Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(padded, Vector(i), Vector(cDim + i), Vector(1L));
         var pool = Scalar(k) + (Scalar(a) / Scalar((float)size)) * sum;
-        var yRef = x * (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Pow(pool, Scalar(-b));
+        var yRef = x * (Tensor<float32>)(ImmutableTensor)OnnxOp.Pow(pool, Scalar(-b));
 
         var pen = (y - yRef).Abs().Reduce(ReduceKind.Sum, keepDims: false).Scalar();
         var scale = Scalar(1f) + yRef.Abs().Reduce(ReduceKind.Sum, keepDims: false).Scalar();

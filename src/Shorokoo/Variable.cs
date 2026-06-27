@@ -125,11 +125,11 @@ namespace Shorokoo
     /// a C# type parameter, and the structural kind (tensor / sequence / optional / struct) lives on
     /// the producing node — so a node needs neither generics nor a per-kind subclass.
     /// <para>
-    /// Deliberately does <b>not</b> implement <see cref="IValue"/>: <c>IValue</c> is the user-facing
-    /// handle interface (implemented by the value-struct handles such as <see cref="Tensor{T}"/>),
-    /// and a graph node is not a handle. Generic typed reinterprets live on the
-    /// <see cref="ImmutableVariable{T}"/> subclass during the migration; the end state collapses the
-    /// generic subclasses into this one class.
+    /// During this migration <see cref="Variable"/> still implements <see cref="IValue"/> — the
+    /// graph's internal currency — so the collapse stays green without flipping every op signature.
+    /// The final, separable step removes <c>IValue</c> from the node so that <c>IValue</c> becomes
+    /// purely the user-facing handle interface (implemented by the value-struct handles such as
+    /// <see cref="Tensor{T}"/>) and a graph node is no longer a handle.
     /// </para>
     /// </summary>
     public abstract class Variable : IValue
@@ -200,36 +200,11 @@ namespace Shorokoo
         }
 
         /// <summary>
-        /// Reinterprets this node to the generic node view of element type <typeparamref name="V"/>.
-        /// During the migration the concrete nodes are still the generic <see cref="ImmutableVariable{T}"/>
-        /// subclasses, so this is a checked reference reinterpret; the element <see cref="DType"/> must
-        /// already match.
+        /// Reinterprets this node as the typed tensor handle of element type <typeparamref name="V"/>.
+        /// The node is non-generic; the runtime element <see cref="DType"/> is unchanged (this is a
+        /// static-type reinterpret, not a dtype conversion — use <c>Cast</c> to convert).
         /// </summary>
-        public ImmutableVariable<V> As<V>() where V : IVarType
-        {
-            if (this is ImmutableVariable<V> v)
-                return v;
-
-            throw new InvalidTensorOperationException(ErrorCodes.CR006, "As<V>", $"from {this.Type} to {typeof(V).Name}",
-                $"Cannot reinterpret {this.GetType().Name} as ImmutableVariable<{typeof(V).Name}> - element types are not compatible");
-        }
-    }
-
-    public abstract class ImmutableVariable<T> : Variable, IValue<T> where T : IVarType
-    {
-        public ImmutableVariable(DType type, Node owningNode, Function? moduleFn, string? name)
-            : base(type, owningNode, moduleFn, name)
-        {
-        }
-
-        public Tensor<T> Tensor() => (ImmutableTensor<T>)this;
-        public Vector<T> Vec() => this.Tensor().Vec();
-        public Scalar<T> Scalar() => this.Tensor().Scalar();
-
-        public override string ToString()
-        {
-            return base.ToString() + "[" + (this.Tensor().Rank ?? -1) + "]";
-        }
+        public Tensor<V> As<V>() where V : IVarType => (ImmutableTensor)this;
     }
 }
 

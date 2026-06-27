@@ -118,7 +118,7 @@ namespace Shorokoo
             // The result is IValue but we know it's a tensor with the specified dtype.
             // Cast through ITensor first (the interface), then to the concrete Tensor<T>.
             // This cast succeeds because TrainableParamRef creates a Variable with the correct dtype.
-            return (ImmutableTensor<T>)(ITensor)result;
+            return (ImmutableTensor)(ITensor)result;
         }
 
         /// <summary>

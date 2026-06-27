@@ -46,7 +46,7 @@ public class ModuleHelperCoverageTests
         var tensor = InputTensor<float32>("t", rank: 2);
         Assert.Equal("float32#2", ModuleHelper.ToSignatureStringWithOverride(tensor, 2));
 
-        var unrankedTensor = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Identity(Scalar(1.0f), rank: null);
+        var unrankedTensor = (Tensor<float32>)(ImmutableTensor)OnnxOp.Identity(Scalar(1.0f), rank: null);
         Assert.Equal("float32", ModuleHelper.ToSignatureStringWithOverride(unrankedTensor, -1));
 
         var opt = OptionalTensor<float32>();

@@ -40,8 +40,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var inputShape = input.DShape;
 
             // Find positions where condition is True
-            Tensor<int64> truePositions = (ImmutableTensor<int64>)OnnxOp.NonZero(condition); // [1, K]
-            Tensor<int64> indices = (ImmutableTensor<int64>)OnnxOp.Reshape(truePositions, Vector(-1L), allowZero: false); // [K]
+            Tensor<int64> truePositions = (ImmutableTensor)OnnxOp.NonZero(condition); // [1, K]
+            Tensor<int64> indices = (ImmutableTensor)OnnxOp.Reshape(truePositions, Vector(-1L), allowZero: false); // [K]
 
             var zero = TypedConst(0f, input);
 
@@ -49,15 +49,15 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             {
                 // No-axis case: input was flattened, grad is 1D [K]
                 // Create 1D zeros of flattened input size
-                Tensor<int64> flatSize = (ImmutableTensor<int64>)OnnxOp.ReduceProd(inputShape, keepdims: false);
-                Tensor<int64> flatShape = (ImmutableTensor<int64>)OnnxOp.Reshape(flatSize, Vector(1L), allowZero: false);
-                Tensor<T1> zeros = (ImmutableTensor<T1>)OnnxOp.Expand(zero, flatShape);
+                Tensor<int64> flatSize = (ImmutableTensor)OnnxOp.ReduceProd(inputShape, keepdims: false);
+                Tensor<int64> flatShape = (ImmutableTensor)OnnxOp.Reshape(flatSize, Vector(1L), allowZero: false);
+                Tensor<T1> zeros = (ImmutableTensor)OnnxOp.Expand(zero, flatShape);
 
                 // Scatter gradient at true positions
-                Tensor<T1> dFlat = (ImmutableTensor<T1>)OnnxOp.ScatterElements(zeros, indices, grad, axis: 0);
+                Tensor<T1> dFlat = (ImmutableTensor)OnnxOp.ScatterElements(zeros, indices, grad, axis: 0);
 
                 // Reshape back to input shape
-                Tensor<T1> dInput = (ImmutableTensor<T1>)OnnxOp.Reshape(dFlat, inputShape, allowZero: false);
+                Tensor<T1> dInput = (ImmutableTensor)OnnxOp.Reshape(dFlat, inputShape, allowZero: false);
                 return [dInput, null];
             }
             else
@@ -66,20 +66,20 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 var effectiveAxis = axis.Value;
 
                 // Build reshape target [1,...,-1,...,1] with -1 at axis position
-                Tensor<int64> rank = (ImmutableTensor<int64>)OnnxOp.Shape(inputShape); // [rank_value]
-                Tensor<int64> ones = (ImmutableTensor<int64>)OnnxOp.Expand(Scalar(1L), rank);
-                Tensor<int64> axisIdx = (ImmutableTensor<int64>)OnnxOp.Reshape(Scalar(effectiveAxis), Vector(1L), allowZero: false);
-                Tensor<int64> negOne = (ImmutableTensor<int64>)OnnxOp.Reshape(Scalar(-1L), Vector(1L), allowZero: false);
-                Tensor<int64> reshapeTarget = (ImmutableTensor<int64>)OnnxOp.ScatterElements(ones, axisIdx, negOne, axis: 0);
+                Tensor<int64> rank = (ImmutableTensor)OnnxOp.Shape(inputShape); // [rank_value]
+                Tensor<int64> ones = (ImmutableTensor)OnnxOp.Expand(Scalar(1L), rank);
+                Tensor<int64> axisIdx = (ImmutableTensor)OnnxOp.Reshape(Scalar(effectiveAxis), Vector(1L), allowZero: false);
+                Tensor<int64> negOne = (ImmutableTensor)OnnxOp.Reshape(Scalar(-1L), Vector(1L), allowZero: false);
+                Tensor<int64> reshapeTarget = (ImmutableTensor)OnnxOp.ScatterElements(ones, axisIdx, negOne, axis: 0);
 
                 // Reshape indices to [1,...,K,...,1] and expand to grad shape
-                Tensor<int64> indicesReshaped = (ImmutableTensor<int64>)OnnxOp.Reshape(indices, reshapeTarget, allowZero: false);
+                Tensor<int64> indicesReshaped = (ImmutableTensor)OnnxOp.Reshape(indices, reshapeTarget, allowZero: false);
                 var gradShape = grad.DShape;
-                Tensor<int64> indicesExpanded = (ImmutableTensor<int64>)OnnxOp.Expand(indicesReshaped, gradShape);
+                Tensor<int64> indicesExpanded = (ImmutableTensor)OnnxOp.Expand(indicesReshaped, gradShape);
 
                 // Create zeros of input shape and scatter grad back
-                Tensor<T1> zeros = (ImmutableTensor<T1>)OnnxOp.Expand(zero, inputShape);
-                Tensor<T1> dInput = (ImmutableTensor<T1>)OnnxOp.ScatterElements(zeros, indicesExpanded, grad, axis: effectiveAxis);
+                Tensor<T1> zeros = (ImmutableTensor)OnnxOp.Expand(zero, inputShape);
+                Tensor<T1> dInput = (ImmutableTensor)OnnxOp.ScatterElements(zeros, indicesExpanded, grad, axis: effectiveAxis);
 
                 return [dInput, null];
             }

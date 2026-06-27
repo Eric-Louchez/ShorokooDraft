@@ -29,7 +29,7 @@ namespace Shorokoo
     {
         /// <summary>Generates a 2D/3D sampling grid from batched affine matrices (ONNX AffineGrid).</summary>
         public static Tensor<T> AffineGrid<T>(Tensor<T> theta, Vector<int64> size, bool? alignCorners = false) where T : FloatLike
-            => (ImmutableTensor<T>)OnnxOp.AffineGrid(theta, size, alignCorners);
+            => (ImmutableTensor)OnnxOp.AffineGrid(theta, size, alignCorners);
 
         /// <summary>Returns a Blackman window of the given size (ONNX BlackmanWindow).</summary>
         public static Vector<T> BlackmanWindow<T>(Scalar<int64> size, bool periodic = true) where T : NumLike
@@ -45,18 +45,18 @@ namespace Shorokoo
 
         /// <summary>Rearranges sliding-block columns back into a batched image tensor (ONNX Col2Im).</summary>
         public static Tensor<T> Col2Im<T>(Tensor<T> input, Tensor<int64> imageShape, Tensor<int64> blockShape, long[] dilations, long[] pads, long[] strides) where T : NumLike
-            => (ImmutableTensor<T>)OnnxOp.Col2Im(input, imageShape, blockShape, dilations, pads, strides);
+            => (ImmutableTensor)OnnxOp.Col2Im(input, imageShape, blockShape, dilations, pads, strides);
 
         /// <summary>Concatenates the tensors along the given axis (ONNX Concat).</summary>
         public static Tensor<T> Concat<T>(Tensor<T>[] inputs, long axis) where T : IVarType
-            => (ImmutableTensor<T>)OnnxOp.Concat([.. inputs.Cast<IValue>()], axis);
+            => (ImmutableTensor)OnnxOp.Concat([.. inputs.Cast<IValue>()], axis);
 
         /// <summary>N-dimensional convolution (ONNX Conv) with geometry supplied as static attributes.</summary>
         public static Tensor<T> Conv<T>(Tensor<T> x, Tensor<T> w, Vector<T> b, AutoPad autoPad,
             long[] dilations, long group, long[] kernelShape, long[]? pads, long[] strides)
             where T : FloatLike
         {
-            return (ImmutableTensor<T>)OnnxOp.Conv(x, w, b, autoPad, dilations, group, kernelShape, pads, strides);
+            return (ImmutableTensor)OnnxOp.Conv(x, w, b, autoPad, dilations, group, kernelShape, pads, strides);
         }
 
         /// <summary>
@@ -69,49 +69,49 @@ namespace Shorokoo
         public static Tensor<T> Conv<T>(Tensor<T> x, Tensor<T> w, Vector<T> b, AutoPad autoPad,
             Vector<int64> dilations, Scalar<int64> group, Vector<int64> kernelShape, Vector<int64> pads, Vector<int64> strides)
             where T : FloatLike
-            => (ImmutableTensor<T>)InternalOp.Conv(x, w, b, autoPad, pads, strides, dilations, kernelShape, group);
+            => (ImmutableTensor)InternalOp.Conv(x, w, b, autoPad, pads, strides, dilations, kernelShape, group);
 
         /// <summary>Integer convolution with zero points, producing an int32 result (ONNX ConvInteger).</summary>
         public static Tensor<int32> ConvInteger<T1,T2>(Tensor<T1> x, Tensor<T2> w, Scalar<T1> xZeroPoint, Scalar<T2> wZeroPoint,
             AutoPad autoPad, long[] dilations, long group, long[] kernelShape, long[] pads, long[] strides)
             where T1 : Int8Like where T2 : Int8Like
-            => (ImmutableTensor<int32>)OnnxOp.ConvInteger(x, w, xZeroPoint, wZeroPoint, autoPad, dilations, group, kernelShape, pads, strides);
+            => (ImmutableTensor)OnnxOp.ConvInteger(x, w, xZeroPoint, wZeroPoint, autoPad, dilations, group, kernelShape, pads, strides);
 
         /// <summary>Transposed (fractionally strided) convolution (ONNX ConvTranspose).</summary>
         public static Tensor<T> ConvTranspose<T>(Tensor<T> x, Tensor<T> w, Vector<T> b, AutoPad autoPad, long[]? dilations, long group,
             long[]? kernelShape, long[]? outputPadding, long[]? outputShape, long[]? pads, long[]? strides)
             where T : FloatLike
-            => (ImmutableTensor<T>)OnnxOp.ConvTranspose(x, w, b, autoPad, dilations, group, kernelShape, outputPadding, outputShape, pads, strides);
+            => (ImmutableTensor)OnnxOp.ConvTranspose(x, w, b, autoPad, dilations, group, kernelShape, outputPadding, outputShape, pads, strides);
 
         /// <summary>Discrete Fourier transform along one axis, optionally inverse and/or one-sided (ONNX DFT).</summary>
         public static Tensor<T1> Dft<T1, T2>(Tensor<T1> input, Scalar<T2> dft_length, Scalar<int64>? axis = null, bool inverse = false, bool onesided = false)
             where T1 : FloatLike
             where T2 : IndexLike
-            => (ImmutableTensor<T1>)OnnxOp.Dft(input, dft_length, axis, inverse, onesided);
+            => (ImmutableTensor)OnnxOp.Dft(input, dft_length, axis, inverse, onesided);
 
         /// <summary>Deformable convolution with learned sampling offsets and mask (ONNX DeformConv).</summary>
         public static Tensor<T> DeformConv<T>(Tensor<T> x, Tensor<T> w, Tensor<T> offset, Vector<T> b, Tensor<T> mask,
             long[] dilations, long group, long[] kernelShape, long offsetGroup, long[] pads, long[] strides)
             where T : FloatLike
-            => (ImmutableTensor<T>)OnnxOp.DeformConv(x, w, offset, b, mask, dilations, group, kernelShape, offsetGroup, pads, strides);
+            => (ImmutableTensor)OnnxOp.DeformConv(x, w, offset, b, mask, dilations, group, kernelShape, offsetGroup, pads, strides);
         
         /// <summary>Dequantizes integer data to float: <c>(x - xZeroPoint) * xScale</c> (ONNX DequantizeLinear).</summary>
         public static Tensor<TOut> DequantizeLinear<TIn, TOut>(Tensor<TIn> x, Tensor<TOut> xScale, Tensor<TIn>? xZeroPoint, long? axis = null, long? blockSize = null)
             where TIn : AnyIntLike
             where TOut : FloatLike
-            => (ImmutableTensor<TOut>)OnnxOp.DequantizeLinear(x, xScale, xZeroPoint, axis, blockSize);
+            => (ImmutableTensor)OnnxOp.DequantizeLinear(x, xScale, xZeroPoint, axis, blockSize);
 
         /// <summary>Determinant of the innermost 2-D square matrices (ONNX Det).</summary>
         public static Tensor<T> DeterminantMatrix<T>(Tensor<T> batchedMatrices)
             where T : FloatLike
-            => (ImmutableTensor<T>)OnnxOp.Det(batchedMatrices);
+            => (ImmutableTensor)OnnxOp.Det(batchedMatrices);
 
         /// <summary>Quantizes to uint8 with scale and zero point computed from the data (ONNX DynamicQuantizeLinear).</summary>
         public static (Scalar<uint8> y, Scalar<float32> y_scale, Scalar<uint8> y_zero_point) DynamicQuantizeLinear<T>(Scalar<T> x)
             where T : FloatLike
         {
             var (y, scale, zp) = OnnxOp.DynamicQuantizeLinear(x);
-            return ((ImmutableScalar<uint8>)y, (ImmutableScalar<float32>)scale, (ImmutableScalar<uint8>)zp);
+            return ((ImmutableScalar)y, (ImmutableScalar)scale, (ImmutableScalar)zp);
         }
 
         /// <summary>Quantizes to uint8 with scale and zero point computed from the data (ONNX DynamicQuantizeLinear).</summary>
@@ -119,7 +119,7 @@ namespace Shorokoo
             where T : FloatLike
         {
             var (y, scale, zp) = OnnxOp.DynamicQuantizeLinear(x);
-            return ((ImmutableVector<uint8>)y, (ImmutableScalar<float32>)scale, (ImmutableScalar<uint8>)zp);
+            return ((ImmutableVector)y, (ImmutableScalar)scale, (ImmutableScalar)zp);
         }
 
         /// <summary>Quantizes to uint8 with scale and zero point computed from the data (ONNX DynamicQuantizeLinear).</summary>
@@ -127,74 +127,74 @@ namespace Shorokoo
             where T : FloatLike
         {
             var (y, scale, zp) = OnnxOp.DynamicQuantizeLinear(x);
-            return ((ImmutableTensor<uint8>)y, (ImmutableScalar<float32>)scale, (ImmutableScalar<uint8>)zp);
+            return ((ImmutableTensor)y, (ImmutableScalar)scale, (ImmutableScalar)zp);
         }
 
         /// <summary>Tensor of input's shape and dtype with ones on the k-th diagonal, zeros elsewhere (ONNX EyeLike).</summary>
         public static Tensor<T> EyeLike<T>(Tensor<T> input, long k = 0)
             where T : CommonLike
-            => (ImmutableTensor<T>)OnnxOp.EyeLike(input, null, k);
+            => (ImmutableTensor)OnnxOp.EyeLike(input, null, k);
 
         /// <summary>EyeLike overload taking any tensor for the shape and producing element type <typeparamref name="T"/>.</summary>
         public static Tensor<T> EyeLike<T>(ITensor input, long k = 0)
             where T : CommonLike
-            => (ImmutableTensor<T>)OnnxOp.EyeLike(input, OnnxUtils.GetDType<T>(), k);
+            => (ImmutableTensor)OnnxOp.EyeLike(input, OnnxUtils.GetDType<T>(), k);
 
         /// <summary>Averages each channel over all spatial dimensions (ONNX GlobalAveragePool).</summary>
         public static Scalar<T> GlobalAveragePool<T>(Scalar<T> input)
             where T : FloatLike
-            => (ImmutableScalar<T>)OnnxOp.GlobalAveragePool(input);
+            => (ImmutableScalar)OnnxOp.GlobalAveragePool(input);
 
         /// <summary>Averages each channel over all spatial dimensions (ONNX GlobalAveragePool).</summary>
         public static Vector<T> GlobalAveragePool<T>(Vector<T> input)
             where T : FloatLike
-            => (ImmutableVector<T>)OnnxOp.GlobalAveragePool(input);
+            => (ImmutableVector)OnnxOp.GlobalAveragePool(input);
 
         /// <summary>Averages each channel over all spatial dimensions (ONNX GlobalAveragePool).</summary>
         public static Tensor<T> GlobalAveragePool<T>(Tensor<T> input)
             where T : FloatLike
-            => (ImmutableTensor<T>)OnnxOp.GlobalAveragePool(input);
+            => (ImmutableTensor)OnnxOp.GlobalAveragePool(input);
 
         /// <summary>Lp-norm of each channel over all spatial dimensions (ONNX GlobalLpPool).</summary>
         public static Scalar<T> GlobalLpPool<T>(Scalar<T> input, long p = 2)
             where T : FloatLike
-            => (ImmutableScalar<T>)OnnxOp.GlobalLpPool(input, p);
+            => (ImmutableScalar)OnnxOp.GlobalLpPool(input, p);
 
         /// <summary>Lp-norm of each channel over all spatial dimensions (ONNX GlobalLpPool).</summary>
         public static Vector<T> GlobalLpPool<T>(Vector<T> input, long p = 2)
             where T : FloatLike
-            => (ImmutableVector<T>)OnnxOp.GlobalLpPool(input, p);
+            => (ImmutableVector)OnnxOp.GlobalLpPool(input, p);
 
         /// <summary>Lp-norm of each channel over all spatial dimensions (ONNX GlobalLpPool).</summary>
         public static Tensor<T> GlobalLpPool<T>(Tensor<T> input, long p = 2)
             where T : FloatLike
-            => (ImmutableTensor<T>)OnnxOp.GlobalLpPool(input, p);
+            => (ImmutableTensor)OnnxOp.GlobalLpPool(input, p);
 
         /// <summary>Maximum of each channel over all spatial dimensions (ONNX GlobalMaxPool).</summary>
         public static Scalar<T> GlobalMaxPool<T>(Scalar<T> input)
             where T : FloatLike
-            => (ImmutableScalar<T>)OnnxOp.GlobalMaxPool(input);
+            => (ImmutableScalar)OnnxOp.GlobalMaxPool(input);
 
         /// <summary>Maximum of each channel over all spatial dimensions (ONNX GlobalMaxPool).</summary>
         public static Vector<T> GlobalMaxPool<T>(Vector<T> input)
             where T : FloatLike
-            => (ImmutableVector<T>)OnnxOp.GlobalMaxPool(input);
+            => (ImmutableVector)OnnxOp.GlobalMaxPool(input);
 
         /// <summary>Maximum of each channel over all spatial dimensions (ONNX GlobalMaxPool).</summary>
         public static Tensor<T> GlobalMaxPool<T>(Tensor<T> input)
             where T : FloatLike
-            => (ImmutableTensor<T>)OnnxOp.GlobalMaxPool(input);
+            => (ImmutableTensor)OnnxOp.GlobalMaxPool(input);
 
         /// <summary>Samples the input at normalized grid coordinates with the given interpolation and padding (ONNX GridSample).</summary>
         public static Tensor<T1> GridSample<T1, T2>(Tensor<T1> input, Tensor<T2> grid, GridSampleMode mode = GridSampleMode.Linear, GridSamplePaddingMode paddingMode = GridSamplePaddingMode.Zeros, bool? alignCorners = false)
             where T1 : CommonLike
             where T2 : FloatLike
-            => (ImmutableTensor<T1>)OnnxOp.GridSample(input, grid, alignCorners, mode, paddingMode);
+            => (ImmutableTensor)OnnxOp.GridSample(input, grid, alignCorners, mode, paddingMode);
 
         /// <summary>Normalizes over channel groups, then applies per-channel scale and bias (ONNX GroupNormalization).</summary>
         public static Tensor<T> GroupNormalization<T>(Tensor<T> x, Tensor<T> scale, Tensor<T> bias, long numGroups, long stashType = 1L, float epsilon = 1e-05f)
             where T : FloatLike
-            => (ImmutableTensor<T>)OnnxOp.GroupNormalization(x, scale, bias, epsilon, numGroups, stashType);
+            => (ImmutableTensor)OnnxOp.GroupNormalization(x, scale, bias, epsilon, numGroups, stashType);
 
         /// <summary>Passes the variable through unchanged (ONNX Identity).</summary>
         public static T Identity<T>(T x) where T : IValue
@@ -204,17 +204,17 @@ namespace Shorokoo
         public static Tensor<int32> MatMulInteger<T1, T2>(Tensor<T1> a, Tensor<T2> b, Tensor<T1> aZeroPoint, Tensor<T2> bZeroPoint)
             where T1 : Int8Like
             where T2 : Int8Like
-            => (ImmutableTensor<int32>)OnnxOp.MatMulInteger(a, b, aZeroPoint, bZeroPoint);
+            => (ImmutableTensor)OnnxOp.MatMulInteger(a, b, aZeroPoint, bZeroPoint);
 
         /// <summary>Element-wise maximum of the given tensors, with broadcasting (ONNX Max).</summary>
         public static Tensor<T> Max<T>(params Tensor<T>[] toMax)
             where T : NumLike
-            => (ImmutableTensor<T>)OnnxOp.Max([.. toMax.Cast<IValue>()]);
+            => (ImmutableTensor)OnnxOp.Max([.. toMax.Cast<IValue>()]);
 
         /// <summary>Max pooling over spatial windows (ONNX MaxPool).</summary>
         public static Tensor<T> MaxPool<T>(Tensor<T> x, bool ceilMode, long[]? dilations, long[]? kernelShape, long[]? pads, long storageOrder, long[]? strides, AutoPad autoPad = AutoPad.NotSet)
             where T : FloatLike
-            => (ImmutableTensor<T>)OnnxOp.MaxPool(x, autoPad, ceilMode, dilations, kernelShape, pads, storageOrder, strides);
+            => (ImmutableTensor)OnnxOp.MaxPool(x, autoPad, ceilMode, dilations, kernelShape, pads, storageOrder, strides);
 
         /// <summary>Max pooling that also returns the flattened indices of the selected elements (ONNX MaxPool, two outputs).</summary>
         public static (Tensor<T> result, Tensor<int64> indices) MaxPoolWithIndices<T>(Tensor<T> x, bool ceilMode, long[] kernelShape, long[] pads, long[] strides, AutoPad autoPad = AutoPad.NotSet)
@@ -222,32 +222,32 @@ namespace Shorokoo
         {
             (IValue result, IValue indices) = OnnxOp.MaxPoolWithIndices(x, autoPad, ceilMode,
                 kernelShape: kernelShape, pads: pads, strides: strides);
-            return ((ImmutableTensor<T>)result, (ImmutableTensor<int64>)indices);
+            return ((ImmutableTensor)result, (ImmutableTensor)indices);
         }
 
         /// <summary>Element-wise minimum of the given tensors, with broadcasting (ONNX Min).</summary>
         public static Tensor<T> Min<T>(params Tensor<T>[] toMax)
             where T : NumLike
-            => (ImmutableTensor<T>)OnnxOp.Min([.. toMax.Cast<IValue>()]);
+            => (ImmutableTensor)OnnxOp.Min([.. toMax.Cast<IValue>()]);
 
         /// <summary>Element-wise integer remainder of a / b; fmod=true selects C-style fmod sign semantics (ONNX Mod).</summary>
         public static Tensor<T> Mod<T>(Tensor<T> a, Tensor<T> b, bool fmod = false)
             where T : IntLike
-            => (ImmutableTensor<T>)OnnxOp.Mod(a, b, fmod);
+            => (ImmutableTensor)OnnxOp.Mod(a, b, fmod);
 
         /// <summary>Element-wise C-style fmod remainder of a / b (ONNX Mod with fmod=1), allowing float operands.</summary>
         public static Tensor<T> FMod<T>(Tensor<T> a, Tensor<T> b)
             where T : NumLike
-            => (ImmutableTensor<T>)OnnxOp.Mod(a, b, true);
+            => (ImmutableTensor)OnnxOp.Mod(a, b, true);
 
         /// <summary>Greedily selects boxes by score, suppressing overlaps above the IoU threshold (ONNX NonMaxSuppression).</summary>
         public static Tensor<int64> NonMaxSuppression(Tensor<float32> boxes, Tensor<float32> scores, Tensor<int64>? maxBoxesPerClass, Tensor<float32>? iouThreashold = null, Tensor<float32>? scoresThreshold = null, bool? usesCenterBoxPoint = false)
-            => (ImmutableTensor<int64>)OnnxOp.NonMaxSuppression(boxes, scores, maxBoxesPerClass, iouThreashold, scoresThreshold, usesCenterBoxPoint);
+            => (ImmutableTensor)OnnxOp.NonMaxSuppression(boxes, scores, maxBoxesPerClass, iouThreashold, scoresThreshold, usesCenterBoxPoint);
 
         /// <summary>Indices of the non-zero elements, one row per dimension (ONNX NonZero).</summary>
         public static Tensor<int64> NonZero<T>(Tensor<T> tensor)
             where T : SignedNumLike
-            => (ImmutableTensor<int64>)OnnxOp.NonZero(tensor);
+            => (ImmutableTensor)OnnxOp.NonZero(tensor);
 
         /// <summary>Reduce overload taking the axes as a vector, without the noOp flag.</summary>
         public static Tensor<T> Reduce<T>(ReduceKind reduceKind, Tensor<T> tensor, Vector<int64>? axes, bool? keepDims)
@@ -277,25 +277,25 @@ namespace Shorokoo
             switch (reduceKind)
             {
                 case ReduceKind.L1:
-                    return (ImmutableTensor<T>)OnnxOp.ReduceL1(tensor, axes, keepDims, noOp);
+                    return (ImmutableTensor)OnnxOp.ReduceL1(tensor, axes, keepDims, noOp);
                 case ReduceKind.L2:
-                    return (ImmutableTensor<T>)OnnxOp.ReduceL2(tensor, axes, keepDims, noOp);
+                    return (ImmutableTensor)OnnxOp.ReduceL2(tensor, axes, keepDims, noOp);
                 case ReduceKind.LogSum:
-                    return (ImmutableTensor<T>)OnnxOp.ReduceLogSum(tensor, axes, keepDims, noOp);
+                    return (ImmutableTensor)OnnxOp.ReduceLogSum(tensor, axes, keepDims, noOp);
                 case ReduceKind.LogSumExp:
-                    return (ImmutableTensor<T>)OnnxOp.ReduceLogSumExp(tensor, axes, keepDims, noOp);
+                    return (ImmutableTensor)OnnxOp.ReduceLogSumExp(tensor, axes, keepDims, noOp);
                 case ReduceKind.Max:
-                    return (ImmutableTensor<T>)OnnxOp.ReduceMax(tensor, axes, keepDims, noOp);
+                    return (ImmutableTensor)OnnxOp.ReduceMax(tensor, axes, keepDims, noOp);
                 case ReduceKind.Mean:
-                    return (ImmutableTensor<T>)OnnxOp.ReduceMean(tensor, axes, keepDims, noOp);
+                    return (ImmutableTensor)OnnxOp.ReduceMean(tensor, axes, keepDims, noOp);
                 case ReduceKind.Min:
-                    return (ImmutableTensor<T>)OnnxOp.ReduceMin(tensor, axes, keepDims, noOp);
+                    return (ImmutableTensor)OnnxOp.ReduceMin(tensor, axes, keepDims, noOp);
                 case ReduceKind.Prod:
-                    return (ImmutableTensor<T>)OnnxOp.ReduceProd(tensor, axes, keepDims, noOp);
+                    return (ImmutableTensor)OnnxOp.ReduceProd(tensor, axes, keepDims, noOp);
                 case ReduceKind.Sum:
-                    return (ImmutableTensor<T>)OnnxOp.ReduceSum(tensor, axes, keepDims, noOp);
+                    return (ImmutableTensor)OnnxOp.ReduceSum(tensor, axes, keepDims, noOp);
                 case ReduceKind.SumSquare:
-                    return (ImmutableTensor<T>)OnnxOp.ReduceSumSquare(tensor, axes, keepDims, noOp);
+                    return (ImmutableTensor)OnnxOp.ReduceSumSquare(tensor, axes, keepDims, noOp);
                 default:
                     throw new InvalidTensorOperationException(ErrorCodes.CR004, "Reduce", reduceKind.ToString(), 
                         $"Reduction type '{reduceKind}' is not yet implemented");
@@ -310,7 +310,7 @@ namespace Shorokoo
         float? extrapolationValue, KeepAspectRatioPolicy? keepAspectRatioPolicy,
         ResizeMode? mode, NearestMode? nearestMode)
             where T : NumLike
-            => (ImmutableTensor<T>)OnnxOp.Resize(x, null, scales, sizes, antialias, axes,
+            => (ImmutableTensor)OnnxOp.Resize(x, null, scales, sizes, antialias, axes,
                                 coordinateTransformationMode, cubicCoeffA, excludeOutside,
                                 extrapolationValue, keepAspectRatioPolicy, mode, nearestMode);
 
@@ -323,7 +323,7 @@ namespace Shorokoo
         ResizeMode? mode, NearestMode? nearestMode, Vector<T2>? roi)
             where T1 : NumLike
             where T2 : FloatLike
-            => (ImmutableTensor<T1>)OnnxOp.Resize(x, roi, scales, sizes, antialias, axes,
+            => (ImmutableTensor)OnnxOp.Resize(x, roi, scales, sizes, antialias, axes,
                                 coordinateTransformationMode, cubicCoeffA, excludeOutside,
                                 extrapolationValue, keepAspectRatioPolicy, mode, nearestMode);
 
@@ -332,7 +332,7 @@ namespace Shorokoo
             where T : IVarType
         {
             var (values, indices) = OnnxOp.TopK(tensor, k.Unsqueeze(), axis, largest, sorted);
-            return ((ImmutableTensor<T>)values, (ImmutableTensor<int64>)indices);
+            return ((ImmutableTensor)values, (ImmutableTensor)indices);
         }
 
         /// <summary>Top-k values and their indices along an axis (ONNX TopK); 1-element-vector-k overload.</summary>
@@ -340,7 +340,7 @@ namespace Shorokoo
             where T : IVarType
         {
             var (values, indices) = OnnxOp.TopK(tensor, k, axis, largest, sorted);
-            return ((ImmutableTensor<T>)values, (ImmutableTensor<int64>)indices);
+            return ((ImmutableTensor)values, (ImmutableTensor)indices);
         }
 
         // -- New opset-21 operators ---------------------------------------------
@@ -363,13 +363,13 @@ namespace Shorokoo
 
         /// <summary>Decodes an encoded image byte stream (e.g. JPEG/PNG) into a uint8 pixel tensor (ONNX ImageDecoder).</summary>
         public static Tensor<uint8> ImageDecoder(Vector<uint8> encodedStream, string? pixelFormat = null)
-            => (ImmutableTensor<uint8>)OnnxOp.ImageDecoder(encodedStream, pixelFormat);
+            => (ImmutableTensor)OnnxOp.ImageDecoder(encodedStream, pixelFormat);
 
         /// <summary>Layer normalization, returning only the normalized output (ONNX LayerNormalization).</summary>
         public static Tensor<T> LayerNormalization<T>(Tensor<T> x, Tensor<T> scale, Tensor<T>? b = null,
             long? axis = null, float? epsilon = null, long? stashType = null)
             where T : FloatLike
-            => (ImmutableTensor<T>)OnnxOp.LayerNormalization(x, scale, b, axis, epsilon, stashType).y;
+            => (ImmutableTensor)OnnxOp.LayerNormalization(x, scale, b, axis, epsilon, stashType).y;
 
         /// <summary>Layer normalization that also returns the saved mean and inverse standard deviation.</summary>
         public static (Tensor<T> y, Tensor<T>? mean, Tensor<T>? invStdDev) LayerNormalizationFullOutputs<T>(
@@ -378,9 +378,9 @@ namespace Shorokoo
             where T : FloatLike
         {
             var retval = OnnxOp.LayerNormalization(x, scale, b, axis, epsilon, stashType);
-            return ((ImmutableTensor<T>)retval.y,
-                    retval.mean is null ? null : (Tensor<T>?)(ImmutableTensor<T>)retval.mean,
-                    retval.invStdDev is null ? null : (Tensor<T>?)(ImmutableTensor<T>)retval.invStdDev);
+            return ((ImmutableTensor)retval.y,
+                    retval.mean is null ? null : (Tensor<T>?)(ImmutableTensor)retval.mean,
+                    retval.invStdDev is null ? null : (Tensor<T>?)(ImmutableTensor)retval.invStdDev);
         }
 
         /// <summary>Builds the weight matrix mapping linear DFT bins to mel-frequency bins (ONNX MelWeightMatrix).</summary>
@@ -388,30 +388,30 @@ namespace Shorokoo
             Scalar<TInt> numMelBins, Scalar<TInt> dftLength, Scalar<TInt> sampleRate,
             Scalar<TFloat> lowerEdgeHertz, Scalar<TFloat> upperEdgeHertz)
             where T : NumLike where TInt : IndexLike where TFloat : FloatLike
-            => (ImmutableTensor<T>)OnnxOp.MelWeightMatrix(
+            => (ImmutableTensor)OnnxOp.MelWeightMatrix(
                 numMelBins, dftLength, sampleRate, lowerEdgeHertz, upperEdgeHertz,
                 OnnxUtils.GetDType<T>());
 
         /// <summary>Samples class indices from per-row unnormalized log-probabilities (ONNX Multinomial).</summary>
         public static Tensor<TOut> Multinomial<TIn, TOut>(Tensor<TIn> input, long? sampleSize = null, float? seed = null)
             where TIn : FloatLike where TOut : IndexLike
-            => (ImmutableTensor<TOut>)OnnxOp.Multinomial(input, OnnxUtils.GetDType<TOut>(), sampleSize, seed);
+            => (ImmutableTensor)OnnxOp.Multinomial(input, OnnxUtils.GetDType<TOut>(), sampleSize, seed);
 
         /// <summary>Negative log-likelihood loss over class scores and target indices (ONNX NegativeLogLikelihoodLoss).</summary>
         public static Tensor<T> NegativeLogLikelihoodLoss<T, TInd>(
             Tensor<T> input, Tensor<TInd> target, Tensor<T>? weight = null,
             long? ignoreIndex = null, string? reduction = null)
             where T : FloatLike where TInd : IndexLike
-            => (ImmutableTensor<T>)OnnxOp.NegativeLogLikelihoodLoss(input, target, weight, ignoreIndex, reduction);
+            => (ImmutableTensor)OnnxOp.NegativeLogLikelihoodLoss(input, target, weight, ignoreIndex, reduction);
 
         /// <summary>One-hot encodes indices to the given depth using [off, on] values (ONNX OneHot).</summary>
         public static Tensor<T> OneHot<TInd, TDepth, T>(Tensor<TInd> indices, Scalar<TDepth> depth, Vector<T> values, long? axis = null)
             where TInd : NumLike where TDepth : NumLike where T : IVarType
-            => (ImmutableTensor<T>)OnnxOp.OneHot(indices, depth, values, axis);
+            => (ImmutableTensor)OnnxOp.OneHot(indices, depth, values, axis);
 
         /// <summary>Parametric ReLU: x where positive, slope * x where negative (ONNX PRelu).</summary>
         public static Tensor<T> PRelu<T>(Tensor<T> x, Tensor<T> slope) where T : FloatLike
-            => (ImmutableTensor<T>)OnnxOp.PRelu(x, slope);
+            => (ImmutableTensor)OnnxOp.PRelu(x, slope);
 
         /// <summary>Quantizes float data to integers using scale and optional zero point (ONNX QuantizeLinear).</summary>
         public static Tensor<TOut> QuantizeLinear<TIn, TOut>(
@@ -419,7 +419,7 @@ namespace Shorokoo
             long? axis = null, long? blockSize = null,
             bool? saturate = null, long? precision = null)
             where TIn : FloatLike where TOut : AnyIntLike
-            => (ImmutableTensor<TOut>)OnnxOp.QuantizeLinear(x, yScale, yZeroPoint, axis, blockSize,
+            => (ImmutableTensor)OnnxOp.QuantizeLinear(x, yScale, yZeroPoint, axis, blockSize,
                 OnnxUtils.GetDType<TOut>(), saturate, precision);
 
         /// <summary>Quantized matrix product of int8-like operands with per-operand scale/zero point (ONNX QLinearMatMul).</summary>
@@ -428,7 +428,7 @@ namespace Shorokoo
             Tensor<TB> b, Scalar<TScale> bScale, Scalar<TB> bZeroPoint,
             Scalar<TScale> yScale, Scalar<TOut> yZeroPoint)
             where TA : Int8Like where TB : Int8Like where TOut : Int8Like where TScale : FloatLike
-            => (ImmutableTensor<TOut>)OnnxOp.QLinearMatMul(
+            => (ImmutableTensor)OnnxOp.QLinearMatMul(
                 a, aScale, aZeroPoint, b, bScale, bZeroPoint, yScale, yZeroPoint);
 
         /// <summary>Quantized convolution of int8-like operands with per-operand scale/zero point (ONNX QLinearConv).</summary>
@@ -439,13 +439,13 @@ namespace Shorokoo
             AutoPad? autoPad = null, long[]? dilations = null, long? group = null,
             long[]? kernelShape = null, long[]? pads = null, long[]? strides = null)
             where TIn : Int8Like where TFilt : Int8Like where TOut : Int8Like
-            => (ImmutableTensor<TOut>)OnnxOp.QLinearConv(
+            => (ImmutableTensor)OnnxOp.QLinearConv(
                 x, xScale, xZeroPoint, w, wScale, wZeroPoint, yScale, yZeroPoint, b,
                 autoPad, dilations, group, kernelShape, pads, strides);
 
         /// <summary>Whether each string element fully matches the regex pattern (ONNX RegexFullMatch).</summary>
         public static Tensor<bit> RegexFullMatch(Tensor<@string> x, string? pattern = null)
-            => (ImmutableTensor<bit>)OnnxOp.RegexFullMatch(x, pattern);
+            => (ImmutableTensor)OnnxOp.RegexFullMatch(x, pattern);
 
         /// <summary>Softmax cross-entropy loss over scores and label indices, optionally returning the log-probabilities (ONNX SoftmaxCrossEntropyLoss).</summary>
         public static (Tensor<T> output, Tensor<T>? logProb) SoftmaxCrossEntropyLoss<T, TInd>(
@@ -454,7 +454,7 @@ namespace Shorokoo
             where T : FloatLike where TInd : IndexLike
         {
             var retval = OnnxOp.SoftmaxCrossEntropyLoss(scores, labels, weights, ignoreIndex, reduction);
-            return ((ImmutableTensor<T>)retval.output, retval.logProb is null ? null : (Tensor<T>?)(ImmutableTensor<T>)retval.logProb);
+            return ((ImmutableTensor)retval.output, retval.logProb is null ? null : (Tensor<T>?)(ImmutableTensor)retval.logProb);
         }
 
         /// <summary>Splits a tensor along an axis into a sequence of tensors (ONNX SplitToSequence).</summary>
@@ -466,17 +466,17 @@ namespace Shorokoo
         public static Tensor<T> STFT<T>(Tensor<T> signal, Scalar<int64> frameStep, Vector<T>? window = null,
             Scalar<int64>? frameLength = null, bool? onesided = null)
             where T : FloatLike
-            => (ImmutableTensor<T>)OnnxOp.STFT(signal, frameStep, window, frameLength, onesided);
+            => (ImmutableTensor)OnnxOp.STFT(signal, frameStep, window, frameLength, onesided);
 
         /// <summary>Element-wise string concatenation (ONNX StringConcat).</summary>
         public static Tensor<@string> StringConcat(Tensor<@string> x, Tensor<@string> y)
-            => (ImmutableTensor<@string>)OnnxOp.StringConcat(x, y);
+            => (ImmutableTensor)OnnxOp.StringConcat(x, y);
 
         /// <summary>Case normalization and stopword removal on string elements (ONNX StringNormalizer).</summary>
         public static Tensor<@string> StringNormalizer(Tensor<@string> x,
             string? caseChangeAction = null, bool? isCaseSensitive = null,
             string? locale = null, string[]? stopwords = null)
-            => (ImmutableTensor<@string>)OnnxOp.StringNormalizer(
+            => (ImmutableTensor)OnnxOp.StringNormalizer(
                 x, caseChangeAction,
                 isCaseSensitive is null ? null : (isCaseSensitive.Value ? 1L : 0L),
                 locale, stopwords);
@@ -485,7 +485,7 @@ namespace Shorokoo
         public static (Tensor<@string> y, Tensor<int64> numSplits) StringSplit(Tensor<@string> x, string? delimiter = null, long? maxsplit = null)
         {
             var retval = OnnxOp.StringSplit(x, delimiter, maxsplit);
-            return ((ImmutableTensor<@string>)retval.y, (ImmutableTensor<int64>)retval.numSplits);
+            return ((ImmutableTensor)retval.y, (ImmutableTensor)retval.numSplits);
         }
 
         /// <summary>Extracts n-gram TF/IDF/TFIDF features from the input sequence (ONNX TfIdfVectorizer).</summary>
@@ -494,7 +494,7 @@ namespace Shorokoo
             string? mode = null, long[]? ngramCounts = null, long[]? ngramIndexes = null,
             long[]? poolInt64s = null, string[]? poolStrings = null, float[]? weights = null)
             where T : NumLike
-            => (ImmutableTensor<float32>)OnnxOp.TfIdfVectorizer(x,
+            => (ImmutableTensor)OnnxOp.TfIdfVectorizer(x,
                 maxGramLength, maxSkipCount, minGramLength, mode,
                 ngramCounts, ngramIndexes, poolInt64s, poolStrings, weights);
 
@@ -506,7 +506,7 @@ namespace Shorokoo
             IValue? attnMask = null, bool? isCausal = null,
             long? kvNumHeads = null, long? qNumHeads = null, float? scale = null, float? softcap = null)
             where T : FloatLike
-            => (ImmutableTensor<T>)OnnxOp.Attention(q, k, v, attnMask, nonpadKvSeqlen: null,
+            => (ImmutableTensor)OnnxOp.Attention(q, k, v, attnMask, nonpadKvSeqlen: null,
                 isCausal: isCausal, kvNumHeads: kvNumHeads, qNumHeads: qNumHeads,
                 qkMatmulOutputMode: null, scale: scale, softcap: softcap, softmaxPrecision: null);
 
@@ -521,26 +521,26 @@ namespace Shorokoo
             var retval = OnnxOp.AttentionWithKVCache(q, k, v, attnMask, pastKey, pastValue,
                 isCausal: isCausal, kvNumHeads: kvNumHeads, qNumHeads: qNumHeads,
                 qkMatmulOutputMode: null, scale: scale, softcap: softcap, softmaxPrecision: null);
-            return ((ImmutableTensor<T>)retval.y, (ImmutableTensor<T>)retval.presentKey, (ImmutableTensor<T>)retval.presentValue);
+            return ((ImmutableTensor)retval.y, (ImmutableTensor)retval.presentKey, (ImmutableTensor)retval.presentValue);
         }
 
         /// <summary>Root-mean-square layer normalization over the suffix axes from <paramref name="axis"/> (ONNX RMSNormalization, opset 23+).</summary>
         public static Tensor<T> RMSNormalization<T>(Tensor<T> x, Tensor<T> scale,
             long? axis = null, float? epsilon = null, long? stashType = null)
             where T : FloatLike
-            => (ImmutableTensor<T>)OnnxOp.RMSNormalization(x, scale, axis, epsilon, stashType);
+            => (ImmutableTensor)OnnxOp.RMSNormalization(x, scale, axis, epsilon, stashType);
 
         /// <summary>Rotary positional embedding (ONNX RotaryEmbedding, opset 23+); output has x's shape.</summary>
         public static Tensor<T> RotaryEmbedding<T>(Tensor<T> x, Tensor<T> cosCache, Tensor<T> sinCache,
             Tensor<int64>? positionIds = null, bool? interleaved = null, long? numHeads = null,
             long? rotaryEmbeddingDim = null)
             where T : FloatLike
-            => (ImmutableTensor<T>)OnnxOp.RotaryEmbedding(x, cosCache, sinCache, positionIds,
+            => (ImmutableTensor)OnnxOp.RotaryEmbedding(x, cosCache, sinCache, positionIds,
                 interleaved, numHeads, rotaryEmbeddingDim);
 
         /// <summary>Swish activation y = x * sigmoid(alpha * x) (ONNX Swish, opset 24+; no ORT 1.26 kernel — QEE-only execution).</summary>
         public static Tensor<T> Swish<T>(Tensor<T> x, float? alpha = null)
             where T : FloatLike
-            => (ImmutableTensor<T>)OnnxOp.Swish(x, alpha);
+            => (ImmutableTensor)OnnxOp.Swish(x, alpha);
     }
 }

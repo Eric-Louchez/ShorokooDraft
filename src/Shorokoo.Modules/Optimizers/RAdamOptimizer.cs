@@ -75,8 +75,8 @@ public partial class RAdamOptimizer
         var newV = beta2 * v + (one - beta2) * grad * grad;
 
         // beta2^t and the bias-correction factors (scalars).
-        var beta2T = (Scalar<float32>)(ImmutableScalar<float32>)OnnxOp.Pow(beta2, newStep);
-        var oneMinusBeta1T = one - (Scalar<float32>)(ImmutableScalar<float32>)OnnxOp.Pow(beta1, newStep);
+        var beta2T = (Scalar<float32>)(ImmutableScalar)OnnxOp.Pow(beta2, newStep);
+        var oneMinusBeta1T = one - (Scalar<float32>)(ImmutableScalar)OnnxOp.Pow(beta1, newStep);
         var oneMinusBeta2T = one - beta2T;
 
         // Bias-corrected first moment (param-shaped via scalar broadcast).

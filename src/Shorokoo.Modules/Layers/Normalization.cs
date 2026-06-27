@@ -85,7 +85,7 @@ public partial class BatchNorm
         // Reduction set {0} ∪ {2..rank-1} (batch + every spatial axis, skipping the
         // channel axis 1), built in-graph from the runtime rank.
         Vector<int64> reduceAxes = [Scalar(0L)];
-        reduceAxes = reduceAxes.Concat(((Tensor<int64>)(ImmutableTensor<int64>)OnnxOp.Range(Scalar(2L), rank, one)).Vec());
+        reduceAxes = reduceAxes.Concat(((Tensor<int64>)(ImmutableTensor)OnnxOp.Range(Scalar(2L), rank, one)).Vec());
 
         // Per-channel broadcast shape [1, C, 1, ..., 1]: a leading 1, the channel
         // count, then (rank - 2) trailing ones (empty for rank-2 [N, C]).
@@ -206,7 +206,7 @@ public partial class LayerNorm
         var start = rank - normalizedDims;
 
         // axes = [rank - normalizedDims, ..., rank - 1]
-        var axes = ((Tensor<int64>)(ImmutableTensor<int64>)OnnxOp.Range(start, rank, Scalar(1L))).Vec();
+        var axes = ((Tensor<int64>)(ImmutableTensor)OnnxOp.Range(start, rank, Scalar(1L))).Vec();
 
         var mean = x.Reduce(ReduceKind.Mean, axes, keepDims: true);
         var diff = x - mean;
@@ -350,7 +350,7 @@ public partial class InstanceNorm
         Scalar<int64> numChannels = shape[1];
 
         // spatial axes = [2 .. rank)  (per-(sample, channel) over all spatial dims).
-        var spatialAxes = ((Tensor<int64>)(ImmutableTensor<int64>)OnnxOp.Range(Scalar(2L), rank, Scalar(1L))).Vec();
+        var spatialAxes = ((Tensor<int64>)(ImmutableTensor)OnnxOp.Range(Scalar(2L), rank, Scalar(1L))).Vec();
 
         var mean = x.Reduce(ReduceKind.Mean, spatialAxes, keepDims: true);
         var diff = x - mean;

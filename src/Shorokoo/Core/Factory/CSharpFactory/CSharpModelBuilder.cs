@@ -155,9 +155,11 @@ namespace Shorokoo.Core.Factory.CSharpFactory
 
         public static string GetModuleAwareTypeDefString(IValue variable, int? rankOverride)
         {
-            if (variable is ImmutableScalar<IModelVarType> modelVariable)
+            // Model/module params are scalar nodes distinguished by runtime DType (formerly the generic
+            // ImmutableScalar<IModelVarType> / ImmutableScalar<IModuleVarType>).
+            if (variable is ImmutableScalar modelVariable && modelVariable.Type == DType.Model)
                 return GetModuleAwareTypeDefString(modelVariable.ModuleFn.AssertNotNull(), asModel: true);
-            else if(variable is ImmutableScalar<IModuleVarType> moduleVariable)
+            else if(variable is ImmutableScalar moduleVariable && moduleVariable.Type == DType.Module)
                 return GetModuleAwareTypeDefString(moduleVariable.ModuleFn.AssertNotNull(), asModel: false);
 
             return GetTypeDefString(variable, rankOverride);

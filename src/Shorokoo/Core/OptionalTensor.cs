@@ -77,9 +77,9 @@ namespace Shorokoo.Core
 
         // ── User-facing API (the optional surface lives here, not on the immutable) ──
         public IValue Value() => OnnxOp.OptionalGetElement(Imm);
-        public Tensor<T> TensorValue() => (ImmutableTensor<T>)Value();
-        public Tensor<T> SequenceValue() => (ImmutableTensor<T>)Value();
-        public Scalar<bit> HasValue() => (ImmutableScalar<bit>)OnnxOp.OptionalHasElement(Imm);
+        public Tensor<T> TensorValue() => (ImmutableTensor)Value();
+        public Tensor<T> SequenceValue() => (ImmutableTensor)Value();
+        public Scalar<bit> HasValue() => (ImmutableScalar)OnnxOp.OptionalHasElement(Imm);
 
         // IValue surface — forward to the wrapped immutable.
         public Node OwningNode => Imm.OwningNode;
@@ -88,7 +88,7 @@ namespace Shorokoo.Core
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public ImmutableVariable<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
+        public Tensor<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
 
 #pragma warning disable CS0618 // forwarding the obsolete member is intentional
         string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;

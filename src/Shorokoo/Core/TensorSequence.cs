@@ -61,7 +61,7 @@ namespace Shorokoo.Core
         // The node carries no element type parameter; its sequence members return interface views
         // (the runtime element dtype lives on the produced tensor node). The typed factories live on
         // the value-type handle TensorSequence<T>.
-        Scalar<int64> ITensorSequence.Count => (ImmutableScalar<int64>)OnnxOp.SequenceLength(this);
+        Scalar<int64> ITensorSequence.Count => (ImmutableScalar)OnnxOp.SequenceLength(this);
         ITensor ITensorSequence.Concat(long axis, bool newAxis) => (ITensor)OnnxOp.ConcatFromSequence(this, axis, newAxis);
         ITensor ITensorSequence.this[Scalar<int64> index] => (ITensor)OnnxOp.SequenceAt(this, index);
         ITensorSequence ITensorSequence.RemoveAt(Scalar<int64> index) => (ITensorSequence)OnnxOp.SequenceErase(this, index);
@@ -91,13 +91,13 @@ namespace Shorokoo.Core
             => handle.Imm;
 
         // ── User-facing typed API (the sequence surface lives here, not on the immutable) ──
-        public Scalar<int64> Count => (ImmutableScalar<int64>)OnnxOp.SequenceLength(Imm);
+        public Scalar<int64> Count => (ImmutableScalar)OnnxOp.SequenceLength(Imm);
 
         public Tensor<T> Concat(long axis, bool newAxis = false)
-            => (ImmutableTensor<T>)OnnxOp.ConcatFromSequence(Imm, axis, newAxis);
+            => (ImmutableTensor)OnnxOp.ConcatFromSequence(Imm, axis, newAxis);
 
         public Tensor<T> this[Scalar<int64> index]
-            => (ImmutableTensor<T>)OnnxOp.SequenceAt(Imm, index);
+            => (ImmutableTensor)OnnxOp.SequenceAt(Imm, index);
 
         /// <summary>Removes the element at <paramref name="index"/>, or the LAST element when called
         /// without an index (ONNX SequenceErase's optional-position default).</summary>
@@ -139,7 +139,7 @@ namespace Shorokoo.Core
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public ImmutableVariable<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
+        public Tensor<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
 
 #pragma warning disable CS0618 // forwarding the obsolete member is intentional
         string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;

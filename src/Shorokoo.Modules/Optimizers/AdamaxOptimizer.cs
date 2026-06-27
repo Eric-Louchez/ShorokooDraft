@@ -60,7 +60,7 @@ public partial class AdamaxOptimizer
         var newU = (beta2 * u).Max(grad.Abs() + epsilon);   // eps INSIDE the max
 
         // Bias correction lives only on m; fold 1/(1 - beta1^t) into the step size.
-        var biasCorrection = one - (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Pow(beta1, newStep);
+        var biasCorrection = one - (Tensor<float32>)(ImmutableTensor)OnnxOp.Pow(beta1, newStep);
         var updatedParam = currentParam - (learningRate / biasCorrection) * newM / newU;
 
         // Register state updates (same order as the state declarations: m, u, step).

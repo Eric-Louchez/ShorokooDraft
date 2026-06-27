@@ -124,7 +124,7 @@ public partial class PoissonNLLLoss
         var tSafe = targets.Max(Scalar(1f));
         var stirling = tSafe * tSafe.Ln() - targets
             + 0.5f * (Scalar(TwoPi) * tSafe).Ln();
-        var gate = (Tensor<bit>)(ImmutableTensor<bit>)OnnxOp.Greater(targets, Scalar(1f)); // target > 1
+        var gate = (Tensor<bit>)(ImmutableTensor)OnnxOp.Greater(targets, Scalar(1f)); // target > 1
         return gate.Where(stirling, targets * 0f);           // else zeros (shape-matched)
     }
 }

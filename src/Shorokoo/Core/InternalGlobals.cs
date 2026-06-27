@@ -72,23 +72,16 @@ namespace Shorokoo.Core
         internal static bool HasPendingStateUpdates
             => _stateUpdatePairs != null && _stateUpdatePairs.Count > 0;
 
+        // The tensor/vector/scalar nodes are non-generic, so they are built directly from the runtime
+        // DType + rank — no per-output CallGeneric/MakeGenericType reflection round-trip.
         internal static ITensor Tensor(Func<Vector<int64>>? shapeFn, DType dtype, Node owningNode, Function? moduleFn, string? name = null, int? rank = null)
-            => (ITensor)OnnxUtils.CallGeneric(dtype.ToIVarType(), typeof(InternalGlobals), nameof(CreateTensorWithShapeFn), [shapeFn, dtype, owningNode, moduleFn, name, rank]);
-
-        private static ImmutableTensor<T> CreateTensorWithShapeFn<T>(Func<Vector<int64>>? shapeFn, DType dtype, Node owningNode, Function? moduleFn, string? name, int? rank) where T : IVarType
-            => new ImmutableTensor<T>(shapeFn, dtype, owningNode, moduleFn, name, rank: rank);
+            => new ImmutableTensor(shapeFn, dtype, owningNode, moduleFn, name, rank: rank);
 
         internal static ITensor Vector(Func<Vector<int64>>? shapeFn, DType dtype, Node owningNode, Function? moduleFn, string? name = null)
-            => (ITensor)OnnxUtils.CallGeneric(dtype.ToIVarType(), typeof(InternalGlobals), nameof(CreateVectorWithShapeFn), [shapeFn, dtype, owningNode, moduleFn, name]);
-
-        private static ImmutableVector<T> CreateVectorWithShapeFn<T>(Func<Vector<int64>>? shapeFn, DType dtype, Node owningNode, Function? moduleFn, string? name) where T : IVarType
-            => new ImmutableVector<T>(shapeFn, dtype, owningNode, moduleFn, name);
+            => new ImmutableVector(shapeFn, dtype, owningNode, moduleFn, name);
 
         internal static IScalar Scalar(DType dtype, Node? owningNode, Function? moduleFn = null, string? name = null)
-            => (IScalar)OnnxUtils.CallGeneric(dtype.ToIVarType(), typeof(InternalGlobals), nameof(CreateScalar), [owningNode, dtype, moduleFn, name]);
-
-        private static ImmutableScalar<T> CreateScalar<T>(Node owningNode, DType dtype, Function? moduleFn, string? name = null) where T : IVarType
-            => new ImmutableScalar<T>(owningNode, dtype, moduleFn, name);
+            => new ImmutableScalar(owningNode!, dtype, moduleFn, name);
 
         private static Scalar<T> CreateScalarValForObj<T>(object val) where T : IVarType
             => Shorokoo.Globals.Scalar<T>(val);
