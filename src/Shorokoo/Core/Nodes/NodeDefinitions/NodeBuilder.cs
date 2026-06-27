@@ -1138,10 +1138,8 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions
             var csharpAttributeVals = attrs.ToDictionary(x => x.attributeName, x => x.attributeValue);
 
             var fullInputs = new Dictionary<string, Variable?[]>();
-            // Normalise any value-struct handle to the Immutable* graph value it wraps: the graph
-            // identifies tensors by node reference, so a struct handle leaking in as an input would
-            // not match its producer's output (breaking key assignment / topological checks).
-            fullInputs[""] = NormalizeInputs(inputs);
+            // Inputs are graph nodes (Variable?[]); the graph identifies tensors by node reference.
+            fullInputs[""] = inputs;
 
             if (nodeDefResolver.IsCloseNode)
             {
@@ -1150,7 +1148,7 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions
                     Debug.Assert(csharpAttributeVals[graphDef.AttributeName] is not null,
                         $"Graph attribute '{graphDef.AttributeName}' is null when it should contain variables");
 
-                    fullInputs[graphDef.AttributeName] = NormalizeInputs((Variable?[])csharpAttributeVals[graphDef.AttributeName]!);
+                    fullInputs[graphDef.AttributeName] = (Variable?[])csharpAttributeVals[graphDef.AttributeName]!;
                     csharpAttributeVals[graphDef.AttributeName] = new BestGraphAttribute { GraphAttributeName = graphDef.AttributeName };
                 }
             }
@@ -1160,24 +1158,6 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions
             return BuildNode(opCode, fullInputs, attributes, identifierTemplateString, outputNames, targetFunction, openNode);
         }
 
-        // Replace any value-struct handle with the Immutable* graph value it wraps (see BuildNode).
-        private static Variable?[] NormalizeInputs(Variable?[] inputs)
-        {
-            Variable?[]? normalized = null;
-            for (int i = 0; i < inputs.Length; i++)
-            {
-                var input = inputs[i];
-                if (input is null) continue;
-                // A defaulted struct handle normalises to null (an absent optional input).
-                var imm = Shorokoo.Core.VariableHandle.Normalize(input);
-                if (!ReferenceEquals(imm, input))
-                {
-                    normalized ??= (Variable?[])inputs.Clone();
-                    normalized[i] = imm;
-                }
-            }
-            return normalized ?? inputs;
-        }
 
         public static Node BuildNode(string opCode, Dictionary<string, Variable?[]> fullInputs, OnnxProtoAttributes attributes, string? identifierTemplateString = null, string?[]? outputNames = null, Function? function = null, Node? openNode = null)
         {

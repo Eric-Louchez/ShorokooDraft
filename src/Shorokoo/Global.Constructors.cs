@@ -873,12 +873,10 @@ namespace Shorokoo
             return InternalOp.RuntimeInput(OnnxUtils.GetDType<T>(), rank ?? dims?.Length, defaultName, moduleFn);
         }
 
-        /// <summary>Creates a runtime (graph) input tensor with optional name and rank/dims.</summary>
+        /// <summary>Creates a runtime (graph) input tensor with optional name and rank/dims. The
+        /// runtime dtype is already known, so build the node directly (no generic round-trip).</summary>
         public static Variable InputTensor(DType type, string? defaultName = null, TensorDim?[]? dims = null, int? rank = null)
-            => Shorokoo.Core.VariableHandle.Normalize(OnnxUtils.CallGeneric(type.ToIVarType(), typeof(Globals), nameof(createInputTensor), [defaultName, dims, rank]))!;
-
-        private static Tensor<T> createInputTensor<T>(string? defaultName = null, TensorDim?[]? dims = null, int? rank = null) where T : IVarType 
-            => InputTensor<T>(defaultName, dims);
+            => InternalOp.RuntimeInput(type, rank ?? dims?.Length, defaultName);
 
         /// <summary>Creates a rank-1 runtime (graph) input.</summary>
         public static Vector<T> InputVector<T>(string? defaultName = null) where T : IVarType
@@ -886,8 +884,7 @@ namespace Shorokoo
 
         /// <summary>Creates a rank-1 runtime (graph) input.</summary>
         public static Variable InputVector(DType type, string? defaultName = null)
-            => Shorokoo.Core.VariableHandle.Normalize(OnnxUtils.CallGeneric(type.ToIVarType(), typeof(Globals), nameof(createInputVector), [defaultName]))!;
-        private static Vector<T> createInputVector<T>(string? defaultName = null) where T : IVarType => InputVector<T>(defaultName);
+            => InternalOp.RuntimeInput(type, 1, defaultName);
 
         /// <summary>Creates a rank-0 runtime (graph) input.</summary>
         public static Scalar<T> InputScalar<T>(string? defaultName = null, Function? moduleFn = null) where T : IVarType
@@ -895,28 +892,27 @@ namespace Shorokoo
 
         /// <summary>Creates a rank-0 runtime (graph) input.</summary>
         public static Variable InputScalar(DType type, string? defaultName = null, Function? moduleFn = null)
-            => Shorokoo.Core.VariableHandle.Normalize(OnnxUtils.CallGeneric(type.ToIVarType(), typeof(Globals), nameof(createInputScalar), [defaultName, moduleFn]))!;
-        private static Scalar<T> createInputScalar<T>(string? defaultName, Function? moduleFn) where T : IVarType => InputScalar<T>(defaultName, moduleFn);
+            => InternalOp.RuntimeInput(type, 0, defaultName, moduleFn);
 
         /// <summary>Not yet implemented; always throws.</summary>
         public static OptionalTensor<T> InputOptionalTensor<T>(string? defaultName = null) where T : IVarType
-            => throw new InvalidTensorOperationException(ErrorCodes.GC009, "InputOptionalTensor", typeof(T).Name, 
+            => throw new InvalidTensorOperationException(ErrorCodes.GC009, "InputOptionalTensor", typeof(T).Name,
                 "InputOptionalTensor functionality is not yet implemented");
 
         /// <summary>Not yet implemented; always throws.</summary>
         public static Variable InputOptionalTensor(DType type, string? defaultName = null)
-            => Shorokoo.Core.VariableHandle.Normalize(OnnxUtils.CallGeneric(type.ToIVarType(), typeof(Globals), nameof(createInputOptionalTensor), [defaultName]))!;
-        private static OptionalTensor<T> createInputOptionalTensor<T>(string? defaultName = null) where T : IVarType => InputOptionalTensor<T>(defaultName);
+            => throw new InvalidTensorOperationException(ErrorCodes.GC009, "InputOptionalTensor", type.ToString(),
+                "InputOptionalTensor functionality is not yet implemented");
 
         /// <summary>Not yet implemented; always throws.</summary>
         public static TensorSequence<T> InputTensorSequence<T>(string? defaultName = null) where T : IVarType
-            => throw new InvalidTensorOperationException(ErrorCodes.GC010, "InputTensorSequence", typeof(T).Name, 
+            => throw new InvalidTensorOperationException(ErrorCodes.GC010, "InputTensorSequence", typeof(T).Name,
                 "InputTensorSequence functionality is not yet implemented");
 
         /// <summary>Not yet implemented; always throws.</summary>
         public static Variable InputTensorSequence(DType type, string? defaultName = null)
-            => Shorokoo.Core.VariableHandle.Normalize(OnnxUtils.CallGeneric(type.ToIVarType(), typeof(Globals), nameof(createInputTensorSequence), [defaultName]))!;
-        private static TensorSequence<T> createInputTensorSequence<T>(string? defaultName = null) where T : IVarType => InputTensorSequence<T>(defaultName);
+            => throw new InvalidTensorOperationException(ErrorCodes.GC010, "InputTensorSequence", type.ToString(),
+                "InputTensorSequence functionality is not yet implemented");
 
         #endregion
 

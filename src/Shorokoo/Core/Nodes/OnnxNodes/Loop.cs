@@ -1014,7 +1014,7 @@ namespace Shorokoo
         public void SetLocalScanVariableInput<T>(Tensor<T> toScan) where T : IVarType
         {
             Debug.Assert(this.IsLocalScanVariable && this.ScanVariableThirdPassInput is null);
-            this.ScanVariableThirdPassInput = Shorokoo.Core.VariableHandle.Normalize(toScan);
+            this.ScanVariableThirdPassInput = toScan;
         }
 
         public void SetInvalidFourthPassOutput(Variable fourthPassOutput)

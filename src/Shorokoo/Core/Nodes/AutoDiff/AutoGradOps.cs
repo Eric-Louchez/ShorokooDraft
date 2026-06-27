@@ -24,7 +24,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             where B : IValue
             where T : FloatLike
         {
-            var retval = InternalOp.AutoGrad([Shorokoo.Core.VariableHandle.Normalize(a), Shorokoo.Core.VariableHandle.Normalize(b)], loss);
+            var retval = InternalOp.AutoGrad([a?.Immutable, b?.Immutable], loss);
             return (retval[0] is null ? default! : retval[0].Cast<A>(),
                     retval[1] is null ? default! : retval[1].Cast<B>());
         }

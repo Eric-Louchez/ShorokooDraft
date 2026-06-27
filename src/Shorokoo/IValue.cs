@@ -175,10 +175,12 @@ namespace Shorokoo
                         param switch
                         {
                             Variable v => v,
-                            IModel model => VariableHandle.Normalize(model.ModelVariable)!,
-                            IModule module => VariableHandle.Normalize(module.ModuleVariable)!,
-                            _ => VariableHandle.Normalize(param)
-                                 ?? throw new InvalidTensorOperationException(ErrorCodes.CR001, "ToVariable", param?.GetType()?.Name ?? "null",
+                            IModel model => (Variable)model.ModelVariable,
+                            IModule module => (Variable)module.ModuleVariable,
+                            IValue handle => handle.Immutable
+                                 ?? throw new InvalidTensorOperationException(ErrorCodes.CR001, "ToVariable", param.GetType().Name,
+                                        "Invalid IModuleParam type for variable conversion"),
+                            _ => throw new InvalidTensorOperationException(ErrorCodes.CR001, "ToVariable", param?.GetType()?.Name ?? "null",
                                         "Invalid IModuleParam type for variable conversion"),
                         };
     }
