@@ -263,7 +263,7 @@ namespace Shorokoo.Core.Nodes
 
             if (this.IsOpenNode)
             {
-                this.ConnectingTensor = new ImmutableTensor(null, DType.Invalid, this, null, null, null);
+                this.ConnectingTensor = new Variable(DType.Invalid, this, null, null, DataStructure.Tensor);
             }
 
             if (this.IsCloseNode && this.GraphOpenNode is not null)

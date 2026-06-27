@@ -140,7 +140,7 @@ namespace Shorokoo.Core.Nodes.Processors.AutoGrad
 
             // Initialize loss gradient: a Scalar<float32> = 1.0. We hardcode float32 here;
             // see class doc for the rationale.
-            gradByKey[lossKey] = (ImmutableScalar)Globals.Scalar(1.0f);
+            gradByKey[lossKey] = (Variable)Globals.Scalar(1.0f);
 
             for (int i = topoOrder.Count - 1; i >= 0; i--)
             {
@@ -556,8 +556,8 @@ namespace Shorokoo.Core.Nodes.Processors.AutoGrad
                 if (args.Length >= 1 && dtypeByIVarType.TryGetValue(args[0], out var dt))
                 {
                     var def = paramType.GetGenericTypeDefinition();
-                    int? rank = def == typeof(ImmutableScalar) || def == typeof(Scalar<>) ? 0
-                              : def == typeof(ImmutableVector) || def == typeof(Vector<>) ? 1
+                    int? rank = def == typeof(Variable) || def == typeof(Scalar<>) ? 0
+                              : def == typeof(Variable) || def == typeof(Vector<>) ? 1
                               : (int?)null;
                     return (dt, rank);
                 }

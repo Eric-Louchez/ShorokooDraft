@@ -17,12 +17,12 @@ namespace Shorokoo.Core.Nodes.AutoDiff
     {
         public static IValue AccumulateGradients(IValue a, IValue b)
         {
-            if (a is ITensor tensorA)
+            if (a.Structure() == DataStructure.Tensor)
             {
-                Debug.Assert(b is ITensor);
+                Debug.Assert(b.Structure() == DataStructure.Tensor);
                 return OnnxOp.Add(a, b);
             }
-            else if (a is ITensorSequence seqenceA)
+            else if (a.Structure() == DataStructure.Sequence)
             {
                 var sequenceResult = OnnxOp.SequenceEmpty(a.Type);
                 foreach (var ctx in LoopAPI.Iterate(OnnxOp.SequenceLength(a).As<int64>().Scalar()))
@@ -35,7 +35,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
                 return sequenceResult;
             }
-            else if (a is IOptionalTensor optionalA)
+            else if (a.Structure() == DataStructure.Optional)
             {
                 var isNotNull = OnnxOp.OptionalHasElement(a).As<bit>().Scalar();
                 var sum = OnnxOp.Add(OnnxOp.OptionalGetElement(a), OnnxOp.OptionalGetElement(b));

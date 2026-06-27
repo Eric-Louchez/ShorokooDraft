@@ -19,6 +19,7 @@ using static Shorokoo.Core.Nodes.Ops;
 using static Shorokoo.Core.Nodes.AutoDiff.Ops;
 using static RandN.Distributions.Uniform;
 using Shorokoo.Core.Nodes.NodeDefinitions;
+using System.Collections.Immutable;
 
 #pragma warning disable CS8981
 
@@ -132,7 +133,7 @@ namespace Shorokoo
     /// <see cref="Tensor{T}"/>) and a graph node is no longer a handle.
     /// </para>
     /// </summary>
-    public abstract class Variable : IValue
+    public class Variable : IValue, ITensor, IVector, IScalar, ITensorSequence, IOptionalTensor, ITensorStruct
     {
         public Node OwningNode { get; private set; }
 
@@ -142,6 +143,15 @@ namespace Shorokoo
 
         public bool IsValid { get; set; } = true;
 
+        /// <summary>The structural kind of this graph value (tensor / optional / sequence / struct).
+        /// Tensor/vector/scalar all share <see cref="DataStructure.Tensor"/> and are distinguished by
+        /// <see cref="Rank"/>.</summary>
+        public DataStructure Kind { get; }
+
+        /// <summary>Statically known rank (number of dimensions), or null when not known at
+        /// graph-construction time. Only meaningful for <see cref="DataStructure.Tensor"/> values.</summary>
+        public int? Rank { get; }
+
         /// <summary>
         /// A globally unique identifier for this tensor, composed of the parent node's key and the output index.
         /// Set by the Node constructor after creating outputs.
@@ -149,13 +159,26 @@ namespace Shorokoo
         public TensorKey Key { get; private set; }
 
         private string? uniqueName;
+        private readonly Func<Vector<int64>>? shapeInferer;
+        private Vector<int64>? infShapeTensor;
+        private readonly TensorStructDef? structDef;
+        private readonly ImmutableDictionary<string, IValue> fields;
 
-        protected Variable(DType type, Node owningNode, Function? moduleFn, string? name)
+        internal Variable(DType type, Node owningNode, Function? moduleFn, string? name,
+            DataStructure kind = DataStructure.Tensor, int? rank = null,
+            Func<Vector<int64>>? shapeFn = null,
+            TensorStructDef? structDef = null,
+            ImmutableDictionary<string, IValue>? fields = null)
         {
             this.OwningNode = owningNode;
             this.Type = type;
-            this.uniqueName = name;  // Store the provided name as uniqueName
+            this.uniqueName = name;
             this.ModuleFn = moduleFn;
+            this.Kind = kind;
+            this.Rank = rank;
+            this.shapeInferer = shapeFn;
+            this.structDef = structDef;
+            this.fields = fields ?? ImmutableDictionary<string, IValue>.Empty;
         }
 
         /// <summary>
@@ -194,17 +217,66 @@ namespace Shorokoo
         [Obsolete("FriendlyName is deprecated. Use UniqueName for ONNX names or Key.ToString() for stable identifiers.")]
         public string? FriendlyName => this.uniqueName;
 
-        public override string ToString()
-        {
-            return (this.uniqueName ?? "") + ": " + this.GetType().Name;
-        }
-
         /// <summary>
         /// Reinterprets this node as the typed tensor handle of element type <typeparamref name="V"/>.
         /// The node is non-generic; the runtime element <see cref="DType"/> is unchanged (this is a
         /// static-type reinterpret, not a dtype conversion — use <c>Cast</c> to convert).
         /// </summary>
-        public Tensor<V> As<V>() where V : IVarType => (ImmutableTensor)this;
+        public Tensor<V> As<V>() where V : IVarType => this;
+
+        // ── ITensor surface (meaningful for DataStructure.Tensor values) ──
+        public virtual Vector<int64> DShape => (Variable)OnnxOp.Shape(this, null, null);
+
+        public virtual Vector<int64>? InfShape => this.Kind == DataStructure.Tensor && this.Rank == 0
+            ? Vector<int64>.Empty
+            : (this.infShapeTensor ??= this.shapeInferer?.Invoke());
+
+        public Vector<int64> TShape => this.DShape;
+        public Scalar<int64> TRank => TShape.TShape[0].T;
+
+        Vector<V> ITensor.Vec<V>() => this.Cast<V>().Vec();
+        Scalar<V> ITensor.Scalar<V>() => this.Cast<V>().Scalar();
+
+        /// <summary>Reinterprets this tensor as a rank-1 vector, inserting an Identity node when needed.</summary>
+        public IVector Vec() => this.Rank == 1 ? this : (Variable)OnnxOp.Identity(this, rank: 1);
+
+        /// <summary>Reinterprets this tensor as a rank-0 scalar, inserting an Identity node when needed.</summary>
+        public IScalar Scalar() => this.Rank == 0 ? this : (Variable)OnnxOp.Identity(this, rank: 0);
+
+        /// <summary>Casts the element type to <typeparamref name="V"/>; returns this tensor unchanged when the types already match.</summary>
+        public Tensor<V> Cast<V>(bool saturate = true) where V : IVarType
+            => OnnxUtils.GetDType<V>() == this.Type ?
+                (Tensor<V>)this :
+                (Variable)OnnxOp.Cast(this, saturate ? null : saturate, OnnxUtils.GetDType<V>());
+
+        // ── ITensorSequence surface (meaningful for DataStructure.Sequence values) ──
+        Scalar<int64> ITensorSequence.Count => (Variable)OnnxOp.SequenceLength(this);
+        ITensor ITensorSequence.Concat(long axis, bool newAxis) => (ITensor)OnnxOp.ConcatFromSequence(this, axis, newAxis);
+        ITensor ITensorSequence.this[Scalar<int64> index] => (ITensor)OnnxOp.SequenceAt(this, index);
+        ITensorSequence ITensorSequence.RemoveAt(Scalar<int64> index) => (ITensorSequence)OnnxOp.SequenceErase(this, index);
+        ITensorSequence ITensorSequence.InsertAt(ITensor tensor, Scalar<int64> index) => (ITensorSequence)OnnxOp.SequenceInsert(this, tensor, index);
+
+        // ── ITensorStruct surface (meaningful for DataStructure.TensorStruct values) ──
+        TensorStructDef ITensorStruct.Definition => this.structDef!;
+        IValue ITensorStruct.GetField(string name) => Field(name);
+        internal TensorStructDef Def => this.structDef!;
+        internal ImmutableDictionary<string, IValue> Fields => this.fields;
+
+        internal IValue Field(string name)
+        {
+            if (this.fields.TryGetValue(name, out var field))
+                return field;
+            throw new KeyNotFoundException($"Field '{name}' not found in TensorStruct. Available fields: {string.Join(", ", this.fields.Keys)}");
+        }
+
+        internal Variable WithFields(ImmutableDictionary<string, IValue> newFields)
+            => new Variable(this.Type, this.OwningNode, this.ModuleFn, this.UniqueName, DataStructure.TensorStruct, structDef: this.structDef, fields: newFields);
+
+        public override string ToString()
+            => this.Kind == DataStructure.TensorStruct
+                ? $"TensorStruct<{this.structDef?.TypeName ?? "DTypeStruct"}>[{this.fields.Count} fields]"
+                : (this.uniqueName ?? "") + ": " + this.GetType().Name
+                    + (this.Kind == DataStructure.Tensor ? "[" + (this.Rank ?? -1) + "]" : "/" + this.Kind);
     }
 }
 

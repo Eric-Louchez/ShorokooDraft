@@ -82,7 +82,7 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Tensor<float32> x)
         {
-            var sliced = (Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(x,
+            var sliced = (Tensor<float32>)(Variable)OnnxOp.Slice(x,
                 starts: Vector(1L), ends: Vector(6L), axes: Vector(0L), steps: Vector(2L));
             var loss = sliced.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var grad = (Tensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
@@ -106,7 +106,7 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Tensor<float32> x)
         {
-            var padded = (Tensor<float32>)(ImmutableTensor)OnnxOp.Pad(x, Vector(1L, 1L), mode: PadMode.Reflect);
+            var padded = (Tensor<float32>)(Variable)OnnxOp.Pad(x, Vector(1L, 1L), mode: PadMode.Reflect);
             var loss = padded.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var grad = (Tensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
             // Never reached: AUTO_GRAD lowering throws AD003 (asserted by the test).
@@ -122,9 +122,9 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Tensor<float32> x)
         {
-            var indices = (Tensor<int64>)(ImmutableTensor)OnnxOp.Reshape(Vector(1L), Vector(1L, 1L), allowZero: false);
-            var updates = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(Scalar(2f), Vector(1L));
-            var scattered = (Tensor<float32>)(ImmutableTensor)OnnxOp.ScatterND(x, indices, updates, ScatterNDReduction.Mul);
+            var indices = (Tensor<int64>)(Variable)OnnxOp.Reshape(Vector(1L), Vector(1L, 1L), allowZero: false);
+            var updates = (Tensor<float32>)(Variable)OnnxOp.Expand(Scalar(2f), Vector(1L));
+            var scattered = (Tensor<float32>)(Variable)OnnxOp.ScatterND(x, indices, updates, ScatterNDReduction.Mul);
             var loss = scattered.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var grad = (Tensor<float32>)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
             // Never reached: AUTO_GRAD lowering throws AD003 (asserted by the test).

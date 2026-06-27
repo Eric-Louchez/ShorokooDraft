@@ -26,20 +26,9 @@ namespace Shorokoo.Core
     }
 
     /// <summary>
-    /// Immutable (class) graph node for an optional tensor — the value the graph actually stores
-    /// (<see cref="Shorokoo.Core.Nodes.Node"/> outputs are <see cref="IValue"/>). This type is
-    /// deliberately minimal: the user-facing API lives on the value-type handle
-    /// <see cref="OptionalTensor{T}"/>, which wraps one of these.
-    /// </summary>
-    public class ImmutableOptionalTensor : Variable, IOptionalTensor
-    {
-        public ImmutableOptionalTensor(DType type, Node owningNode, Function? moduleFn, string? name) : base(type, owningNode, moduleFn, name) {}
-    }
-
-    /// <summary>
     /// Value-type handle for an optional tensor. The original <c>OptionalTensor&lt;T&gt;</c> name now
     /// denotes this <see langword="struct"/>; the reference type was renamed
-    /// <see cref="ImmutableOptionalTensor"/>. This struct carries the full user-facing surface.
+    /// <see cref="Variable"/>. This struct carries the full user-facing surface.
     /// <para>
     /// The struct holds the immutable <b>directly</b> in a field (no shared box) so copying a handle
     /// copies the reference field by value — giving the Module DSL value-type semantics: a callee
@@ -53,18 +42,18 @@ namespace Shorokoo.Core
     /// </summary>
     public struct OptionalTensor<T> : IOptionalTensor, IValueHandle where T : IVarType
     {
-        private ImmutableOptionalTensor? inner;
+        private Variable? inner;
 
         IValue IValueHandle.Immutable => Imm;
 
         /// <summary>The wrapped immutable, materialising an absent optional for a defaulted handle.</summary>
-        internal ImmutableOptionalTensor Imm
-            => inner ??= (ImmutableOptionalTensor)OnnxOp.Optional(null, DataStructure.Tensor, OnnxUtils.GetDType<T>());
+        internal Variable Imm
+            => inner ??= (Variable)OnnxOp.Optional(null, DataStructure.Tensor, OnnxUtils.GetDType<T>());
 
         // Wrap / unwrap between the handle and its immutable.
-        public static implicit operator OptionalTensor<T>(ImmutableOptionalTensor imm)
+        public static implicit operator OptionalTensor<T>(Variable imm)
             => new OptionalTensor<T> { inner = imm };
-        public static implicit operator ImmutableOptionalTensor(OptionalTensor<T> handle)
+        public static implicit operator Variable(OptionalTensor<T> handle)
             => handle.Imm;
 
         /// <summary>
@@ -77,9 +66,9 @@ namespace Shorokoo.Core
 
         // ── User-facing API (the optional surface lives here, not on the immutable) ──
         public IValue Value() => OnnxOp.OptionalGetElement(Imm);
-        public Tensor<T> TensorValue() => (ImmutableTensor)Value();
-        public Tensor<T> SequenceValue() => (ImmutableTensor)Value();
-        public Scalar<bit> HasValue() => (ImmutableScalar)OnnxOp.OptionalHasElement(Imm);
+        public Tensor<T> TensorValue() => (Variable)Value();
+        public Tensor<T> SequenceValue() => (Variable)Value();
+        public Scalar<bit> HasValue() => (Variable)OnnxOp.OptionalHasElement(Imm);
 
         // IValue surface — forward to the wrapped immutable.
         public Node OwningNode => Imm.OwningNode;

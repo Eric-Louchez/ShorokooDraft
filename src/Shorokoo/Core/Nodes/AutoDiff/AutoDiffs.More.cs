@@ -14,7 +14,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         public static IValue?[] Abs<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d|x|/dx = sign(x)
-            return [grad * (ImmutableTensor)OnnxOp.Sign(x)];
+            return [grad * (Variable)OnnxOp.Sign(x)];
         }
 
         // ===== Reciprocal =====
@@ -37,7 +37,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var alphaConst = TypedConst(effectiveAlpha, x);
             var one = TypedConst(1.0f, x);
             var mask = x > zero;
-            Tensor<T> slope = (ImmutableTensor)OnnxOp.Where(mask, one, alphaConst);
+            Tensor<T> slope = (Variable)OnnxOp.Where(mask, one, alphaConst);
             return [grad * slope];
         }
 
@@ -60,7 +60,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 var three = TypedConst(3.0f, x);
                 var xSq = x * x;
                 var u = c * (x + k * xSq * x);
-                Tensor<T> t = (ImmutableTensor)OnnxOp.Tanh(u);
+                Tensor<T> t = (Variable)OnnxOp.Tanh(u);
                 var sechSq = one - t * t;
                 var du = c * (one + three * k * xSq);
                 return [grad * (half * (one + t) + half * x * sechSq * du)];
@@ -72,7 +72,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var invSqrt2Pi = TypedConst(1.0f / MathF.Sqrt(2.0f * MathF.PI), x);
             var negHalf = TypedConst(-0.5f, x);
 
-            var cdf = half * (one + (ImmutableTensor)OnnxOp.Erf(x / sqrt2));
+            var cdf = half * (one + (Variable)OnnxOp.Erf(x / sqrt2));
             var pdf = (x * x * negHalf).Exp() * invSqrt2Pi;
 
             return [grad * (cdf + x * pdf)];
@@ -90,7 +90,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var one = TypedConst(1.0f, x);
             var alphaConst = TypedConst(effectiveAlpha, x);
             var mask = x > zero;
-            Tensor<T> eluGrad = (ImmutableTensor)OnnxOp.Where(mask, one, alphaConst * x.Exp());
+            Tensor<T> eluGrad = (Variable)OnnxOp.Where(mask, one, alphaConst * x.Exp());
             return [grad * eluGrad];
         }
 
@@ -108,7 +108,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var alphaConst = TypedConst(effectiveAlpha, x);
             var gammaConst = TypedConst(effectiveGamma, x);
             var mask = x > zero;
-            var seluGrad = gammaConst * (ImmutableTensor)OnnxOp.Where(mask, one, alphaConst * x.Exp());
+            var seluGrad = gammaConst * (Variable)OnnxOp.Where(mask, one, alphaConst * x.Exp());
             return [grad * seluGrad];
         }
 
@@ -124,7 +124,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var one = TypedConst(1.0f, x);
             var alphaConst = TypedConst(effectiveAlpha, x);
             var mask = x > zero;
-            Tensor<T> celuGrad = (ImmutableTensor)OnnxOp.Where(mask, one, (x / alphaConst).Exp());
+            Tensor<T> celuGrad = (Variable)OnnxOp.Where(mask, one, (x / alphaConst).Exp());
             return [grad * celuGrad];
         }
 
@@ -135,7 +135,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         {
             // Gradient of Flatten: reshape grad back to original shape
             var originalShape = input.DShape;
-            return [(ImmutableTensor)OnnxOp.Reshape(grad, originalShape, allowZero: false)];
+            return [(Variable)OnnxOp.Reshape(grad, originalShape, allowZero: false)];
         }
 
         // ===== Squeeze =====
@@ -147,7 +147,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         {
             // Gradient of Squeeze: reshape grad back to original shape
             var originalShape = data.DShape;
-            return [(ImmutableTensor)OnnxOp.Reshape(grad, originalShape, allowZero: false), null];
+            return [(Variable)OnnxOp.Reshape(grad, originalShape, allowZero: false), null];
         }
 
         // ===== Unsqueeze =====
@@ -159,7 +159,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         {
             // Gradient of Unsqueeze: reshape grad back to original shape
             var originalShape = data.DShape;
-            return [(ImmutableTensor)OnnxOp.Reshape(grad, originalShape, allowZero: false), null];
+            return [(Variable)OnnxOp.Reshape(grad, originalShape, allowZero: false), null];
         }
 
         // ===== Expand =====
@@ -185,9 +185,9 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var zero = TypedConst(0.0f, input);
             var result = grad;
             if (min.HasValue)
-                result = (ImmutableTensor)OnnxOp.Where(input < min.Value, zero, result);
+                result = (Variable)OnnxOp.Where(input < min.Value, zero, result);
             if (max.HasValue)
-                result = (ImmutableTensor)OnnxOp.Where(input > max.Value, zero, result);
+                result = (Variable)OnnxOp.Where(input > max.Value, zero, result);
             return [result, null, null];
         }
 
@@ -198,8 +198,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         {
             // Gradient flows to x where condition is true, to y where condition is false
             var zero = TypedConst(0.0f, x);
-            var xGrad = ReverseBroadcast<T>((ImmutableTensor)OnnxOp.Where(condition, grad, zero), x.DShape);
-            var yGrad = ReverseBroadcast<T>((ImmutableTensor)OnnxOp.Where(condition, zero, grad), y.DShape);
+            var xGrad = ReverseBroadcast<T>((Variable)OnnxOp.Where(condition, grad, zero), x.DShape);
+            var yGrad = ReverseBroadcast<T>((Variable)OnnxOp.Where(condition, zero, grad), y.DShape);
             return [null, xGrad, yGrad];
         }
 
@@ -266,25 +266,25 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                     + "one.");
 
             var inputShape = data.DShape;
-            Tensor<int64> padsCast = (ImmutableTensor)OnnxOp.Cast(pads, saturate: null, to: DType.Int64);
+            Tensor<int64> padsCast = (Variable)OnnxOp.Cast(pads, saturate: null, to: DType.Int64);
 
             if (!axes.HasValue)
             {
                 // pads = [begin_0, ..., begin_N, end_0, ..., end_N]
                 var numDimsShape = inputShape.DShape; // Vector<int64> of shape [1], value = number of dims
-                Tensor<int64> begins = (ImmutableTensor)OnnxOp.Slice(padsCast, Vector(0L), numDimsShape);
+                Tensor<int64> begins = (Variable)OnnxOp.Slice(padsCast, Vector(0L), numDimsShape);
                 var ends = begins + inputShape;
-                return [(ImmutableTensor)OnnxOp.Slice(grad, begins, ends), null, null, null];
+                return [(Variable)OnnxOp.Slice(grad, begins, ends), null, null, null];
             }
             else
             {
                 // pads only describes specified axes
-                Tensor<int64> axesCast = (ImmutableTensor)OnnxOp.Cast(axes, saturate: null, to: DType.Int64);
+                Tensor<int64> axesCast = (Variable)OnnxOp.Cast(axes, saturate: null, to: DType.Int64);
                 var numAxesShape = axesCast.DShape; // [1] containing number of axes
-                Tensor<int64> begins = (ImmutableTensor)OnnxOp.Slice(padsCast, Vector(0L), numAxesShape);
-                Tensor<int64> dimSizes = (ImmutableTensor)OnnxOp.Gather(inputShape, axesCast, axis: 0);
+                Tensor<int64> begins = (Variable)OnnxOp.Slice(padsCast, Vector(0L), numAxesShape);
+                Tensor<int64> dimSizes = (Variable)OnnxOp.Gather(inputShape, axesCast, axis: 0);
                 var ends = begins + dimSizes;
-                return [(ImmutableTensor)OnnxOp.Slice(grad, begins, ends, axesCast), null, null, null];
+                return [(Variable)OnnxOp.Slice(grad, begins, ends, axesCast), null, null, null];
             }
         }
 
@@ -300,8 +300,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // Slice extracts a region of data. Gradient = pad grad with zeros back to original shape.
             // For step=1 (default): use Pad to place gradient back at the slice position.
             var inputShape = data.DShape;
-            Tensor<int64> startsCast = (ImmutableTensor)OnnxOp.Cast(starts, saturate: null, to: DType.Int64);
-            Tensor<int64> endsCast = (ImmutableTensor)OnnxOp.Cast(ends, saturate: null, to: DType.Int64);
+            Tensor<int64> startsCast = (Variable)OnnxOp.Cast(starts, saturate: null, to: DType.Int64);
+            Tensor<int64> endsCast = (Variable)OnnxOp.Cast(ends, saturate: null, to: DType.Int64);
 
             if (steps.HasValue)
             {
@@ -311,10 +311,10 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 // data's shape) to recover precisely which positions the forward selected —
                 // including strided, negative-step, negative-start/end and clamped configs —
                 // then scatter the gradient onto those flat offsets and reshape back.
-                Tensor<int64> stepsCast = (ImmutableTensor)OnnxOp.Cast(steps, saturate: null, to: DType.Int64);
+                Tensor<int64> stepsCast = (Variable)OnnxOp.Cast(steps, saturate: null, to: DType.Int64);
                 var axesCastOpt = !axes.HasValue
                     ? null
-                    : (ImmutableTensor)OnnxOp.Cast(axes, saturate: null, to: DType.Int64);
+                    : (Variable)OnnxOp.Cast(axes, saturate: null, to: DType.Int64);
 
                 var flatCount = OnnxOp.ReduceProd(inputShape, keepdims: true);          // [1]
                 var flatRange = OnnxOp.Range(
@@ -332,28 +332,28 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 var scattered = OnnxOp.ScatterND(
                     zerosFlat, scatterIndices, gradFlat, ScatterNDReduction.Add);
                 var gradData = OnnxOp.Reshape(scattered, inputShape, allowZero: false);
-                return [(Tensor<T1>)(ImmutableTensor)gradData, null, null, null, null];
+                return [(Tensor<T1>)(Variable)gradData, null, null, null, null];
             }
 
             if (!axes.HasValue)
             {
                 // All axes sliced: pads = [start_0, ..., start_N, (dim_0 - end_0), ..., (dim_N - end_N)]
-                Tensor<int64> clampedStarts = (ImmutableTensor)OnnxOp.Max(startsCast, (ImmutableTensor)OnnxOp.Expand(Scalar(0L), startsCast.DShape));
-                Tensor<int64> clampedEnds = (ImmutableTensor)OnnxOp.Min(endsCast, inputShape);
+                Tensor<int64> clampedStarts = (Variable)OnnxOp.Max(startsCast, (Variable)OnnxOp.Expand(Scalar(0L), startsCast.DShape));
+                Tensor<int64> clampedEnds = (Variable)OnnxOp.Min(endsCast, inputShape);
                 var endPads = inputShape - clampedEnds;
-                Tensor<int64> pads = (ImmutableTensor)OnnxOp.Concat([clampedStarts, endPads], axis: 0);
-                return [(ImmutableTensor)OnnxOp.Pad(grad, pads, mode: PadMode.Constant), null, null, null, null];
+                Tensor<int64> pads = (Variable)OnnxOp.Concat([clampedStarts, endPads], axis: 0);
+                return [(Variable)OnnxOp.Pad(grad, pads, mode: PadMode.Constant), null, null, null, null];
             }
             else
             {
                 // Only specified axes are sliced
-                Tensor<int64> axesCast = (ImmutableTensor)OnnxOp.Cast(axes, saturate: null, to: DType.Int64);
-                Tensor<int64> dimSizes = (ImmutableTensor)OnnxOp.Gather(inputShape, axesCast, axis: 0);
-                Tensor<int64> clampedStarts = (ImmutableTensor)OnnxOp.Max(startsCast, (ImmutableTensor)OnnxOp.Expand(Scalar(0L), startsCast.DShape));
-                Tensor<int64> clampedEnds = (ImmutableTensor)OnnxOp.Min(endsCast, dimSizes);
+                Tensor<int64> axesCast = (Variable)OnnxOp.Cast(axes, saturate: null, to: DType.Int64);
+                Tensor<int64> dimSizes = (Variable)OnnxOp.Gather(inputShape, axesCast, axis: 0);
+                Tensor<int64> clampedStarts = (Variable)OnnxOp.Max(startsCast, (Variable)OnnxOp.Expand(Scalar(0L), startsCast.DShape));
+                Tensor<int64> clampedEnds = (Variable)OnnxOp.Min(endsCast, dimSizes);
                 var endPads = dimSizes - clampedEnds;
-                Tensor<int64> pads = (ImmutableTensor)OnnxOp.Concat([clampedStarts, endPads], axis: 0);
-                return [(ImmutableTensor)OnnxOp.Pad(grad, pads, axes: axesCast, mode: PadMode.Constant), null, null, null, null];
+                Tensor<int64> pads = (Variable)OnnxOp.Concat([clampedStarts, endPads], axis: 0);
+                return [(Variable)OnnxOp.Pad(grad, pads, axes: axesCast, mode: PadMode.Constant), null, null, null, null];
             }
         }
 
@@ -372,12 +372,12 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             // Create zeros with same shape and type as data
             var zero = TypedConst(0.0f, data);
-            Tensor<T1> zeros = (ImmutableTensor)OnnxOp.Expand(zero, dataShape);
+            Tensor<T1> zeros = (Variable)OnnxOp.Expand(zero, dataShape);
 
             // Flatten indices to 1D for ScatterND and add trailing index-depth dimension
-            Tensor<int64> indicesInt = (ImmutableTensor)OnnxOp.Cast(indices, saturate: null, to: DType.Int64);
-            Tensor<int64> flatIndices = (ImmutableTensor)OnnxOp.Reshape(indicesInt, Vector(-1L), allowZero: false);
-            Tensor<int64> scatterIndices = (ImmutableTensor)OnnxOp.Unsqueeze(flatIndices, Vector(-1L)); // [M, 1]
+            Tensor<int64> indicesInt = (Variable)OnnxOp.Cast(indices, saturate: null, to: DType.Int64);
+            Tensor<int64> flatIndices = (Variable)OnnxOp.Reshape(indicesInt, Vector(-1L), allowZero: false);
+            Tensor<int64> scatterIndices = (Variable)OnnxOp.Unsqueeze(flatIndices, Vector(-1L)); // [M, 1]
 
             if (effectiveAxis == 0)
             {
@@ -387,11 +387,11 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 // correctly collapses the leading index dims. Using an unconditional reshape
                 // also avoids depending on indices.Rank being statically known — Reshape-built
                 // indices commonly have a null Rank even though their actual rank is > 1.
-                Tensor<int64> tailShape = (ImmutableTensor)OnnxOp.Shape(data, start: 1);
-                Tensor<int64> newShape = (ImmutableTensor)OnnxOp.Concat([Vector(-1L), tailShape], axis: 0);
-                grad = (ImmutableTensor)OnnxOp.Reshape(grad, newShape, allowZero: false);
+                Tensor<int64> tailShape = (Variable)OnnxOp.Shape(data, start: 1);
+                Tensor<int64> newShape = (Variable)OnnxOp.Concat([Vector(-1L), tailShape], axis: 0);
+                grad = (Variable)OnnxOp.Reshape(grad, newShape, allowZero: false);
 
-                Tensor<T1> result = (ImmutableTensor)OnnxOp.ScatterND(zeros, scatterIndices, grad, ScatterNDReduction.Add);
+                Tensor<T1> result = (Variable)OnnxOp.ScatterND(zeros, scatterIndices, grad, ScatterNDReduction.Add);
                 return [result, null];
             }
 
@@ -421,24 +421,24 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 // flattened to [M_total, 1], so the same collapse handles 1-D and multi-dim
                 // gather indices alike (M_total = product of all the gathered index dims).
                 var dataShapeVec = data.DShape;
-                Tensor<int64> beforeDims = (ImmutableTensor)OnnxOp.Shape(data, start: 0, end: normalizedAxis);                // non-empty (axis >= 1)
-                Tensor<int64> axisDim = (ImmutableTensor)OnnxOp.Shape(data, start: normalizedAxis, end: normalizedAxis + 1);  // [K]
-                Tensor<int64> lead = (ImmutableTensor)OnnxOp.ReduceProd(beforeDims, Vector(0L), keepdims: true, noopWithEmptyAxes: false); // [L]
-                Tensor<int64> gatheredCount = (ImmutableTensor)OnnxOp.Shape(scatterIndices, start: 0, end: 1);                // [M_total]
+                Tensor<int64> beforeDims = (Variable)OnnxOp.Shape(data, start: 0, end: normalizedAxis);                // non-empty (axis >= 1)
+                Tensor<int64> axisDim = (Variable)OnnxOp.Shape(data, start: normalizedAxis, end: normalizedAxis + 1);  // [K]
+                Tensor<int64> lead = (Variable)OnnxOp.ReduceProd(beforeDims, Vector(0L), keepdims: true, noopWithEmptyAxes: false); // [L]
+                Tensor<int64> gatheredCount = (Variable)OnnxOp.Shape(scatterIndices, start: 0, end: 1);                // [M_total]
 
                 // The trailing [-1] lets Reshape infer R, so the (possibly empty) after-axis
                 // dims never need their own product.
-                Tensor<int64> data3DShape = (ImmutableTensor)OnnxOp.Concat([lead, axisDim, Vector(-1L)], axis: 0);         // [L, K, -1]
-                Tensor<int64> grad3DShape = (ImmutableTensor)OnnxOp.Concat([lead, gatheredCount, Vector(-1L)], axis: 0);   // [L, M_total, -1]
+                Tensor<int64> data3DShape = (Variable)OnnxOp.Concat([lead, axisDim, Vector(-1L)], axis: 0);         // [L, K, -1]
+                Tensor<int64> grad3DShape = (Variable)OnnxOp.Concat([lead, gatheredCount, Vector(-1L)], axis: 0);   // [L, M_total, -1]
 
-                Tensor<T1> zeros3D = (ImmutableTensor)OnnxOp.Reshape(zeros, data3DShape, allowZero: false);   // (L, K, R)
-                Tensor<T1> grad3D = (ImmutableTensor)OnnxOp.Reshape(grad, grad3DShape, allowZero: false);     // (L, M_total, R)
+                Tensor<T1> zeros3D = (Variable)OnnxOp.Reshape(zeros, data3DShape, allowZero: false);   // (L, K, R)
+                Tensor<T1> grad3D = (Variable)OnnxOp.Reshape(grad, grad3DShape, allowZero: false);     // (L, M_total, R)
 
-                Tensor<T1> zeros3DKFront = (ImmutableTensor)zeros3D.Transpose(1L, 0L, 2L); // (K, L, R)
-                Tensor<T1> grad3DKFront = (ImmutableTensor)grad3D.Transpose(1L, 0L, 2L);   // (M_total, L, R)
-                Tensor<T1> scattered3D = (ImmutableTensor)OnnxOp.ScatterND(zeros3DKFront, scatterIndices, grad3DKFront, ScatterNDReduction.Add); // (K, L, R)
-                Tensor<T1> scattered3DRestored = (ImmutableTensor)scattered3D.Transpose(1L, 0L, 2L); // (L, K, R)
-                return [(ImmutableTensor)OnnxOp.Reshape(scattered3DRestored, dataShapeVec, allowZero: false), null];
+                Tensor<T1> zeros3DKFront = (Variable)zeros3D.Transpose(1L, 0L, 2L); // (K, L, R)
+                Tensor<T1> grad3DKFront = (Variable)grad3D.Transpose(1L, 0L, 2L);   // (M_total, L, R)
+                Tensor<T1> scattered3D = (Variable)OnnxOp.ScatterND(zeros3DKFront, scatterIndices, grad3DKFront, ScatterNDReduction.Add); // (K, L, R)
+                Tensor<T1> scattered3DRestored = (Variable)scattered3D.Transpose(1L, 0L, 2L); // (L, K, R)
+                return [(Variable)OnnxOp.Reshape(scattered3DRestored, dataShapeVec, allowZero: false), null];
             }
 
             // perm: [axis, 0, 1, ..., axis-1, axis+1, ..., rank-1]
@@ -461,7 +461,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             if (indicesRankVal <= 1)
             {
                 var gradT = grad.Transpose(perm);
-                Tensor<T1> scattered = (ImmutableTensor)OnnxOp.ScatterND(zerosT, scatterIndices, gradT, ScatterNDReduction.Add);
+                Tensor<T1> scattered = (Variable)OnnxOp.ScatterND(zerosT, scatterIndices, gradT, ScatterNDReduction.Add);
                 return [scattered.Transpose(inversePerm), null];
             }
 
@@ -481,11 +481,11 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var gradT2 = grad.Transpose(gradPerm);
 
             // Flatten the leading index dims of grad to [M_total, remaining_dims...]
-            Tensor<int64> tailShape2 = (ImmutableTensor)OnnxOp.Shape(zerosT, start: 1);
-            Tensor<int64> newShape2 = (ImmutableTensor)OnnxOp.Concat([Vector(-1L), tailShape2], axis: 0);
-            gradT2 = (ImmutableTensor)OnnxOp.Reshape(gradT2, newShape2, allowZero: false);
+            Tensor<int64> tailShape2 = (Variable)OnnxOp.Shape(zerosT, start: 1);
+            Tensor<int64> newShape2 = (Variable)OnnxOp.Concat([Vector(-1L), tailShape2], axis: 0);
+            gradT2 = (Variable)OnnxOp.Reshape(gradT2, newShape2, allowZero: false);
 
-            Tensor<T1> scattered2 = (ImmutableTensor)OnnxOp.ScatterND(zerosT, scatterIndices, gradT2, ScatterNDReduction.Add);
+            Tensor<T1> scattered2 = (Variable)OnnxOp.ScatterND(zerosT, scatterIndices, gradT2, ScatterNDReduction.Add);
             return [scattered2.Transpose(inversePerm), null];
         }
 
@@ -507,10 +507,10 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             var dataShape = data.DShape;
             var zero = TypedConst(0.0f, data);
-            Tensor<T1> zeros = (ImmutableTensor)OnnxOp.Expand(zero, dataShape);
+            Tensor<T1> zeros = (Variable)OnnxOp.Expand(zero, dataShape);
 
-            Tensor<int64> indicesInt = (ImmutableTensor)OnnxOp.Cast(indices, saturate: null, to: DType.Int64);
-            Tensor<T1> result = (ImmutableTensor)OnnxOp.ScatterND(zeros, indicesInt, grad, ScatterNDReduction.Add);
+            Tensor<int64> indicesInt = (Variable)OnnxOp.Cast(indices, saturate: null, to: DType.Int64);
+            Tensor<T1> result = (Variable)OnnxOp.ScatterND(zeros, indicesInt, grad, ScatterNDReduction.Add);
             return [result, null];
         }
 
@@ -527,22 +527,22 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // Reshape to: [r0, d0, r1, d1, ..., rn, dn]
             // ReduceSum over axes [0, 2, 4, ...] → [d0, d1, ..., dn]
             var dataShape = input.DShape;
-            Tensor<int64> repeatsInt = (ImmutableTensor)OnnxOp.Cast(repeats, saturate: null, to: DType.Int64);
+            Tensor<int64> repeatsInt = (Variable)OnnxOp.Cast(repeats, saturate: null, to: DType.Int64);
 
             // Build interleaved shape: [r0, d0, r1, d1, ...]
-            Tensor<int64> repeatsUnsqueezed = (ImmutableTensor)OnnxOp.Unsqueeze(repeatsInt, Vector(1L));
-            Tensor<int64> shapeUnsqueezed = (ImmutableTensor)OnnxOp.Unsqueeze(dataShape, Vector(1L));
-            Tensor<int64> interleaved = (ImmutableTensor)OnnxOp.Concat([repeatsUnsqueezed, shapeUnsqueezed], axis: 1);
-            Tensor<int64> interleavedFlat = (ImmutableTensor)OnnxOp.Reshape(interleaved, Vector(-1L), allowZero: false);
+            Tensor<int64> repeatsUnsqueezed = (Variable)OnnxOp.Unsqueeze(repeatsInt, Vector(1L));
+            Tensor<int64> shapeUnsqueezed = (Variable)OnnxOp.Unsqueeze(dataShape, Vector(1L));
+            Tensor<int64> interleaved = (Variable)OnnxOp.Concat([repeatsUnsqueezed, shapeUnsqueezed], axis: 1);
+            Tensor<int64> interleavedFlat = (Variable)OnnxOp.Reshape(interleaved, Vector(-1L), allowZero: false);
 
             // Reshape grad to interleaved shape
-            Tensor<T1> reshaped = (ImmutableTensor)OnnxOp.Reshape(grad, interleavedFlat, allowZero: false);
+            Tensor<T1> reshaped = (Variable)OnnxOp.Reshape(grad, interleavedFlat, allowZero: false);
 
             // Sum over even-indexed axes [0, 2, 4, ..., 2*(n-1)] using dynamic range
             var dataRankScalar = dataShape.DShape.Squeeze();
             var twoN = dataRankScalar + dataRankScalar;
             var evenAxes = VectorRange(Scalar(0L), twoN, Scalar(2L));
-            Tensor<T1> reduced = (ImmutableTensor)OnnxOp.ReduceSum(reshaped, evenAxes, keepdims: false);
+            Tensor<T1> reduced = (Variable)OnnxOp.ReduceSum(reshaped, evenAxes, keepdims: false);
 
             return [reduced, null];
         }
@@ -567,10 +567,10 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                     + $"'{effectiveReduction}'). This is an implementation limitation, not a "
                     + "mathematical one.");
 
-            Tensor<int64> indicesInt = (ImmutableTensor)OnnxOp.Cast(indices, saturate: null, to: DType.Int64);
+            Tensor<int64> indicesInt = (Variable)OnnxOp.Cast(indices, saturate: null, to: DType.Int64);
 
             // grad_updates = GatherND(grad, indices) always
-            Tensor<T1> gradUpdates = (ImmutableTensor)OnnxOp.GatherND(grad, indicesInt);
+            Tensor<T1> gradUpdates = (Variable)OnnxOp.GatherND(grad, indicesInt);
 
             Tensor<T1> gradData;
             if (effectiveReduction == ScatterNDReduction.Add)
@@ -584,8 +584,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 // "none": data values at indices are replaced
                 // grad_data = grad with positions at indices zeroed out
                 var zero = TypedConst(0.0f, data);
-                Tensor<T1> zeroUpdates = (ImmutableTensor)OnnxOp.Expand(zero, updates.DShape);
-                gradData = (ImmutableTensor)OnnxOp.ScatterND(grad, indicesInt, zeroUpdates, ScatterNDReduction.None);
+                Tensor<T1> zeroUpdates = (Variable)OnnxOp.Expand(zero, updates.DShape);
+                gradData = (Variable)OnnxOp.ScatterND(grad, indicesInt, zeroUpdates, ScatterNDReduction.None);
             }
 
             return [gradData, null, gradUpdates];
@@ -607,18 +607,18 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             // Get grad shape components: [N, C, H*r, W*r]
             var gradShape = grad.DShape;
-            Tensor<int64> nVec = (ImmutableTensor)OnnxOp.Slice(gradShape, Vector(0L), Vector(1L));
-            Tensor<int64> cVec = (ImmutableTensor)OnnxOp.Slice(gradShape, Vector(1L), Vector(2L));
-            Tensor<int64> hrVec = (ImmutableTensor)OnnxOp.Slice(gradShape, Vector(2L), Vector(3L));
-            Tensor<int64> wrVec = (ImmutableTensor)OnnxOp.Slice(gradShape, Vector(3L), Vector(4L));
+            Tensor<int64> nVec = (Variable)OnnxOp.Slice(gradShape, Vector(0L), Vector(1L));
+            Tensor<int64> cVec = (Variable)OnnxOp.Slice(gradShape, Vector(1L), Vector(2L));
+            Tensor<int64> hrVec = (Variable)OnnxOp.Slice(gradShape, Vector(2L), Vector(3L));
+            Tensor<int64> wrVec = (Variable)OnnxOp.Slice(gradShape, Vector(3L), Vector(4L));
             var rVec = Vector(r);
             var hVec = hrVec / rVec;
             var wVec = wrVec / rVec;
 
             // Step 1: Reshape grad [N, C, H*r, W*r] → [N, C, H, r, W, r]
-            Tensor<int64> intermediateShape = (ImmutableTensor)OnnxOp.Concat(
+            Tensor<int64> intermediateShape = (Variable)OnnxOp.Concat(
                 [nVec, cVec, hVec, rVec, wVec, rVec], axis: 0);
-            Tensor<T> reshaped = (ImmutableTensor)OnnxOp.Reshape(grad, intermediateShape, allowZero: false);
+            Tensor<T> reshaped = (Variable)OnnxOp.Reshape(grad, intermediateShape, allowZero: false);
 
             // Step 2: Transpose to rearrange back to depth-channel layout
             long[] perm;
@@ -629,10 +629,10 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 // CRD: [N, C, H, r, W, r] → [N, C, r, r, H, W]: perm = [0, 1, 3, 5, 2, 4]
                 perm = [0, 1, 3, 5, 2, 4];
 
-            Tensor<T> transposed = (ImmutableTensor)OnnxOp.Transpose(reshaped, perm: perm);
+            Tensor<T> transposed = (Variable)OnnxOp.Transpose(reshaped, perm: perm);
 
             // Step 3: Reshape to original input shape [N, C*r², H, W]
-            Tensor<T> result = (ImmutableTensor)OnnxOp.Reshape(transposed, originalShape, allowZero: false);
+            Tensor<T> result = (Variable)OnnxOp.Reshape(transposed, originalShape, allowZero: false);
 
             return [result];
         }
@@ -662,7 +662,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 return [a - a, b - b];
             }
 
-            var q = (a - (ImmutableTensor)OnnxOp.Mod(a, b, fmod)) / b;
+            var q = (a - (Variable)OnnxOp.Mod(a, b, fmod)) / b;
             var aGrad = ReverseBroadcast(grad, a.DShape);
             var bGrad = ReverseBroadcast(-(grad * q), b.DShape);
             return [aGrad, bGrad];
@@ -690,62 +690,62 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // Get input shape components
             var xShape = x.DShape;                                                    // [N, C, ...]
             var xRank = OnnxOp.Shape(xShape);                                         // [1] containing rank
-            Tensor<int64> nVec = (ImmutableTensor)OnnxOp.Slice(xShape, Vector(0L), Vector(1L));   // [N]
-            Tensor<int64> cVec = (ImmutableTensor)OnnxOp.Slice(xShape, Vector(1L), Vector(2L));   // [C]
-            Tensor<int64> spatialShape = (ImmutableTensor)OnnxOp.Slice(xShape, Vector(2L), xRank);// [H, W, ...]
+            Tensor<int64> nVec = (Variable)OnnxOp.Slice(xShape, Vector(0L), Vector(1L));   // [N]
+            Tensor<int64> cVec = (Variable)OnnxOp.Slice(xShape, Vector(1L), Vector(2L));   // [C]
+            Tensor<int64> spatialShape = (Variable)OnnxOp.Slice(xShape, Vector(2L), xRank);// [H, W, ...]
 
             var gVec = Vector(effectiveGroups);
             var cpgVec = cVec / gVec;  // channels per group
 
             // Reshape x to [N, G, C/G, *spatial] for group normalization computation
-            Tensor<int64> groupedShape = (ImmutableTensor)OnnxOp.Concat(
+            Tensor<int64> groupedShape = (Variable)OnnxOp.Concat(
                 [nVec, gVec, cpgVec, spatialShape], axis: 0);
-            Tensor<T> xGrouped = (ImmutableTensor)OnnxOp.Reshape(x, groupedShape, allowZero: false);
+            Tensor<T> xGrouped = (Variable)OnnxOp.Reshape(x, groupedShape, allowZero: false);
 
             // Compute group mean and variance over axes [2, 3, ..., rank_grouped-1] (C/G and spatial dims)
             var groupedRankScalar = OnnxOp.Squeeze(OnnxOp.Shape(groupedShape), Vector(0L));
             var reduceAxes = OnnxOp.Range(Scalar(2L), groupedRankScalar, Scalar(1L));
 
-            Tensor<T> groupMean = (ImmutableTensor)OnnxOp.ReduceMean(xGrouped, reduceAxes, keepdims: true);
+            Tensor<T> groupMean = (Variable)OnnxOp.ReduceMean(xGrouped, reduceAxes, keepdims: true);
             var xCentered = xGrouped - groupMean;
-            Tensor<T> groupVar = (ImmutableTensor)OnnxOp.ReduceMean(xCentered * xCentered, reduceAxes, keepdims: true);
-            Tensor<T> invStd = (ImmutableTensor)OnnxOp.Reciprocal((ImmutableTensor)OnnxOp.Sqrt(groupVar + epsConst));
+            Tensor<T> groupVar = (Variable)OnnxOp.ReduceMean(xCentered * xCentered, reduceAxes, keepdims: true);
+            Tensor<T> invStd = (Variable)OnnxOp.Reciprocal((Variable)OnnxOp.Sqrt(groupVar + epsConst));
 
             // x_hat (normalized) in grouped shape
             var xHat = xCentered * invStd;
 
             // Reshape x_hat back to [N, C, *spatial] for scale/bias computation
-            Tensor<T> xHatFlat = (ImmutableTensor)OnnxOp.Reshape(xHat, xShape, allowZero: false);
+            Tensor<T> xHatFlat = (Variable)OnnxOp.Reshape(xHat, xShape, allowZero: false);
 
             // Build broadcast shape [1, C, 1, 1, ...] for scale/bias
-            Tensor<int64> onesShape = (ImmutableTensor)OnnxOp.Expand(Scalar(1L), xRank);
-            Tensor<int64> scatterIdx = (ImmutableTensor)OnnxOp.Reshape(Vector(1L), Vector(1L, 1L), allowZero: false);
-            Tensor<int64> broadcastShape = (ImmutableTensor)OnnxOp.ScatterND(onesShape, scatterIdx, cVec);
-            Tensor<T> scaleBC = (ImmutableTensor)OnnxOp.Reshape(scale, broadcastShape, allowZero: false);
+            Tensor<int64> onesShape = (Variable)OnnxOp.Expand(Scalar(1L), xRank);
+            Tensor<int64> scatterIdx = (Variable)OnnxOp.Reshape(Vector(1L), Vector(1L, 1L), allowZero: false);
+            Tensor<int64> broadcastShape = (Variable)OnnxOp.ScatterND(onesShape, scatterIdx, cVec);
+            Tensor<T> scaleBC = (Variable)OnnxOp.Reshape(scale, broadcastShape, allowZero: false);
 
             // Build reduce axes for dscale/dbias: [0, 2, 3, ..., rank-1] (all except channel dim 1)
             var xRankScalar = OnnxOp.Squeeze(xRank, Vector(0L));
             var allAxes = OnnxOp.Range(Scalar(0L), xRankScalar, Scalar(1L));
-            Tensor<int64> axis0 = (ImmutableTensor)OnnxOp.Slice(allAxes, Vector(0L), Vector(1L));
-            Tensor<int64> axesSuffix = (ImmutableTensor)OnnxOp.Slice(allAxes, Vector(2L), xRank);
-            Tensor<int64> channelReduceAxes = (ImmutableTensor)OnnxOp.Concat([axis0, axesSuffix], axis: 0);
+            Tensor<int64> axis0 = (Variable)OnnxOp.Slice(allAxes, Vector(0L), Vector(1L));
+            Tensor<int64> axesSuffix = (Variable)OnnxOp.Slice(allAxes, Vector(2L), xRank);
+            Tensor<int64> channelReduceAxes = (Variable)OnnxOp.Concat([axis0, axesSuffix], axis: 0);
 
             // dscale = sum(grad * x_hat, axes=[0, 2, 3, ...]) → [C]
-            Tensor<T> gradScale = (ImmutableTensor)OnnxOp.ReduceSum(grad * xHatFlat, channelReduceAxes, keepdims: false);
+            Tensor<T> gradScale = (Variable)OnnxOp.ReduceSum(grad * xHatFlat, channelReduceAxes, keepdims: false);
 
             // dbias = sum(grad, axes=[0, 2, 3, ...]) → [C]
-            Tensor<T> gradBias = (ImmutableTensor)OnnxOp.ReduceSum(grad, channelReduceAxes, keepdims: false);
+            Tensor<T> gradBias = (Variable)OnnxOp.ReduceSum(grad, channelReduceAxes, keepdims: false);
 
             // dx: reshape grad to grouped shape and compute using group statistics
-            Tensor<T> gradGrouped = (ImmutableTensor)OnnxOp.Reshape(grad * scaleBC, groupedShape, allowZero: false);
+            Tensor<T> gradGrouped = (Variable)OnnxOp.Reshape(grad * scaleBC, groupedShape, allowZero: false);
 
             // dx_grouped = invStd * (gradGrouped - mean(gradGrouped) - x_centered * mean(gradGrouped * x_centered) / (var + eps))
-            Tensor<T> meanGrad = (ImmutableTensor)OnnxOp.ReduceMean(gradGrouped, reduceAxes, keepdims: true);
-            Tensor<T> meanGradXc = (ImmutableTensor)OnnxOp.ReduceMean(gradGrouped * xCentered, reduceAxes, keepdims: true);
+            Tensor<T> meanGrad = (Variable)OnnxOp.ReduceMean(gradGrouped, reduceAxes, keepdims: true);
+            Tensor<T> meanGradXc = (Variable)OnnxOp.ReduceMean(gradGrouped * xCentered, reduceAxes, keepdims: true);
             var dxGrouped = invStd * (gradGrouped - meanGrad - xCentered * meanGradXc * invStd * invStd);
 
             // Reshape dx back to original shape
-            Tensor<T> gradX = (ImmutableTensor)OnnxOp.Reshape(dxGrouped, xShape, allowZero: false);
+            Tensor<T> gradX = (Variable)OnnxOp.Reshape(dxGrouped, xShape, allowZero: false);
 
             return [gradX, gradScale, gradBias];
         }
@@ -765,11 +765,11 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             // Create zeros with same shape and type as data
             var zero = TypedConst(0.0f, data);
-            Tensor<T1> zeros = (ImmutableTensor)OnnxOp.Expand(zero, dataShape);
+            Tensor<T1> zeros = (Variable)OnnxOp.Expand(zero, dataShape);
 
             // Scatter grad values back to data positions using Add reduction (handles duplicates)
-            Tensor<int64> indicesInt = (ImmutableTensor)OnnxOp.Cast(indices, saturate: null, to: DType.Int64);
-            Tensor<T1> result = (ImmutableTensor)OnnxOp.ScatterElements(zeros, indicesInt, grad,
+            Tensor<int64> indicesInt = (Variable)OnnxOp.Cast(indices, saturate: null, to: DType.Int64);
+            Tensor<T1> result = (Variable)OnnxOp.ScatterElements(zeros, indicesInt, grad,
                 axis: effectiveAxis, reduction: ScatterNDReduction.Add);
             return [result, null];
         }
@@ -795,10 +795,10 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                     + "mathematical one.");
             var effectiveAxis = axis ?? 0;
 
-            Tensor<int64> indicesInt = (ImmutableTensor)OnnxOp.Cast(indices, saturate: null, to: DType.Int64);
+            Tensor<int64> indicesInt = (Variable)OnnxOp.Cast(indices, saturate: null, to: DType.Int64);
 
             // grad_updates = GatherElements(grad, indices, axis) always
-            Tensor<T1> gradUpdates = (ImmutableTensor)OnnxOp.GatherElements(grad, indicesInt, axis: effectiveAxis);
+            Tensor<T1> gradUpdates = (Variable)OnnxOp.GatherElements(grad, indicesInt, axis: effectiveAxis);
 
             Tensor<T1> gradData;
             if (effectiveReduction == ScatterNDReduction.Add)
@@ -812,8 +812,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 // "none": data values at scatter positions are replaced
                 // grad_data = grad with positions at indices zeroed out
                 var zero = TypedConst(0.0f, data);
-                Tensor<T1> zeroUpdates = (ImmutableTensor)OnnxOp.Expand(zero, updates.DShape);
-                gradData = (ImmutableTensor)OnnxOp.ScatterElements(grad, indicesInt, zeroUpdates,
+                Tensor<T1> zeroUpdates = (Variable)OnnxOp.Expand(zero, updates.DShape);
+                gradData = (Variable)OnnxOp.ScatterElements(grad, indicesInt, zeroUpdates,
                     axis: effectiveAxis, reduction: ScatterNDReduction.None);
             }
 

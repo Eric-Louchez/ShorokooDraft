@@ -26,35 +26,25 @@ namespace Shorokoo
     {
     }
 
-    /// <summary>
-    /// Non-generic graph node for a rank-0 (scalar) symbolic tensor (element type is the runtime DType).
-    /// Operations mirror <see cref="Tensor{T}"/> but statically preserve the scalar rank in their return types.
-    /// </summary>
-    public class ImmutableScalar : ImmutableTensor, IScalar
-    {
-        public override Vector<int64>? InfShape => Vector<int64>.Empty;
-        internal ImmutableScalar(Node owningNode, DType dtype, Function? moduleFn, string? name = null) : base(() => Vector<int64>.Empty, dtype, owningNode, moduleFn, name, rank: 0) {}
-    }
-
     public partial struct Scalar<T> : IScalar where T : IVarType
     {
-        private ImmutableScalar? inner;
-        internal ImmutableScalar Imm => inner ?? throw new InvalidOperationException("default(Scalar<T>) is not materialised; build one via a graph op.");
+        private Variable? inner;
+        internal Variable Imm => inner ?? throw new InvalidOperationException("default(Scalar<T>) is not materialised; build one via a graph op.");
 
-        public static implicit operator Scalar<T>(ImmutableScalar imm) => new Scalar<T> { inner = imm };
-        public static implicit operator ImmutableScalar(Scalar<T> h) => h.Imm;
+        public static implicit operator Scalar<T>(Variable imm) => new Scalar<T> { inner = imm };
+        public static implicit operator Variable(Scalar<T> h) => h.Imm;
         public static implicit operator Tensor<T>(Scalar<T> h) => h.Imm;
 
         // ITensor contract — forward to the wrapped immutable.
         public int? Rank => Imm.Rank;
-        public ImmutableVector? InfShape => Imm.InfShape;
+        public Variable? InfShape => Imm.InfShape;
         public Vector<int64> DShape => Imm.DShape;
         public Vector<int64> TShape => Imm.TShape;
         public Scalar<int64> TRank => Imm.TRank;
-        public Vector<T> Vec() => (ImmutableVector)Imm.Vec();
-        IVector ITensor.Vec() => (ImmutableVector)Imm.Vec();
+        public Vector<T> Vec() => (Variable)Imm.Vec();
+        IVector ITensor.Vec() => (Variable)Imm.Vec();
         Vector<V> ITensor.Vec<V>() => Imm.Cast<V>().Vec();
-        IScalar ITensor.Scalar() => (ImmutableScalar)Imm.Scalar();
+        IScalar ITensor.Scalar() => (Variable)Imm.Scalar();
         Scalar<V> ITensor.Scalar<V>() => Imm.Cast<V>().Scalar();        Tensor<V> ITensor.Cast<V>(bool saturate) => Imm.Cast<V>(saturate);
 
         public Node OwningNode => Imm.OwningNode;
@@ -269,7 +259,7 @@ namespace Shorokoo
             => ((Tensor<T>)this).Bernoulli(seed).Scalar();
 
         /// <summary>Bernoulli sample, treating this scalar as a probability, with result element type <typeparamref name="V"/>.</summary>
-        public ImmutableScalar Bernoulli<V>(float? seed = null) where V : CommonLike
+        public Variable Bernoulli<V>(float? seed = null) where V : CommonLike
             => ((Tensor<T>)this).Bernoulli<V>(seed).Scalar();
 
         /// <summary>Scalar CELU activation.</summary>

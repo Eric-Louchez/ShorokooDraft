@@ -91,7 +91,7 @@ public partial class AdafactorOptimizer
         var newStep = step + one;
 
         // Increasing second-moment decay: beta2t = 1 - t^tau (0 at t = 1, -> 1 as t grows).
-        var beta2t = one - (Tensor<float32>)(ImmutableTensor)OnnxOp.Pow(newStep, beta2Decay);
+        var beta2t = one - (Tensor<float32>)(Variable)OnnxOp.Pow(newStep, beta2Decay);
 
         // Relative step size rho = min(lr, 1/sqrt(t)) and parameter-scaled effective lr.
         var rho = learningRate.Min(one / newStep.Sqrt());

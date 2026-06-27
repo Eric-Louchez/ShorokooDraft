@@ -16,54 +16,10 @@ using Shorokoo.Onnx;
 
 namespace Shorokoo
 {
-    /// <summary>
-    /// Immutable (class) graph node for a TensorStruct — a composite that groups multiple
-    /// <see cref="IValue"/>s into one. This is the value the graph stores; it holds the field
-    /// data and definition and satisfies the <see cref="ITensorStruct"/> contract. The user-facing
-    /// API lives on the value-type handle <see cref="TensorStruct{T}"/>.
-    /// </summary>
-    public class ImmutableTensorStruct : Variable, ITensorStruct
-    {
-        private readonly ImmutableDictionary<string, IValue> _fields;
-        private readonly TensorStructDef _definition;
-
-        internal ImmutableTensorStruct(DType dtype, Node owningNode, Function? moduleFn, string? name,
-            TensorStructDef definition, ImmutableDictionary<string, IValue>? fields = null)
-            : base(dtype, owningNode, moduleFn, name)
-        {
-            _definition = definition ?? throw new ArgumentNullException(nameof(definition));
-            _fields = fields ?? ImmutableDictionary<string, IValue>.Empty;
-        }
-
-        // ITensorStruct contract (the minimal graph-node surface).
-        TensorStructDef ITensorStruct.Definition => _definition;
-        IValue ITensorStruct.GetField(string name) => Field(name);
-
-        // Internal accessors used by the value-struct handle to build the public surface.
-        internal TensorStructDef Def => _definition;
-        internal ImmutableDictionary<string, IValue> Fields => _fields;
-
-        internal IValue Field(string name)
-        {
-            if (_fields.TryGetValue(name, out var field))
-                return field;
-
-            throw new KeyNotFoundException($"Field '{name}' not found in TensorStruct. Available fields: {string.Join(", ", _fields.Keys)}");
-        }
-
-        internal ImmutableTensorStruct WithFields(ImmutableDictionary<string, IValue> newFields)
-            => new ImmutableTensorStruct(this.Type, this.OwningNode, this.ModuleFn, this.UniqueName, _definition, newFields);
-
-        public override string ToString()
-        {
-            var typeName = _definition.TypeName ?? "DTypeStruct";
-            return $"TensorStruct<{typeName}>[{_fields.Count} fields]";
-        }
-    }
 
     /// <summary>
     /// Value-type handle for a TensorStruct. The original <c>TensorStruct&lt;T&gt;</c> name now denotes
-    /// this <see langword="struct"/>; the reference type was renamed <see cref="ImmutableTensorStruct"/>.
+    /// this <see langword="struct"/>; the reference type was renamed <see cref="Variable"/>.
     /// This struct carries the full user-facing surface. It holds the immutable directly in a field
     /// (value-copy semantics for the Module DSL). This pass only makes mutation possible — behaviour
     /// is unchanged (de-facto immutable).
@@ -74,18 +30,18 @@ namespace Shorokoo
     /// </summary>
     public struct TensorStruct<T> : ITensorStruct, Shorokoo.Core.IValueHandle where T : IStruct
     {
-        private ImmutableTensorStruct? inner;
+        private Variable? inner;
 
         IValue Shorokoo.Core.IValueHandle.Immutable => Imm;
 
         /// <summary>The wrapped immutable. A defaulted handle has no recoverable field layout, so this throws.</summary>
-        internal readonly ImmutableTensorStruct Imm
+        internal readonly Variable Imm
             => inner ?? throw new InvalidOperationException(
                 "default(TensorStruct<T>) has no field layout; create one via a graph op (e.g. Globals.TensorStruct<T>(...)).");
 
-        public static implicit operator TensorStruct<T>(ImmutableTensorStruct imm)
+        public static implicit operator TensorStruct<T>(Variable imm)
             => new TensorStruct<T> { inner = imm };
-        public static implicit operator ImmutableTensorStruct(TensorStruct<T> handle)
+        public static implicit operator Variable(TensorStruct<T> handle)
             => handle.Imm;
 
         // ── User-facing API (the struct surface lives here, not on the immutable) ──

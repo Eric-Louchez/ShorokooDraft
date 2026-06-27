@@ -100,7 +100,7 @@ namespace Shorokoo.Modules
         // method, which is inputs-first / hyperparameters-last). For hyperparameters combined with
         // MULTIPLE runtime inputs, construct the Module<THypers, TInputs, TOutputs> base directly
         // with a wrapper lambda, e.g.
-        //   new Module<Scalar<float32>, (ImmutableTensor, Tensor<float32>), Tensor<float32>>(
+        //   new Module<Scalar<float32>, (Variable, Tensor<float32>), Tensor<float32>>(
         //       (h, ins) => Body(ins.Item1, ins.Item2, h), Body);
 
         /// <summary>

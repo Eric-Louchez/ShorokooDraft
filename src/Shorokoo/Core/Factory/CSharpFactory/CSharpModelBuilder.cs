@@ -89,9 +89,9 @@ namespace Shorokoo.Core.Factory.CSharpFactory
         public static string GetTypeDefString(IValue variable, int? rank)
         {
             // Handle TensorStruct types
-            if (variable is ITensorStruct tensorStruct)
+            if (variable.Structure() == DataStructure.TensorStruct)
             {
-                var def = tensorStruct.Definition;
+                var def = ((ITensorStruct)variable).Definition;
                 var structTypeName = def?.TypeName;
                 if (structTypeName != null && !structTypeName.Contains('.'))
                 {
@@ -110,7 +110,7 @@ namespace Shorokoo.Core.Factory.CSharpFactory
                 return $"Scalar<{typeName}>";
             else if (rank == 1)
                 return $"Vector<{typeName}>";
-            else if (variable is ITensor)
+            else if (variable.Structure() == DataStructure.Tensor)
                 return $"Tensor<{typeName}>";
             else
                 return $"IValue<{typeName}>";
@@ -156,10 +156,10 @@ namespace Shorokoo.Core.Factory.CSharpFactory
         public static string GetModuleAwareTypeDefString(IValue variable, int? rankOverride)
         {
             // Model/module params are scalar nodes distinguished by runtime DType (formerly the generic
-            // ImmutableScalar<IModelVarType> / ImmutableScalar<IModuleVarType>).
-            if (variable is ImmutableScalar modelVariable && modelVariable.Type == DType.Model)
+            // Variable<IModelVarType> / Variable<IModuleVarType>).
+            if (variable is Variable modelVariable && modelVariable.Type == DType.Model)
                 return GetModuleAwareTypeDefString(modelVariable.ModuleFn.AssertNotNull(), asModel: true);
-            else if(variable is ImmutableScalar moduleVariable && moduleVariable.Type == DType.Module)
+            else if(variable is Variable moduleVariable && moduleVariable.Type == DType.Module)
                 return GetModuleAwareTypeDefString(moduleVariable.ModuleFn.AssertNotNull(), asModel: false);
 
             return GetTypeDefString(variable, rankOverride);

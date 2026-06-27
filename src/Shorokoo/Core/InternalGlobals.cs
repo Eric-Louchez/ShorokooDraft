@@ -72,28 +72,25 @@ namespace Shorokoo.Core
         internal static bool HasPendingStateUpdates
             => _stateUpdatePairs != null && _stateUpdatePairs.Count > 0;
 
-        // The tensor/vector/scalar nodes are non-generic, so they are built directly from the runtime
-        // DType + rank — no per-output CallGeneric/MakeGenericType reflection round-trip.
+        // Every kind is now the single non-generic Variable, built directly from the runtime DType +
+        // kind + rank — no per-output CallGeneric/MakeGenericType reflection round-trip.
         internal static ITensor Tensor(Func<Vector<int64>>? shapeFn, DType dtype, Node owningNode, Function? moduleFn, string? name = null, int? rank = null)
-            => new ImmutableTensor(shapeFn, dtype, owningNode, moduleFn, name, rank: rank);
+            => new Variable(dtype, owningNode, moduleFn, name, DataStructure.Tensor, rank: rank, shapeFn: shapeFn);
 
         internal static ITensor Vector(Func<Vector<int64>>? shapeFn, DType dtype, Node owningNode, Function? moduleFn, string? name = null)
-            => new ImmutableVector(shapeFn, dtype, owningNode, moduleFn, name);
+            => new Variable(dtype, owningNode, moduleFn, name, DataStructure.Tensor, rank: 1, shapeFn: shapeFn);
 
         internal static IScalar Scalar(DType dtype, Node? owningNode, Function? moduleFn = null, string? name = null)
-            => new ImmutableScalar(owningNode!, dtype, moduleFn, name);
+            => new Variable(dtype, owningNode!, moduleFn, name, DataStructure.Tensor, rank: 0);
 
         private static Scalar<T> CreateScalarValForObj<T>(object val) where T : IVarType
             => Shorokoo.Globals.Scalar<T>(val);
 
-        // Non-generic sequence node built directly from the runtime DType (no CallGeneric).
-        internal static ImmutableTensorSequence TensorSequence(DType dtype, Node owningNode, Function? moduleFn, string? name = null)
-            => new ImmutableTensorSequence(dtype, owningNode, moduleFn, name);
+        internal static Variable TensorSequence(DType dtype, Node owningNode, Function? moduleFn, string? name = null)
+            => new Variable(dtype, owningNode, moduleFn, name, DataStructure.Sequence);
 
-        // The optional node is now non-generic, so it is built directly from the runtime DType —
-        // no per-output CallGeneric/MakeGenericType reflection round-trip.
-        internal static ImmutableOptionalTensor OptionalTensor(DType dtype, Node owningNode, Function? moduleFn, string? name = null)
-            => new ImmutableOptionalTensor(dtype, owningNode, moduleFn, name);
+        internal static Variable OptionalTensor(DType dtype, Node owningNode, Function? moduleFn, string? name = null)
+            => new Variable(dtype, owningNode, moduleFn, name, DataStructure.Optional);
 
         internal static IVector EmptyVector(DType type) => (IVector)Shorokoo.Core.Nodes.NodeDefinitions.OnnxOp.Constant(Globals.TensorData(type));
 
@@ -109,16 +106,16 @@ namespace Shorokoo.Core
             if (structDef == null)
                 throw new InvalidOperationException($"TensorStruct DType {type} has no associated TensorStructDef");
 
-            // The struct node is non-generic; the field layout lives in the runtime TensorStructDef.
-            return new ImmutableTensorStruct(type, owningNode, moduleFn, name, structDef);
+            // The struct node is the single non-generic Variable; the field layout lives in the runtime TensorStructDef.
+            return new Variable(type, owningNode, moduleFn, name, DataStructure.TensorStruct, structDef: structDef);
         }
 
         /// <summary>
         /// Creates a TensorStruct with a specific IStruct type. The element type parameter is kept for
         /// caller convenience but the node itself is non-generic (its layout is the runtime definition).
         /// </summary>
-        internal static ImmutableTensorStruct TensorStruct<T>(DType type, Node owningNode, Function? moduleFn, string? name, TensorStructDef definition) where T : IStruct
-            => new ImmutableTensorStruct(type, owningNode, moduleFn, name, definition);
+        internal static Variable TensorStruct<T>(DType type, Node owningNode, Function? moduleFn, string? name, TensorStructDef definition) where T : IStruct
+            => new Variable(type, owningNode, moduleFn, name, DataStructure.TensorStruct, structDef: definition);
 
         internal static OnnxTensorData<bit> OnnxTensorData(Shape shape, params bool[] data) => new OnnxTensorData<bit>(shape, OnnxUtils.CreateTensorValue<bool>(shape, data));
         internal static OnnxTensorData<int8> OnnxTensorData(Shape shape, params sbyte[] data) => new OnnxTensorData<int8>(shape, OnnxUtils.CreateTensorValue<sbyte>(shape, data));

@@ -33,7 +33,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         {
             Debug.Assert(inputs.Length > 0 && inputs[0] is not null);
             var dOptional = outputGrads[0];
-            Debug.Assert(dOptional is IOptionalTensor);
+            Debug.Assert(dOptional?.Structure() == DataStructure.Optional);
 
             return [OnnxOp.OptionalGetElement(dOptional!)];
         }

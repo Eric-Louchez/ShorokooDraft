@@ -1584,7 +1584,7 @@ public partial class NNEmbeddingMaxNormClampsL2
         var diff = (y - expected).Abs().Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         // (a) the over-cap probe row (index 0 in the tensor) output L2 norm == maxNorm.
-        var yOverRow = (Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(y, Vector(0L), Vector(1L), Vector(0L)); // [1,4]
+        var yOverRow = (Tensor<float32>)(Variable)OnnxOp.Slice(y, Vector(0L), Vector(1L), Vector(0L)); // [1,4]
         var yOverNorm = yOverRow.Reduce(ReduceKind.L2, keepDims: false).Scalar();
         var capDiff = (yOverNorm - maxNorm).Abs();
 
@@ -2246,8 +2246,8 @@ public partial class NNCrossEntropyReductionWeightIgnoreChecks
 
         // PerElement → [ln2, ln2]; check each element via Slice.
         var cePer = CrossEntropyLoss.PerElement(logits2, tgt01);   // [2]
-        var cePer0 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(cePer, Vector(0L), Vector(1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
-        var cePer1 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(cePer, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var cePer0 = ((Tensor<float32>)(Variable)OnnxOp.Slice(cePer, Vector(0L), Vector(1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var cePer1 = ((Tensor<float32>)(Variable)OnnxOp.Slice(cePer, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         // Weighted mean: denominator is Σ w[target] over non-ignored samples.
         var wMean01 = CrossEntropyLoss.Reduced(logits2, tgt01, weight: weight, reduction: LossReduction.Mean);
@@ -2261,7 +2261,7 @@ public partial class NNCrossEntropyReductionWeightIgnoreChecks
         var ceIgMean = CrossEntropyLoss.Reduced(logits3, tgtIg, ignoreIndex: 7L, reduction: LossReduction.Mean);
         // PerElement returns 0 at the ignored position (index 1).
         var ceIgPer = CrossEntropyLoss.PerElement(logits3, tgtIg, ignoreIndex: 7L);   // [3]
-        var ceIgPer1 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(ceIgPer, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var ceIgPer1 = ((Tensor<float32>)(Variable)OnnxOp.Slice(ceIgPer, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         var ok = Within((ceMean - ln2).Abs(), 1e-4f)
                + Within((ceSum - Scalar(2f) * ln2).Abs(), 1e-4f)
@@ -2392,7 +2392,7 @@ public partial class NNNLLLossWeightIgnoreChecks
         var tgtIg = Vector(0L, 7L, 1L);
         var igMean = NLLLoss.Reduced(logp3, tgtIg, ignoreIndex: 7L, reduction: LossReduction.Mean);
         var igPer = NLLLoss.PerElement(logp3, tgtIg, ignoreIndex: 7L);   // [3]
-        var igPer1 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(igPer, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var igPer1 = ((Tensor<float32>)(Variable)OnnxOp.Slice(igPer, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         // Zero-scaled touch of the runtime input (and a no-op use of nl2) so the
         // graph has a real input to drive; folded in as an extra ok-bit.
@@ -2502,8 +2502,8 @@ public partial class NNRegressionReductionChecks
         var l1Mean = L1Loss.Reduced(p1, t1, reduction: LossReduction.Mean);
         var l1Sum = L1Loss.Reduced(p1, t1, reduction: LossReduction.Sum);
         var l1Per = L1Loss.PerElement(p1, t1);   // [1, 2]
-        var l1Per0 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(l1Per, Vector(0L), Vector(1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
-        var l1Per1 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(l1Per, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var l1Per0 = ((Tensor<float32>)(Variable)OnnxOp.Slice(l1Per, Vector(0L), Vector(1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var l1Per1 = ((Tensor<float32>)(Variable)OnnxOp.Slice(l1Per, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         var p22 = Tensor(new long[] { 2L, 2L }, 1f, 2f, 3f, 4f);
         var z22 = Tensor(new long[] { 2L, 2L }, 0f, 0f, 0f, 0f);
@@ -3103,7 +3103,7 @@ public partial class AnalyticSliceParamModel
     public static Tensor<float32> Inline(Tensor<float32> x)
     {
         var w = AnalyticInitRange4.Init(Vector(4L));
-        return (Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(w, Vector(0L), Vector(2L)) * x;
+        return (Tensor<float32>)(Variable)OnnxOp.Slice(w, Vector(0L), Vector(2L)) * x;
     }
 }
 
@@ -3145,8 +3145,8 @@ public partial class NNLossEdgeCaseChecks
     public static Scalar<bit> Inline(Tensor<float32> d)   // d = [0.5, 2]
     {
         var z1 = Tensor(new long[] { 1L }, 0f);
-        var quad = SmoothL1Loss.Inline((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(d, Vector(0L), Vector(1L)), z1);
-        var lin = SmoothL1Loss.Inline((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(d, Vector(1L), Vector(2L)), z1);
+        var quad = SmoothL1Loss.Inline((Tensor<float32>)(Variable)OnnxOp.Slice(d, Vector(0L), Vector(1L)), z1);
+        var lin = SmoothL1Loss.Inline((Tensor<float32>)(Variable)OnnxOp.Slice(d, Vector(1L), Vector(2L)), z1);
         var bceClamped = BCELoss.Inline(Tensor(new long[] { 2L }, 0f, 1f), Tensor(new long[] { 2L }, 0f, 1f));
         var bceWrong = BCELoss.Inline(Tensor(new long[] { 1L }, 0f), Tensor(new long[] { 1L }, 1f));
         var bwlHi = BCEWithLogitsLoss.Inline(Tensor(new long[] { 1L }, 100f), Tensor(new long[] { 1L }, 1f));
@@ -3198,8 +3198,8 @@ public partial class NNLogCoshLossChecks
 
         // PerElement → [0, 0.43378083]; check each element via Slice.
         var per = LogCoshLoss.PerElement(pred01, zero2);   // [2]
-        var per0 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(per, Vector(0L), Vector(1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
-        var per1 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(per, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var per0 = ((Tensor<float32>)(Variable)OnnxOp.Slice(per, Vector(0L), Vector(1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var per1 = ((Tensor<float32>)(Variable)OnnxOp.Slice(per, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         // Mid d=2 (pred=[2], target=[0]): log(cosh 2) = 1.3250027.
         var mid = LogCoshLoss.Inline(Tensor(new long[] { 1L }, 2f), Tensor(new long[] { 1L }, 0f));
@@ -3257,8 +3257,8 @@ public partial class NNPoissonNLLLossChecks
 
         // PerElement → [1, 0.71828183]; check each element via Slice.
         var per = PoissonNLLLoss.PerElement(predLog, tgtLog);   // [2]
-        var per0 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(per, Vector(0L), Vector(1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
-        var per1 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(per, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var per0 = ((Tensor<float32>)(Variable)OnnxOp.Slice(per, Vector(0L), Vector(1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var per1 = ((Tensor<float32>)(Variable)OnnxOp.Slice(per, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         // logInput=false: pred=[1,2] (>0), target=[1,2], default eps=1e-8. mean = 0.80685281.
         var predRate = Tensor(new long[] { 2L }, 1f, 2f);
@@ -3268,9 +3268,9 @@ public partial class NNPoissonNLLLossChecks
         var predZ = Tensor(new long[] { 3L }, 0f, 0f, 0f);
         var tgtF = Tensor(new long[] { 3L }, 0f, 1f, 3f);
         var perFull = PoissonNLLLoss.PerElement(predZ, tgtF, logInput: true, full: true);   // [1, 1, 2.7640816]
-        var full0 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(perFull, Vector(0L), Vector(1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
-        var full1 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(perFull, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
-        var full2 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(perFull, Vector(2L), Vector(3L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var full0 = ((Tensor<float32>)(Variable)OnnxOp.Slice(perFull, Vector(0L), Vector(1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var full1 = ((Tensor<float32>)(Variable)OnnxOp.Slice(perFull, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var full2 = ((Tensor<float32>)(Variable)OnnxOp.Slice(perFull, Vector(2L), Vector(3L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         var ok = Within((mean - Scalar(0.85914091f)).Abs(), 1e-5f)
                + Within((sum - Scalar(1.71828183f)).Abs(), 1e-5f)
@@ -3321,9 +3321,9 @@ public partial class NNHingeLossChecks
 
         // PerElement → [0.5, 1.5, 0]; check each element via Slice.
         var per = HingeLoss.PerElement(pred, tgt);   // [3]
-        var per0 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(per, Vector(0L), Vector(1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
-        var per1 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(per, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
-        var per2 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(per, Vector(2L), Vector(3L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var per0 = ((Tensor<float32>)(Variable)OnnxOp.Slice(per, Vector(0L), Vector(1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var per1 = ((Tensor<float32>)(Variable)OnnxOp.Slice(per, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var per2 = ((Tensor<float32>)(Variable)OnnxOp.Slice(per, Vector(2L), Vector(3L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         // Negative-class: pred=[−2], target=[−1] → relu(1−2) = 0.
         var neg = HingeLoss.Inline(Tensor(new long[] { 1L }, -2f), Tensor(new long[] { 1L }, -1f));
@@ -3376,9 +3376,9 @@ public partial class NNSquaredHingeLossChecks
 
         // PerElement → [0.25, 2.25, 0]; check each element via Slice.
         var per = SquaredHingeLoss.PerElement(pred, tgt);   // [3]
-        var per0 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(per, Vector(0L), Vector(1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
-        var per1 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(per, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
-        var per2 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(per, Vector(2L), Vector(3L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var per0 = ((Tensor<float32>)(Variable)OnnxOp.Slice(per, Vector(0L), Vector(1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var per1 = ((Tensor<float32>)(Variable)OnnxOp.Slice(per, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var per2 = ((Tensor<float32>)(Variable)OnnxOp.Slice(per, Vector(2L), Vector(3L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         // Keras cross-check: target=[−1,1,1], pred=[0.6,−0.7,−0.5] → mean 2.56666667.
         var kerasPred = Tensor(new long[] { 3L }, 0.6f, -0.7f, -0.5f);
@@ -3498,8 +3498,8 @@ internal static class RnnRefHelpers
 
         var (yVar, yhVar) = OnnxOp.Rnn(x, w, r, b, null, null,
             null, null, activations, null, onnxDir, hiddenSize, false);
-        var yLayer = (Tensor<float32>)(ImmutableTensor)yVar;     // [L, D, N, H]
-        var yh = (Tensor<float32>)(ImmutableTensor)yhVar;        // [D, N, H]
+        var yLayer = (Tensor<float32>)(Variable)yVar;     // [L, D, N, H]
+        var yh = (Tensor<float32>)(Variable)yhVar;        // [D, N, H]
 
         var l = yLayer.DimTensor(0);
         var n = yLayer.DimTensor(2);
@@ -3811,9 +3811,9 @@ internal static class LstmRefHelpers
 
         var (yVar, yhVar, ycVar) = OnnxOp.Lstm(x, w, r, b, null, null, null, null,
             null, null, null, null, onnxDir, hiddenSize, false, false);
-        var yLayer = (Tensor<float32>)(ImmutableTensor)yVar;     // [L, D, N, H]
-        var yh = (Tensor<float32>)(ImmutableTensor)yhVar;        // [D, N, H]
-        var yc = (Tensor<float32>)(ImmutableTensor)ycVar;        // [D, N, H]
+        var yLayer = (Tensor<float32>)(Variable)yVar;     // [L, D, N, H]
+        var yh = (Tensor<float32>)(Variable)yhVar;        // [D, N, H]
+        var yc = (Tensor<float32>)(Variable)ycVar;        // [D, N, H]
 
         var l = yLayer.DimTensor(0);
         var n = yLayer.DimTensor(2);
@@ -4147,8 +4147,8 @@ internal static class GruRefHelpers
 
         var (yVar, yhVar) = OnnxOp.Gru(x, w, r, b, null, null,
             null, null, null, null, onnxDir, hiddenSize, false, linearBeforeReset);
-        var yLayer = (Tensor<float32>)(ImmutableTensor)yVar;     // [L, D, N, H]
-        var yh = (Tensor<float32>)(ImmutableTensor)yhVar;        // [D, N, H]
+        var yLayer = (Tensor<float32>)(Variable)yVar;     // [L, D, N, H]
+        var yh = (Tensor<float32>)(Variable)yhVar;        // [D, N, H]
 
         var l = yLayer.DimTensor(0);
         var n = yLayer.DimTensor(2);
@@ -4487,7 +4487,7 @@ internal static class CellRefHelpers
 
         var (_, yhVar) = OnnxOp.Rnn(x.Unsqueeze(0L), w, r, b, null, h.Unsqueeze(0L),
             null, null, activations, null, RNNDirection.Forward, hiddenSize, false);
-        return ((Tensor<float32>)(ImmutableTensor)yhVar).Squeeze(Vector(0L));           // [N, H]
+        return ((Tensor<float32>)(Variable)yhVar).Squeeze(Vector(0L));           // [N, H]
     }
 
     /// <summary>Hand-built seq=1 LSTM reference: Unsqueeze x/h/c, run the op forward with the same SAME-shape
@@ -4504,8 +4504,8 @@ internal static class CellRefHelpers
 
         var (_, yhVar, ycVar) = OnnxOp.Lstm(x.Unsqueeze(0L), w, r, b, null, h.Unsqueeze(0L), c.Unsqueeze(0L),
             null, null, null, null, null, LSTMDirection.Forward, hiddenSize, false, false);
-        return (((Tensor<float32>)(ImmutableTensor)yhVar).Squeeze(Vector(0L)),
-                ((Tensor<float32>)(ImmutableTensor)ycVar).Squeeze(Vector(0L)));            // each [N, H]
+        return (((Tensor<float32>)(Variable)yhVar).Squeeze(Vector(0L)),
+                ((Tensor<float32>)(Variable)ycVar).Squeeze(Vector(0L)));            // each [N, H]
     }
 
     /// <summary>Hand-built seq=1 GRU reference: Unsqueeze x/h, run the op forward with the same SAME-shape
@@ -4523,7 +4523,7 @@ internal static class CellRefHelpers
 
         var (_, yhVar) = OnnxOp.Gru(x.Unsqueeze(0L), w, r, b, null, h.Unsqueeze(0L),
             null, null, null, null, GRUDirection.Forward, hiddenSize, false, linearBeforeReset);
-        return ((Tensor<float32>)(ImmutableTensor)yhVar).Squeeze(Vector(0L));              // [N, H]
+        return ((Tensor<float32>)(Variable)yhVar).Squeeze(Vector(0L));              // [N, H]
     }
 }
 
@@ -4666,9 +4666,9 @@ public partial class RnnCellForwardTanhGradCheck
         Func<Scalar<float32>, Scalar<float32>> f = z =>
         {
             // x [1, 2] and h [1, 2] both depend on z, so the grad threads through x AND the h-input.
-            var zv = (Tensor<float32>)(ImmutableTensor)OnnxOp.Unsqueeze(z, Vector(0L));
-            var x = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Concat([zv, Vector(0.4f)], axis: 0)).Reshape([Scalar(1L), Scalar(2L)]);
-            var h = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Concat([zv, Vector(-0.2f)], axis: 0)).Reshape([Scalar(1L), Scalar(2L)]);
+            var zv = (Tensor<float32>)(Variable)OnnxOp.Unsqueeze(z, Vector(0L));
+            var x = ((Tensor<float32>)(Variable)OnnxOp.Concat([zv, Vector(0.4f)], axis: 0)).Reshape([Scalar(1L), Scalar(2L)]);
+            var h = ((Tensor<float32>)(Variable)OnnxOp.Concat([zv, Vector(-0.2f)], axis: 0)).Reshape([Scalar(1L), Scalar(2L)]);
             var hOut = Recurrent.RNNCell(x, h, hiddenSize: 2L);
             return hOut.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
         };
@@ -4712,8 +4712,8 @@ public partial class RnnCellReluBpttThrowCheck
 {
     public static Scalar<bit> Inline(Scalar<float32> v)
     {
-        var zv = (Tensor<float32>)(ImmutableTensor)OnnxOp.Unsqueeze(v, Vector(0L));
-        var x = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Concat([zv, Vector(0.4f)], axis: 0)).Reshape([Scalar(1L), Scalar(2L)]);
+        var zv = (Tensor<float32>)(Variable)OnnxOp.Unsqueeze(v, Vector(0L));
+        var x = ((Tensor<float32>)(Variable)OnnxOp.Concat([zv, Vector(0.4f)], axis: 0)).Reshape([Scalar(1L), Scalar(2L)]);
         var h = Tensor(new long[] { 1L, 2L }, 0.3f, -0.2f);
         var hOut = Recurrent.RNNCell(x, h, hiddenSize: 2L, nonlinearity: RnnNonlinearity.Relu);
         var loss = hOut.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
@@ -4851,10 +4851,10 @@ public partial class LstmCellForwardGradCheck
     {
         Func<Scalar<float32>, Scalar<float32>> f = z =>
         {
-            var zv = (Tensor<float32>)(ImmutableTensor)OnnxOp.Unsqueeze(z, Vector(0L));
-            var x = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Concat([zv, Vector(0.4f)], axis: 0)).Reshape([Scalar(1L), Scalar(2L)]);
-            var h = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Concat([zv, Vector(-0.2f)], axis: 0)).Reshape([Scalar(1L), Scalar(2L)]);
-            var c = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Concat([zv, Vector(0.1f)], axis: 0)).Reshape([Scalar(1L), Scalar(2L)]);
+            var zv = (Tensor<float32>)(Variable)OnnxOp.Unsqueeze(z, Vector(0L));
+            var x = ((Tensor<float32>)(Variable)OnnxOp.Concat([zv, Vector(0.4f)], axis: 0)).Reshape([Scalar(1L), Scalar(2L)]);
+            var h = ((Tensor<float32>)(Variable)OnnxOp.Concat([zv, Vector(-0.2f)], axis: 0)).Reshape([Scalar(1L), Scalar(2L)]);
+            var c = ((Tensor<float32>)(Variable)OnnxOp.Concat([zv, Vector(0.1f)], axis: 0)).Reshape([Scalar(1L), Scalar(2L)]);
             var (hOut, cOut) = Recurrent.LSTMCell(x, h, c, hiddenSize: 2L);
             return hOut.Reduce(ReduceKind.Sum, keepDims: false).Scalar()
                  + cOut.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
@@ -5053,9 +5053,9 @@ public partial class GruCellForwardGradCheckBothLbr
     {
         Func<Scalar<float32>, bool, Scalar<float32>> step = (z, lbr) =>
         {
-            var zv = (Tensor<float32>)(ImmutableTensor)OnnxOp.Unsqueeze(z, Vector(0L));
-            var x = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Concat([zv, Vector(0.4f)], axis: 0)).Reshape([Scalar(1L), Scalar(2L)]);
-            var h = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Concat([zv, Vector(-0.2f)], axis: 0)).Reshape([Scalar(1L), Scalar(2L)]);
+            var zv = (Tensor<float32>)(Variable)OnnxOp.Unsqueeze(z, Vector(0L));
+            var x = ((Tensor<float32>)(Variable)OnnxOp.Concat([zv, Vector(0.4f)], axis: 0)).Reshape([Scalar(1L), Scalar(2L)]);
+            var h = ((Tensor<float32>)(Variable)OnnxOp.Concat([zv, Vector(-0.2f)], axis: 0)).Reshape([Scalar(1L), Scalar(2L)]);
             var hOut = Recurrent.GRUCell(x, h, hiddenSize: 2L, linearBeforeReset: lbr);
             return hOut.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
         };
@@ -5446,9 +5446,9 @@ public partial class NNTripletMarginClosedFormChecks
 
         // PerElement → [0, 0.5, 2]; check each element via Slice.
         var per = TripletMarginLoss.PerElement(margin, p, eps, Scalar(false), anchor, positive, negative); // [3]
-        var per0 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(per, Vector(0L), Vector(1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
-        var per1 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(per, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
-        var per2 = ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(per, Vector(2L), Vector(3L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var per0 = ((Tensor<float32>)(Variable)OnnxOp.Slice(per, Vector(0L), Vector(1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var per1 = ((Tensor<float32>)(Variable)OnnxOp.Slice(per, Vector(1L), Vector(2L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        var per2 = ((Tensor<float32>)(Variable)OnnxOp.Slice(per, Vector(2L), Vector(3L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
         // INDEPENDENT reference: relu(margin + d(a,p) − d(a,n)) with a raw-op
         // Euclidean distance (no eps, no module re-call). Tolerance absorbs the
@@ -5679,9 +5679,9 @@ public partial class NNTripletEmbeddingRigModel
     public static Scalar<float32> Inline(Tensor<float32> apn)   // [3N, D] = [6, 2]
     {
         var embed = Linear.Model(Scalar(2L), Scalar(true));     // shared trainable embedding [D]→[2]
-        var ea = embed.Call((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(apn, Vector(0L), Vector(2L)));   // anchor   [2,2]
-        var ep = embed.Call((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(apn, Vector(2L), Vector(4L)));   // positive [2,2]
-        var en = embed.Call((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(apn, Vector(4L), Vector(6L)));   // negative [2,2]
+        var ea = embed.Call((Tensor<float32>)(Variable)OnnxOp.Slice(apn, Vector(0L), Vector(2L)));   // anchor   [2,2]
+        var ep = embed.Call((Tensor<float32>)(Variable)OnnxOp.Slice(apn, Vector(2L), Vector(4L)));   // positive [2,2]
+        var en = embed.Call((Tensor<float32>)(Variable)OnnxOp.Slice(apn, Vector(4L), Vector(6L)));   // negative [2,2]
         // margin=10 keeps the hinge ACTIVE regardless of the random init (the
         // embedding distances are O(few)), so the triplet loss is nonzero and the
         // gradient flows; swap=true so the Min arm is on the autodiff path too.
@@ -5795,7 +5795,7 @@ public partial class NNCosineEmbeddingClosedFormChecks
     }
 
     private static Scalar<float32> Slice1(Tensor<float32> v, long i)
-        => ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(v, Vector(i), Vector(i + 1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        => ((Tensor<float32>)(Variable)OnnxOp.Slice(v, Vector(i), Vector(i + 1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
     private static Scalar<int64> Within(Scalar<float32> dist, float bound)
         => (dist <= Scalar(bound)).IfElse(Scalar(1L), Scalar(0L));
@@ -5895,7 +5895,7 @@ public partial class NNCosineEmbeddingWhereSplitChecks
     }
 
     private static Scalar<float32> Slice1(Tensor<float32> v, long i)
-        => ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(v, Vector(i), Vector(i + 1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        => ((Tensor<float32>)(Variable)OnnxOp.Slice(v, Vector(i), Vector(i + 1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
     private static Scalar<int64> Within(Scalar<float32> dist, float bound)
         => (dist <= Scalar(bound)).IfElse(Scalar(1L), Scalar(0L));
@@ -6015,7 +6015,7 @@ public partial class NNCosineSimilarityHelperChecks
     }
 
     private static Scalar<float32> Slice1(Tensor<float32> v, long i)
-        => ((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(v, Vector(i), Vector(i + 1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+        => ((Tensor<float32>)(Variable)OnnxOp.Slice(v, Vector(i), Vector(i + 1L))).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
 
     private static Scalar<int64> Within(Scalar<float32> dist, float bound)
         => (dist <= Scalar(bound)).IfElse(Scalar(1L), Scalar(0L));
@@ -6042,8 +6042,8 @@ public partial class NNCosineEmbeddingRigModel
     public static Scalar<float32> Inline(Tensor<float32> pair)   // [2N, D] = [4, 2]
     {
         var embed = Linear.Model(Scalar(2L), Scalar(true));     // shared trainable embedding [D]→[2]
-        var e1 = embed.Call((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(pair, Vector(0L), Vector(2L)));   // x1 [2,2]
-        var e2 = embed.Call((Tensor<float32>)(ImmutableTensor)OnnxOp.Slice(pair, Vector(2L), Vector(4L)));   // x2 [2,2]
+        var e1 = embed.Call((Tensor<float32>)(Variable)OnnxOp.Slice(pair, Vector(0L), Vector(2L)));   // x1 [2,2]
+        var e2 = embed.Call((Tensor<float32>)(Variable)OnnxOp.Slice(pair, Vector(2L), Vector(4L)));   // x2 [2,2]
         // y=−1 (dissimilar arm) with margin=−1 keeps the hinge relu(cos−margin)
         // active for ANY cos ∈ [−1,1] (cos − (−1) = cos + 1 ≥ 0, strictly > 0 unless
         // cos=−1), so the loss is a real, nonzero objective and the gradient flows.

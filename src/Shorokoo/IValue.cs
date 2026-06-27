@@ -133,24 +133,25 @@ namespace Shorokoo
     {
         // Element-type reinterprets — produce the typed tensor handle of element type T over the same
         // graph node (the node itself is non-generic; the runtime dtype is unchanged).
-        public static Tensor<T> As<T>(this IValue var) where T : IVarType => (ImmutableTensor)var;
-        public static Tensor<uint4> uint4(this IValue var) => (ImmutableTensor)var;
-        public static Tensor<uint8> uint8(this IValue var) => (ImmutableTensor)var;
-        public static Tensor<uint16> uint16(this IValue var) => (ImmutableTensor)var;
-        public static Tensor<uint32> uint32(this IValue var) => (ImmutableTensor)var;
-        public static Tensor<uint64> uint64(this IValue var) => (ImmutableTensor)var;
-        public static Tensor<int4> int4(this IValue var) => (ImmutableTensor)var;
-        public static Tensor<int8> int8(this IValue var) => (ImmutableTensor)var;
-        public static Tensor<int16> int16(this IValue var) => (ImmutableTensor)var;
-        public static Tensor<int32> int32(this IValue var) => (ImmutableTensor)var;
-        public static Tensor<int64> int64(this IValue var) => (ImmutableTensor)var;
-        public static Tensor<float16> float16(this IValue var) => (ImmutableTensor)var;
-        public static Tensor<bfloat16> bfloat16(this IValue var) => (ImmutableTensor)var;
-        public static Tensor<float32> float32(this IValue var) => (ImmutableTensor)var;
-        public static Tensor<float64> float64(this IValue var) => (ImmutableTensor)var;
+        public static Tensor<T> As<T>(this IValue var) where T : IVarType => (Variable)var;
+        public static Tensor<uint4> uint4(this IValue var) => (Variable)var;
+        public static Tensor<uint8> uint8(this IValue var) => (Variable)var;
+        public static Tensor<uint16> uint16(this IValue var) => (Variable)var;
+        public static Tensor<uint32> uint32(this IValue var) => (Variable)var;
+        public static Tensor<uint64> uint64(this IValue var) => (Variable)var;
+        public static Tensor<int4> int4(this IValue var) => (Variable)var;
+        public static Tensor<int8> int8(this IValue var) => (Variable)var;
+        public static Tensor<int16> int16(this IValue var) => (Variable)var;
+        public static Tensor<int32> int32(this IValue var) => (Variable)var;
+        public static Tensor<int64> int64(this IValue var) => (Variable)var;
+        public static Tensor<float16> float16(this IValue var) => (Variable)var;
+        public static Tensor<bfloat16> bfloat16(this IValue var) => (Variable)var;
+        public static Tensor<float32> float32(this IValue var) => (Variable)var;
+        public static Tensor<float64> float64(this IValue var) => (Variable)var;
 
         public static DataStructure Structure(this IValue var)
-            => var is ITensorStruct ? DataStructure.TensorStruct :
+            => var is Variable nodeVar ? nodeVar.Kind :
+               var is ITensorStruct ? DataStructure.TensorStruct :
                var is ITensor ? DataStructure.Tensor :
                var is IOptionalTensor ? DataStructure.Optional :
                DataStructure.Sequence;

@@ -13,10 +13,10 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Tensor<int64>, Tensor<int64>, Tensor<int64>, Tensor<int64>) Inline(Tensor<float32> x)
         {
-            var amax0 = (Tensor<int64>)(ImmutableTensor)OnnxOp.ArgMax(x, axis: 0, keepdims: false, selectLastIndex: false);
-            var amaxK = (Tensor<int64>)(ImmutableTensor)OnnxOp.ArgMax(x, axis: -1, keepdims: true, selectLastIndex: true);
-            var amin0 = (Tensor<int64>)(ImmutableTensor)OnnxOp.ArgMin(x, axis: 0, keepdims: false, selectLastIndex: false);
-            var aminK = (Tensor<int64>)(ImmutableTensor)OnnxOp.ArgMin(x, axis: -1, keepdims: true, selectLastIndex: false);
+            var amax0 = (Tensor<int64>)(Variable)OnnxOp.ArgMax(x, axis: 0, keepdims: false, selectLastIndex: false);
+            var amaxK = (Tensor<int64>)(Variable)OnnxOp.ArgMax(x, axis: -1, keepdims: true, selectLastIndex: true);
+            var amin0 = (Tensor<int64>)(Variable)OnnxOp.ArgMin(x, axis: 0, keepdims: false, selectLastIndex: false);
+            var aminK = (Tensor<int64>)(Variable)OnnxOp.ArgMin(x, axis: -1, keepdims: true, selectLastIndex: false);
             return (amax0, amaxK, amin0, aminK);
         }
     }
@@ -27,8 +27,8 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Tensor<float32>, Tensor<int64>) Inline(Tensor<float32> x)
         {
-            var e1 = (Tensor<float32>)(ImmutableTensor)OnnxOp.EyeLike(x, dtype: null, k: 0);
-            var e2 = (Tensor<int64>)(ImmutableTensor)OnnxOp.EyeLike(x, dtype: DType.Int64, k: 1);
+            var e1 = (Tensor<float32>)(Variable)OnnxOp.EyeLike(x, dtype: null, k: 0);
+            var e2 = (Tensor<int64>)(Variable)OnnxOp.EyeLike(x, dtype: DType.Int64, k: 1);
             return (e1, e2);
         }
     }
@@ -42,10 +42,10 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Tensor<float32>, Tensor<float32>, Tensor<float32>, Tensor<float32>) Inline(Tensor<float32> x)
         {
-            var rn = (Tensor<float32>)(ImmutableTensor)OnnxOp.RandomNormal(new long[] { 2L, 3L }, mean: 0f, scale: 1f, dtype: DType.Float32, seed: 42f);
-            var ru = (Tensor<float32>)(ImmutableTensor)OnnxOp.RandomUniform(new long[] { 2L, 3L }, high: 1f, low: 0f, dtype: DType.Float32, seed: 7f);
-            var rnl = (Tensor<float32>)(ImmutableTensor)OnnxOp.RandomNormalLike(x, mean: 0f, scale: 1f, dtype: null, seed: 1f);
-            var rul = (Tensor<float32>)(ImmutableTensor)OnnxOp.RandomUniformLike(x, high: 1f, low: 0f, dtype: null, seed: 1f);
+            var rn = (Tensor<float32>)(Variable)OnnxOp.RandomNormal(new long[] { 2L, 3L }, mean: 0f, scale: 1f, dtype: DType.Float32, seed: 42f);
+            var ru = (Tensor<float32>)(Variable)OnnxOp.RandomUniform(new long[] { 2L, 3L }, high: 1f, low: 0f, dtype: DType.Float32, seed: 7f);
+            var rnl = (Tensor<float32>)(Variable)OnnxOp.RandomNormalLike(x, mean: 0f, scale: 1f, dtype: null, seed: 1f);
+            var rul = (Tensor<float32>)(Variable)OnnxOp.RandomUniformLike(x, high: 1f, low: 0f, dtype: null, seed: 1f);
             return (rn, ru, rnl, rul);
         }
     }
@@ -56,8 +56,8 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Tensor<float32>, Tensor<float32>) Inline(Vector<int64> shape)
         {
-            var srn = (Tensor<float32>)(ImmutableTensor)InternalOp.RandomNormal(shape, mean: 0f, scale: 1f, seed: 2f);
-            var sru = (Tensor<float32>)(ImmutableTensor)InternalOp.RandomUniform(shape, high: 1f, low: 0f, seed: 3f);
+            var srn = (Tensor<float32>)(Variable)InternalOp.RandomNormal(shape, mean: 0f, scale: 1f, seed: 2f);
+            var sru = (Tensor<float32>)(Variable)InternalOp.RandomUniform(shape, high: 1f, low: 0f, seed: 3f);
             return (srn, sru);
         }
     }
@@ -69,7 +69,7 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<bit> Inline(Tensor<float32> x)
         {
             var opt = OnnxOp.Optional(x, DataStructure.Tensor, DType.Float32);
-            return (Scalar<bit>)(ImmutableScalar)OnnxOp.OptionalHasElement(opt);
+            return (Scalar<bit>)(Variable)OnnxOp.OptionalHasElement(opt);
         }
     }
 
@@ -86,27 +86,27 @@ namespace Shorokoo.Tests.Modules
         public static (Tensor<float32>, Tensor<float32>, Tensor<float32>, Tensor<float32>, Tensor<int64>) Inline(
             Tensor<float32> x, Scalar<float32> a, Scalar<float32> b, Scalar<float32> c)
         {
-            var aV = (Tensor<float32>)(ImmutableTensor)OnnxOp.Reshape(a, Vector(1L), allowZero: false);
-            var bV = (Tensor<float32>)(ImmutableTensor)OnnxOp.Reshape(b, Vector(1L), allowZero: false);
-            var cV = (Tensor<float32>)(ImmutableTensor)OnnxOp.Reshape(c, Vector(1L), allowZero: false);
+            var aV = (Tensor<float32>)(Variable)OnnxOp.Reshape(a, Vector(1L), allowZero: false);
+            var bV = (Tensor<float32>)(Variable)OnnxOp.Reshape(b, Vector(1L), allowZero: false);
+            var cV = (Tensor<float32>)(Variable)OnnxOp.Reshape(c, Vector(1L), allowZero: false);
 
             // SequenceSlice with runtime int64 bounds.
             var seq = OnnxOp.SequenceConstruct(aV, bV, cV);
             var startL = Scalar(0f).Cast<int64>();
             var endL = Scalar(2f).Cast<int64>();
             var sliced = InternalOp.SequenceSlice(seq, startL, endL);
-            var sliceElem = (Tensor<float32>)(ImmutableTensor)OnnxOp.SequenceAt(sliced, Scalar(0f).Cast<int64>());
+            var sliceElem = (Tensor<float32>)(Variable)OnnxOp.SequenceAt(sliced, Scalar(0f).Cast<int64>());
 
             // SequenceConcat of two single-element sequences.
             var seq1 = OnnxOp.SequenceConstruct(aV);
             var seq2 = OnnxOp.SequenceConstruct(bV);
             var merged = InternalOp.SequenceConcat(new[] { seq1, seq2 });
-            var concatElem = (Tensor<float32>)(ImmutableTensor)OnnxOp.SequenceAt(merged, Scalar(0f).Cast<int64>());
+            var concatElem = (Tensor<float32>)(Variable)OnnxOp.SequenceAt(merged, Scalar(0f).Cast<int64>());
 
             // Standalone Loop placeholder ops.
-            var scanZombie = (Tensor<float32>)(ImmutableTensor)OnnxOp.LoopScanZombie(x);
-            var fakeInput = (Tensor<float32>)(ImmutableTensor)OnnxOp.LoopFakeInput(DType.Float32, rank: 2, DataStructure.Tensor);
-            var loopIdx = (Tensor<int64>)(ImmutableTensor)OnnxOp.LoopIndexVariable();
+            var scanZombie = (Tensor<float32>)(Variable)OnnxOp.LoopScanZombie(x);
+            var fakeInput = (Tensor<float32>)(Variable)OnnxOp.LoopFakeInput(DType.Float32, rank: 2, DataStructure.Tensor);
+            var loopIdx = (Tensor<int64>)(Variable)OnnxOp.LoopIndexVariable();
 
             return (sliceElem, concatElem, scanZombie, fakeInput, loopIdx);
         }
@@ -118,10 +118,10 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Tensor<int64>, Tensor<int64>, Tensor<float32>, Tensor<float32>) Inline()
         {
-            var ci = (Tensor<int64>)(ImmutableTensor)OnnxOp.Constant(42L);
-            var cis = (Tensor<int64>)(ImmutableTensor)OnnxOp.Constant(new long[] { 1L, 2L, 3L });
-            var cf = (Tensor<float32>)(ImmutableTensor)OnnxOp.Constant(2.5f);
-            var cfs = (Tensor<float32>)(ImmutableTensor)OnnxOp.Constant(new float[] { 1.5f, 2.5f, 3.5f });
+            var ci = (Tensor<int64>)(Variable)OnnxOp.Constant(42L);
+            var cis = (Tensor<int64>)(Variable)OnnxOp.Constant(new long[] { 1L, 2L, 3L });
+            var cf = (Tensor<float32>)(Variable)OnnxOp.Constant(2.5f);
+            var cfs = (Tensor<float32>)(Variable)OnnxOp.Constant(new float[] { 1.5f, 2.5f, 3.5f });
             return (ci, cis, cf, cfs);
         }
     }
@@ -132,9 +132,9 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Tensor<int64>, Tensor<int64>, Tensor<int64>) Inline(Tensor<int64> x)
         {
-            var a = (Tensor<int64>)(ImmutableTensor)OnnxOp.Abs(x);
-            var n = (Tensor<int64>)(ImmutableTensor)OnnxOp.Neg(x);
-            var s = (Tensor<int64>)(ImmutableTensor)OnnxOp.Sign(x);
+            var a = (Tensor<int64>)(Variable)OnnxOp.Abs(x);
+            var n = (Tensor<int64>)(Variable)OnnxOp.Neg(x);
+            var s = (Tensor<int64>)(Variable)OnnxOp.Sign(x);
             return (a, n, s);
         }
     }
@@ -145,8 +145,8 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Tensor<bit>, Tensor<bit>) Inline(Tensor<int64> a, Tensor<int64> b)
         {
-            var lt = (Tensor<bit>)(ImmutableTensor)OnnxOp.Less(a, b);
-            var le = (Tensor<bit>)(ImmutableTensor)OnnxOp.LessOrEqual(a, b);
+            var lt = (Tensor<bit>)(Variable)OnnxOp.Less(a, b);
+            var le = (Tensor<bit>)(Variable)OnnxOp.LessOrEqual(a, b);
             return (lt, le);
         }
     }
@@ -157,8 +157,8 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Tensor<int64>, Tensor<int64>) Inline(Tensor<int64> a, Tensor<int64> b)
         {
-            var p = (Tensor<int64>)(ImmutableTensor)OnnxOp.Pow(a, b);
-            var m = (Tensor<int64>)(ImmutableTensor)OnnxOp.Mod(a, b, fmod: false);
+            var p = (Tensor<int64>)(Variable)OnnxOp.Pow(a, b);
+            var m = (Tensor<int64>)(Variable)OnnxOp.Mod(a, b, fmod: false);
             return (p, m);
         }
     }
@@ -169,10 +169,10 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Tensor<int64>, Tensor<int64>, Tensor<int64>, Tensor<int64>) Inline(Tensor<int64> a, Tensor<int64> b)
         {
-            var bAnd = (Tensor<int64>)(ImmutableTensor)OnnxOp.BitwiseAnd(a, b);
-            var bOr = (Tensor<int64>)(ImmutableTensor)OnnxOp.BitwiseOr(a, b);
-            var bXor = (Tensor<int64>)(ImmutableTensor)OnnxOp.BitwiseXor(a, b);
-            var bNot = (Tensor<int64>)(ImmutableTensor)OnnxOp.BitwiseNot(a);
+            var bAnd = (Tensor<int64>)(Variable)OnnxOp.BitwiseAnd(a, b);
+            var bOr = (Tensor<int64>)(Variable)OnnxOp.BitwiseOr(a, b);
+            var bXor = (Tensor<int64>)(Variable)OnnxOp.BitwiseXor(a, b);
+            var bNot = (Tensor<int64>)(Variable)OnnxOp.BitwiseNot(a);
             return (bAnd, bOr, bXor, bNot);
         }
     }
@@ -186,9 +186,9 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Tensor<float32>, Tensor<bit>, Tensor<float32>) Inline(Tensor<float32> f, Tensor<bit> b1, Tensor<bit> b2)
         {
-            var c = (Tensor<float32>)(ImmutableTensor)OnnxOp.Ceil(f);
-            var x = (Tensor<bit>)(ImmutableTensor)OnnxOp.Xor(b1, b2);
-            var r = (Tensor<float32>)(ImmutableTensor)OnnxOp.Range(Scalar(0f), Scalar(5f), Scalar(0.5f));
+            var c = (Tensor<float32>)(Variable)OnnxOp.Ceil(f);
+            var x = (Tensor<bit>)(Variable)OnnxOp.Xor(b1, b2);
+            var r = (Tensor<float32>)(Variable)OnnxOp.Range(Scalar(0f), Scalar(5f), Scalar(0.5f));
             return (c, x, r);
         }
     }
@@ -199,10 +199,10 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Tensor<float32>, Tensor<float32>, Tensor<float32>, Tensor<float32>) Inline(Tensor<float32> x)
         {
-            var celu = (Tensor<float32>)(ImmutableTensor)OnnxOp.Celu(x, alpha: 1.0f);
-            var elu = (Tensor<float32>)(ImmutableTensor)OnnxOp.Elu(x, alpha: 1.5f);
-            var selu = (Tensor<float32>)(ImmutableTensor)OnnxOp.Selu(x, alpha: 1.0507f, gamma: 1.6732f);
-            var lr = (Tensor<float32>)(ImmutableTensor)OnnxOp.LeakyRelu(x, alpha: 0.01f);
+            var celu = (Tensor<float32>)(Variable)OnnxOp.Celu(x, alpha: 1.0f);
+            var elu = (Tensor<float32>)(Variable)OnnxOp.Elu(x, alpha: 1.5f);
+            var selu = (Tensor<float32>)(Variable)OnnxOp.Selu(x, alpha: 1.0507f, gamma: 1.6732f);
+            var lr = (Tensor<float32>)(Variable)OnnxOp.LeakyRelu(x, alpha: 0.01f);
             return (celu, elu, selu, lr);
         }
     }
@@ -213,9 +213,9 @@ namespace Shorokoo.Tests.Modules
     {
         public static (Tensor<bit>, Tensor<bit>, Tensor<bit>) Inline(Tensor<float32> f, Tensor<int64> i, Tensor<bit> b)
         {
-            var cf = (Tensor<bit>)(ImmutableTensor)OnnxOp.Cast(f, saturate: null, to: DType.Bool);
-            var ci = (Tensor<bit>)(ImmutableTensor)OnnxOp.Cast(i, saturate: null, to: DType.Bool);
-            var cb = (Tensor<bit>)(ImmutableTensor)OnnxOp.Cast(b, saturate: null, to: DType.Bool);
+            var cf = (Tensor<bit>)(Variable)OnnxOp.Cast(f, saturate: null, to: DType.Bool);
+            var ci = (Tensor<bit>)(Variable)OnnxOp.Cast(i, saturate: null, to: DType.Bool);
+            var cb = (Tensor<bit>)(Variable)OnnxOp.Cast(b, saturate: null, to: DType.Bool);
             return (cf, ci, cb);
         }
     }
@@ -251,10 +251,10 @@ namespace Shorokoo.Tests.Modules
         public static (Tensor<float64>, Tensor<int32>, Tensor<int16>, Tensor<int8>) Inline(
             Tensor<float64> f64, Tensor<int32> i32, Tensor<int16> i16, Tensor<int8> i8)
             => (
-                (Tensor<float64>)(ImmutableTensor)OnnxOp.Identity(f64, rank: null),
-                (Tensor<int32>)(ImmutableTensor)OnnxOp.Identity(i32, rank: null),
-                (Tensor<int16>)(ImmutableTensor)OnnxOp.Identity(i16, rank: null),
-                (Tensor<int8>)(ImmutableTensor)OnnxOp.Identity(i8, rank: null)
+                (Tensor<float64>)(Variable)OnnxOp.Identity(f64, rank: null),
+                (Tensor<int32>)(Variable)OnnxOp.Identity(i32, rank: null),
+                (Tensor<int16>)(Variable)OnnxOp.Identity(i16, rank: null),
+                (Tensor<int8>)(Variable)OnnxOp.Identity(i8, rank: null)
             );
     }
 
@@ -268,11 +268,11 @@ namespace Shorokoo.Tests.Modules
         public static (Tensor<uint8>, Tensor<uint16>, Tensor<uint32>, Tensor<uint64>, Tensor<bit>) Inline(
             Tensor<uint8> u8, Tensor<uint16> u16, Tensor<uint32> u32, Tensor<uint64> u64, Tensor<bit> b)
             => (
-                (Tensor<uint8>)(ImmutableTensor)OnnxOp.Identity(u8, rank: null),
-                (Tensor<uint16>)(ImmutableTensor)OnnxOp.Identity(u16, rank: null),
-                (Tensor<uint32>)(ImmutableTensor)OnnxOp.Identity(u32, rank: null),
-                (Tensor<uint64>)(ImmutableTensor)OnnxOp.Identity(u64, rank: null),
-                (Tensor<bit>)(ImmutableTensor)OnnxOp.Identity(b, rank: null)
+                (Tensor<uint8>)(Variable)OnnxOp.Identity(u8, rank: null),
+                (Tensor<uint16>)(Variable)OnnxOp.Identity(u16, rank: null),
+                (Tensor<uint32>)(Variable)OnnxOp.Identity(u32, rank: null),
+                (Tensor<uint64>)(Variable)OnnxOp.Identity(u64, rank: null),
+                (Tensor<bit>)(Variable)OnnxOp.Identity(b, rank: null)
             );
     }
 }

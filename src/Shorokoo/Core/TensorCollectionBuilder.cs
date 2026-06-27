@@ -39,7 +39,7 @@ namespace Shorokoo.Core
 
         internal VectorExpressionHelper(Vector<T> vector)
         {
-            if ((ImmutableTensor)vector.Imm is ImmutableScalar s) {                this.scalar = s; }
+            if (vector.Imm.Rank == 0) { this.scalar = vector.Imm; }
             else
                 this.vector = vector;
         }

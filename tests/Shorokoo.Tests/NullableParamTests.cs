@@ -234,7 +234,7 @@ public class NullableParamTests
     }
 
     // ───────────────────────── value-struct handle (OptionalTensor) ─────────────────────────
-    // OptionalTensor<T> is now a value-type handle wrapping an ImmutableOptionalTensor; these
+    // OptionalTensor<T> is now a value-type handle wrapping an Variable; these
     // pin the conversion web, graph-identity preservation under boxing, and default materialisation.
 
     [Fact]
@@ -247,7 +247,7 @@ public class NullableParamTests
     public void OptionalTensorHandle_WrapUnwrap_PreservesGraphIdentity()
     {
         OptionalTensor<float32> handle = OptionalTensor<float32>(Vector(1f, 2f, 3f));
-        Shorokoo.Core.ImmutableOptionalTensor imm = handle;   // unwrap (implicit)
+        Variable imm = handle;   // unwrap (implicit)
         OptionalTensor<float32> rewrapped = imm;                       // wrap (implicit)
         Assert.Equal(imm.Key, ((IValue)rewrapped).Key);
         Assert.Equal(imm.Key, ((IValue)handle).Key);                // boxing keeps Key

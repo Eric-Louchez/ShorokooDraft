@@ -118,11 +118,11 @@ namespace Shorokoo.Core
                 return $"[{module.ModuleVariable.ModuleFn!.ModuleSignatureString}]";
 
             // Model/module params are scalar nodes distinguished by their runtime DType (formerly the
-            // generic ImmutableScalar<IModelVarType> / ImmutableScalar<IModuleVarType>).
-            if (moduleParam is ImmutableScalar modelVariable && modelVariable.Type == DType.Model)
+            // generic Variable<IModelVarType> / Variable<IModuleVarType>).
+            if (moduleParam is Variable modelVariable && modelVariable.Type == DType.Model)
                 return $"[{modelVariable.ModuleFn!.ModelSignatureString}]";
 
-            if (moduleParam is ImmutableScalar moduleVariable && moduleVariable.Type == DType.Module)
+            if (moduleParam is Variable moduleVariable && moduleVariable.Type == DType.Module)
                 return $"[{moduleVariable.ModuleFn!.ModuleSignatureString}]";
 
             var variable = moduleParam as IValue;
@@ -131,21 +131,20 @@ namespace Shorokoo.Core
 
             var rankString = rank is null || rank == -1 ? "" : $"#{rank}";
 
-            if (moduleParam is ITensorStruct tensorStruct)
+            // Dispatch on the structural kind (a single Variable node satisfies every marker
+            // interface, so kind must come from Structure()/Kind rather than ordered `is` checks).
+            switch (variable.Structure())
             {
-                // TensorStruct signature format: "struct:{typeName}" where typeName is the IStruct interface name
-                var typeName = tensorStruct.Definition?.TypeName ?? "anonymous";
-                return $"struct:{typeName}";
+                case DataStructure.TensorStruct:
+                    // "struct:{typeName}" where typeName is the IStruct interface name.
+                    return $"struct:{((ITensorStruct)variable).Definition?.TypeName ?? "anonymous"}";
+                case DataStructure.Tensor:
+                    return $"{variable.Type.ToString().ToLower()}{rankString}";
+                case DataStructure.Optional:
+                    return $"{variable.Type.ToString().ToLower()}?{rankString}";
+                case DataStructure.Sequence:
+                    return $"{variable.Type.ToString().ToLower()}/seq{rankString}";
             }
-
-            if (moduleParam is ITensor tensor)
-                return $"{tensor.Type.ToString().ToLower()}{rankString}";
-
-            if (moduleParam is IOptionalTensor optionalTensor)
-                return $"{optionalTensor.Type.ToString().ToLower()}?{rankString}";
-
-            if (moduleParam is ITensorSequence tensorSequence)
-                return $"{tensorSequence.Type.ToString().ToLower()}/seq{rankString}";
 
             throw new InvalidTensorOperationException(ErrorCodes.FW002, "Module Parameter Type Processing", $"parameter type {variable.GetType().Name}", "Unsupported module parameter type - expected ITensor, IOptionalTensor, ITensorSequence, or ITensorStruct");
         }
@@ -357,7 +356,7 @@ namespace Shorokoo.Core
             {
                 genericTypeArgs = ExtractGenericTypeArgsFromType(moduleType);
             }
-            return (ImmutableScalar)InternalOp.CreateModule(targetFunction, genericTypeArgs);
+            return (Variable)InternalOp.CreateModule(targetFunction, genericTypeArgs);
         }
 
         /// <summary>
@@ -614,7 +613,7 @@ namespace Shorokoo.Core
             {
                 var type = typeForEach;
                 if (type.IsAssignableFrom(typeof(IModel)))
-                    type = typeof(ImmutableScalar);
+                    type = typeof(Variable);
 
                 if (type.IsAssignableTo(typeof(ITensorStruct)))
                 {

@@ -30,7 +30,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(2L), Scalar(2L), Scalar(3L), Scalar(3L)]);
             var b = InitSimple.Init([Scalar(2L)]).Vec();
             var loss = ConvLoss(x, w, b);
-            var grad = (Tensor<float32>)(ImmutableTensor)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
+            var grad = (Tensor<float32>)(Variable)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
 
             var h = Scalar(1e-3f);
             var pert = h * grad;
@@ -61,7 +61,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(2L), Scalar(2L), Scalar(3L), Scalar(3L)]);
             var b = InitSimple.Init([Scalar(2L)]).Vec();
             var loss = ConvLoss(x, w, b);
-            var grad = (Tensor<float32>)(ImmutableTensor)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
+            var grad = (Tensor<float32>)(Variable)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
 
             var h = Scalar(1e-3f);
             var pert = h * grad;
@@ -94,7 +94,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(2L), Scalar(2L), Scalar(2L), Scalar(2L)]);
             var b = InitSimple.Init([Scalar(2L)]).Vec();
             var loss = ConvLoss(x, w, b);
-            var grad = (Tensor<float32>)(ImmutableTensor)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
+            var grad = (Tensor<float32>)(Variable)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
 
             var h = Scalar(1e-3f);
             var pert = h * grad;
@@ -125,7 +125,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(4L), Scalar(2L), Scalar(3L), Scalar(3L)]);
             var b = InitSimple.Init([Scalar(4L)]).Vec();
             var loss = ConvLoss(x, w, b);
-            var grad = (Tensor<float32>)(ImmutableTensor)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
+            var grad = (Tensor<float32>)(Variable)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
 
             var h = Scalar(1e-3f);
             var pert = h * grad;
@@ -159,7 +159,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(4L), Scalar(2L), Scalar(3L), Scalar(3L)]);
             var b = InitSimple.Init([Scalar(4L)]).Vec();
             var loss = ConvLoss(x, w, b);
-            var grad = (Tensor<float32>)(ImmutableTensor)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
+            var grad = (Tensor<float32>)(Variable)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
 
             // Closed form: every weight element's gradient is OH*OW * x_val = 9 * 0.1 = 0.9.
             var diff = (grad - Scalar(0.9f)).Abs();
@@ -190,7 +190,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(4L), Scalar(2L), Scalar(2L), Scalar(2L)]);
             var b = InitSimple.Init([Scalar(4L)]).Vec();
             var loss = ConvLoss(x, w, b);
-            var grad = (Tensor<float32>)(ImmutableTensor)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
+            var grad = (Tensor<float32>)(Variable)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
 
             var h = Scalar(1e-3f);
             var pert = h * grad;
@@ -224,7 +224,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(4L), Scalar(2L), Scalar(3L), Scalar(3L)]);
             var b = InitSimple.Init([Scalar(4L)]).Vec();
             var loss = ConvTLoss(x, w, b);
-            var grad = (Tensor<float32>)(ImmutableTensor)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
+            var grad = (Tensor<float32>)(Variable)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
 
             var diff = (grad - Scalar(2.5f)).Abs();
             return diff.Reduce(ReduceKind.Max, keepDims: false).Scalar() < Scalar(1e-3f);
@@ -232,7 +232,7 @@ namespace Shorokoo.Tests.Modules
 
         private static Scalar<float32> ConvTLoss(Tensor<float32> x, Tensor<float32> w, Vector<float32> b)
         {
-            var convT = (Tensor<float32>)(ImmutableTensor)NN.ConvTranspose(x, w, b, AutoPad.NotSet,
+            var convT = (Tensor<float32>)(Variable)NN.ConvTranspose(x, w, b, AutoPad.NotSet,
                 dilations: [1L, 1L], group: 2L, kernelShape: [3L, 3L],
                 outputPadding: [0L, 0L], outputShape: [],
                 pads: [0L, 0L, 0L, 0L], strides: [1L, 1L]);
@@ -261,7 +261,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(3L), Scalar(2L), Scalar(3L), Scalar(3L)]);
             var b = InitSimple.Init([Scalar(2L)]).Vec();
             var loss = ConvTLoss(x, w, b);
-            var grad = (Tensor<float32>)(ImmutableTensor)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
+            var grad = (Tensor<float32>)(Variable)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
 
             // Closed form: every weight element's gradient is H*W * x_val = 25 * 0.1 = 2.5.
             var diff = (grad - Scalar(2.5f)).Abs();
@@ -270,7 +270,7 @@ namespace Shorokoo.Tests.Modules
 
         private static Scalar<float32> ConvTLoss(Tensor<float32> x, Tensor<float32> w, Vector<float32> b)
         {
-            var convT = (Tensor<float32>)(ImmutableTensor)NN.ConvTranspose(x, w, b, AutoPad.NotSet,
+            var convT = (Tensor<float32>)(Variable)NN.ConvTranspose(x, w, b, AutoPad.NotSet,
                 dilations: [1L, 1L], group: 1L, kernelShape: [3L, 3L],
                 outputPadding: [0L, 0L], outputShape: [],
                 pads: [0L, 0L, 0L, 0L], strides: [1L, 1L]);
@@ -292,7 +292,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(2L), Scalar(2L), Scalar(3L), Scalar(3L)]);
             var b = InitSimple.Init([Scalar(2L)]).Vec();
             var loss = ConvTLoss(x, w, b);
-            var grad = (Tensor<float32>)(ImmutableTensor)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
+            var grad = (Tensor<float32>)(Variable)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
 
             var h = Scalar(1e-3f);
             var pert = h * grad;
@@ -303,7 +303,7 @@ namespace Shorokoo.Tests.Modules
 
         private static Scalar<float32> ConvTLoss(Tensor<float32> x, Tensor<float32> w, Vector<float32> b)
         {
-            var convT = (Tensor<float32>)(ImmutableTensor)NN.ConvTranspose(x, w, b, AutoPad.NotSet,
+            var convT = (Tensor<float32>)(Variable)NN.ConvTranspose(x, w, b, AutoPad.NotSet,
                 dilations: [1L, 1L], group: 1L, kernelShape: [3L, 3L],
                 outputPadding: [1L, 1L], outputShape: [],
                 pads: [0L, 0L, 0L, 0L], strides: [2L, 2L]);
@@ -326,7 +326,7 @@ namespace Shorokoo.Tests.Modules
             var w = InitSimple.Init([Scalar(2L), Scalar(2L), Scalar(3L), Scalar(3L)]);
             var b = InitSimple.Init([Scalar(2L)]).Vec();
             var loss = ConvTLoss(x, w, b);
-            var grad = (Tensor<float32>)(ImmutableTensor)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
+            var grad = (Tensor<float32>)(Variable)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(w, loss);
 
             var h = Scalar(1e-3f);
             var pert = h * grad;
@@ -337,7 +337,7 @@ namespace Shorokoo.Tests.Modules
 
         private static Scalar<float32> ConvTLoss(Tensor<float32> x, Tensor<float32> w, Vector<float32> b)
         {
-            var convT = (Tensor<float32>)(ImmutableTensor)NN.ConvTranspose(x, w, b, AutoPad.NotSet,
+            var convT = (Tensor<float32>)(Variable)NN.ConvTranspose(x, w, b, AutoPad.NotSet,
                 dilations: [1L, 1L], group: 1L, kernelShape: [3L, 3L],
                 outputPadding: [1L, 1L], outputShape: [],
                 pads: [0L, 0L, 0L, 0L], strides: [2L, 2L]);
@@ -364,11 +364,11 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Scalar<float32> a)
         {
-            var grid = (Tensor<float32>)(ImmutableTensor)OnnxOp.Reshape(
+            var grid = (Tensor<float32>)(Variable)OnnxOp.Reshape(
                 OnnxOp.Cast(OnnxOp.Range(Scalar(1L), Scalar(17L), Scalar(1L)), saturate: null, to: DType.Float32),
                 Vector(1L, 1L, 4L, 4L), allowZero: false);
             var x = grid * a;
-            var pooled = (Tensor<float32>)(ImmutableTensor)OnnxOp.MaxPool(x,
+            var pooled = (Tensor<float32>)(Variable)OnnxOp.MaxPool(x,
                 autoPad: AutoPad.NotSet, ceilMode: false, dilations: [1L, 1L],
                 kernelShape: [2L, 2L], pads: [0L, 0L, 0L, 0L], storageOrder: 0L, strides: [1L, 1L]);
             var loss = pooled.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
@@ -388,11 +388,11 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Scalar<float32> a)
         {
-            var grid = (Tensor<float32>)(ImmutableTensor)OnnxOp.Reshape(
+            var grid = (Tensor<float32>)(Variable)OnnxOp.Reshape(
                 OnnxOp.Cast(OnnxOp.Range(Scalar(1L), Scalar(17L), Scalar(1L)), saturate: null, to: DType.Float32),
                 Vector(1L, 1L, 4L, 4L), allowZero: false);
             var x = grid * a;
-            var pooled = (Tensor<float32>)(ImmutableTensor)OnnxOp.MaxPool(x,
+            var pooled = (Tensor<float32>)(Variable)OnnxOp.MaxPool(x,
                 autoPad: AutoPad.NotSet, ceilMode: false, dilations: [1L, 1L],
                 kernelShape: [2L, 2L], pads: [1L, 1L, 1L, 1L], storageOrder: 0L, strides: [2L, 2L]);
             var loss = pooled.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
@@ -412,11 +412,11 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Scalar<float32> a)
         {
-            var grid = (Tensor<float32>)(ImmutableTensor)OnnxOp.Reshape(
+            var grid = (Tensor<float32>)(Variable)OnnxOp.Reshape(
                 OnnxOp.Cast(OnnxOp.Range(Scalar(1L), Scalar(26L), Scalar(1L)), saturate: null, to: DType.Float32),
                 Vector(1L, 1L, 5L, 5L), allowZero: false);
             var x = grid * a;
-            var pooled = (Tensor<float32>)(ImmutableTensor)OnnxOp.MaxPool(x,
+            var pooled = (Tensor<float32>)(Variable)OnnxOp.MaxPool(x,
                 autoPad: AutoPad.NotSet, ceilMode: true, dilations: [1L, 1L],
                 kernelShape: [2L, 2L], pads: [0L, 0L, 0L, 0L], storageOrder: 0L, strides: [2L, 2L]);
             var loss = pooled.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
@@ -435,11 +435,11 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Scalar<float32> a)
         {
-            var grid = (Tensor<float32>)(ImmutableTensor)OnnxOp.Reshape(
+            var grid = (Tensor<float32>)(Variable)OnnxOp.Reshape(
                 OnnxOp.Cast(OnnxOp.Range(Scalar(1L), Scalar(17L), Scalar(1L)), saturate: null, to: DType.Float32),
                 Vector(1L, 1L, 4L, 4L), allowZero: false);
             var x = grid * a;
-            var pooled = (Tensor<float32>)(ImmutableTensor)OnnxOp.MaxPool(x,
+            var pooled = (Tensor<float32>)(Variable)OnnxOp.MaxPool(x,
                 autoPad: AutoPad.NotSet, ceilMode: false, dilations: [2L, 2L],
                 kernelShape: [2L, 2L], pads: [0L, 0L, 0L, 0L], storageOrder: 0L, strides: [1L, 1L]);
             var loss = pooled.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
@@ -463,11 +463,11 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Scalar<float32> a)
         {
-            var grid = (Tensor<float32>)(ImmutableTensor)OnnxOp.Reshape(
+            var grid = (Tensor<float32>)(Variable)OnnxOp.Reshape(
                 OnnxOp.Cast(OnnxOp.Range(Scalar(1L), Scalar(17L), Scalar(1L)), saturate: null, to: DType.Float32),
                 Vector(1L, 1L, 4L, 4L), allowZero: false);
             var x = grid * a;
-            var pooled = (Tensor<float32>)(ImmutableTensor)OnnxOp.AveragePool(
+            var pooled = (Tensor<float32>)(Variable)OnnxOp.AveragePool(
                 x, autoPad: AutoPad.NotSet, ceilMode: false, countIncludePad: false,
                 dilations: [2L, 2L], kernelShape: [2L, 2L],
                 pads: [0L, 0L, 0L, 0L], strides: [1L, 1L]);
@@ -487,8 +487,8 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Scalar<float32> a)
         {
-            var x = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(a, Vector(1L, 2L, 2L, 2L, 2L));
-            var pooled = (Tensor<float32>)(ImmutableTensor)OnnxOp.GlobalAveragePool(x);
+            var x = (Tensor<float32>)(Variable)OnnxOp.Expand(a, Vector(1L, 2L, 2L, 2L, 2L));
+            var pooled = (Tensor<float32>)(Variable)OnnxOp.GlobalAveragePool(x);
             var loss = pooled.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var grad = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(a, loss);
             return (grad - Scalar(2f)).Abs() < Scalar(1e-4f);
@@ -510,12 +510,12 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Scalar<float32> s, Scalar<float32> t)
         {
-            var x = (Tensor<float32>)(ImmutableTensor)OnnxOp.Reshape(Vector(1f, 2f), Vector(1L, 2L), allowZero: false);
-            var scale = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(s, Vector(2L));
-            var bias = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(t, Vector(2L));
-            var mean = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(Scalar(0f), Vector(2L));
-            var variance = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(Scalar(1f), Vector(2L));
-            var bn = (Tensor<float32>)(ImmutableTensor)OnnxOp.BatchNormalization(x, scale, bias, mean, variance,
+            var x = (Tensor<float32>)(Variable)OnnxOp.Reshape(Vector(1f, 2f), Vector(1L, 2L), allowZero: false);
+            var scale = (Tensor<float32>)(Variable)OnnxOp.Expand(s, Vector(2L));
+            var bias = (Tensor<float32>)(Variable)OnnxOp.Expand(t, Vector(2L));
+            var mean = (Tensor<float32>)(Variable)OnnxOp.Expand(Scalar(0f), Vector(2L));
+            var variance = (Tensor<float32>)(Variable)OnnxOp.Expand(Scalar(1f), Vector(2L));
+            var bn = (Tensor<float32>)(Variable)OnnxOp.BatchNormalization(x, scale, bias, mean, variance,
                 epsilon: 1e-8f, momentum: null, trainingMode: false);
             var loss = bn.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var (gradS, gradT) = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(s, t, loss);
@@ -538,9 +538,9 @@ namespace Shorokoo.Tests.Modules
         {
             var x = Vector(1f, 2f, 3f, 4f).Tensor();
             var weights = Vector(1f, 2f, 3f, 4f).Tensor();
-            var scale = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(s, Vector(4L));
-            var bias = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(t, Vector(4L));
-            var y = (Tensor<float32>)(ImmutableTensor)OnnxOp.LayerNormalization(x, scale, bias, axis: -1, epsilon: 1e-5f).y;
+            var scale = (Tensor<float32>)(Variable)OnnxOp.Expand(s, Vector(4L));
+            var bias = (Tensor<float32>)(Variable)OnnxOp.Expand(t, Vector(4L));
+            var y = (Tensor<float32>)(Variable)OnnxOp.LayerNormalization(x, scale, bias, axis: -1, epsilon: 1e-5f).y;
             var loss = (y * weights).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var (gradS, gradT) = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(s, t, loss);
 
@@ -575,13 +575,13 @@ namespace Shorokoo.Tests.Modules
 
         private static Scalar<float32> LnLoss(Scalar<float32> a)
         {
-            var c = (Tensor<float32>)(ImmutableTensor)OnnxOp.Reshape(
+            var c = (Tensor<float32>)(Variable)OnnxOp.Reshape(
                 OnnxOp.Cast(OnnxOp.Range(Scalar(1L), Scalar(9L), Scalar(1L)), saturate: null, to: DType.Float32),
                 Vector(2L, 4L), allowZero: false);
             var x = c * a + c * c;
-            var scale = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(Scalar(1f), Vector(4L));
-            var bias = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(Scalar(0f), Vector(4L));
-            var y = (Tensor<float32>)(ImmutableTensor)OnnxOp.LayerNormalization(x, scale, bias, axis: 1, epsilon: 1e-5f).y;
+            var scale = (Tensor<float32>)(Variable)OnnxOp.Expand(Scalar(1f), Vector(4L));
+            var bias = (Tensor<float32>)(Variable)OnnxOp.Expand(Scalar(0f), Vector(4L));
+            var y = (Tensor<float32>)(Variable)OnnxOp.LayerNormalization(x, scale, bias, axis: 1, epsilon: 1e-5f).y;
             return (y * c).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
         }
     }
@@ -597,12 +597,12 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Scalar<float32> s, Scalar<float32> t)
         {
-            var grid = (Tensor<float32>)(ImmutableTensor)OnnxOp.Reshape(
+            var grid = (Tensor<float32>)(Variable)OnnxOp.Reshape(
                 OnnxOp.Cast(OnnxOp.Range(Scalar(1L), Scalar(9L), Scalar(1L)), saturate: null, to: DType.Float32),
                 Vector(1L, 4L, 1L, 2L), allowZero: false);
-            var scale = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(s, Vector(4L));
-            var bias = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(t, Vector(4L));
-            var y = (Tensor<float32>)(ImmutableTensor)OnnxOp.GroupNormalization(grid, scale, bias,
+            var scale = (Tensor<float32>)(Variable)OnnxOp.Expand(s, Vector(4L));
+            var bias = (Tensor<float32>)(Variable)OnnxOp.Expand(t, Vector(4L));
+            var y = (Tensor<float32>)(Variable)OnnxOp.GroupNormalization(grid, scale, bias,
                 epsilon: 1e-5f, numGroups: 2);
             var loss = (y * grid).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var (gradS, gradT) = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(s, t, loss);
@@ -625,12 +625,12 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Scalar<float32> s, Scalar<float32> t)
         {
-            var grid = (Tensor<float32>)(ImmutableTensor)OnnxOp.Reshape(
+            var grid = (Tensor<float32>)(Variable)OnnxOp.Reshape(
                 OnnxOp.Cast(OnnxOp.Range(Scalar(1L), Scalar(9L), Scalar(1L)), saturate: null, to: DType.Float32),
                 Vector(1L, 2L, 2L, 2L), allowZero: false);
-            var scale = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(s, Vector(2L));
-            var bias = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(t, Vector(2L));
-            var y = (Tensor<float32>)(ImmutableTensor)OnnxOp.InstanceNormalization(grid, scale, bias, epsilon: 1e-5f);
+            var scale = (Tensor<float32>)(Variable)OnnxOp.Expand(s, Vector(2L));
+            var bias = (Tensor<float32>)(Variable)OnnxOp.Expand(t, Vector(2L));
+            var y = (Tensor<float32>)(Variable)OnnxOp.InstanceNormalization(grid, scale, bias, epsilon: 1e-5f);
             var loss = (y * grid).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var (gradS, gradT) = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(s, t, loss);
 
@@ -657,10 +657,10 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Scalar<float32> a, Scalar<float32> b)
         {
-            var aMat = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(a, Vector(2L, 1L));
-            var bMat = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(b, Vector(2L, 2L));
-            var cat = (Tensor<float32>)(ImmutableTensor)OnnxOp.Concat([aMat, bMat], axis: -1);
-            var w = (Tensor<float32>)(ImmutableTensor)OnnxOp.Reshape(
+            var aMat = (Tensor<float32>)(Variable)OnnxOp.Expand(a, Vector(2L, 1L));
+            var bMat = (Tensor<float32>)(Variable)OnnxOp.Expand(b, Vector(2L, 2L));
+            var cat = (Tensor<float32>)(Variable)OnnxOp.Concat([aMat, bMat], axis: -1);
+            var w = (Tensor<float32>)(Variable)OnnxOp.Reshape(
                 OnnxOp.Cast(OnnxOp.Range(Scalar(1L), Scalar(7L), Scalar(1L)), saturate: null, to: DType.Float32),
                 Vector(2L, 3L), allowZero: false);
             var loss = (cat * w).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
@@ -681,13 +681,13 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Scalar<float32> a)
         {
-            var grid = (Tensor<float32>)(ImmutableTensor)OnnxOp.Reshape(
+            var grid = (Tensor<float32>)(Variable)OnnxOp.Reshape(
                 OnnxOp.Cast(OnnxOp.Range(Scalar(1L), Scalar(9L), Scalar(1L)), saturate: null, to: DType.Float32),
                 Vector(2L, 4L), allowZero: false);
             var data = grid * a;
             var splits = OnnxOp.Split(data, Vector(2L, 2L), axis: -1, numOutputs: null, variadicOutputCount: 2);
-            var s0 = ((Tensor<float32>)(ImmutableTensor)splits[0]).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
-            var s1 = ((Tensor<float32>)(ImmutableTensor)splits[1]).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+            var s0 = ((Tensor<float32>)(Variable)splits[0]).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+            var s1 = ((Tensor<float32>)(Variable)splits[1]).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var loss = s0 + Scalar(3f) * s1;
             var grad = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(a, loss);
             return (grad - Scalar(80f)).Abs() < Scalar(1e-3f);
@@ -706,12 +706,12 @@ namespace Shorokoo.Tests.Modules
         public static Scalar<bit> Inline(Tensor<float32> x)
         {
             var splits = OnnxOp.Split(x, Vector(2L, 2L), axis: 0, numOutputs: null, variadicOutputCount: 2);
-            var loss = ((Tensor<float32>)(ImmutableTensor)splits[1]).Reduce(ReduceKind.Sum, keepDims: false).Scalar() * Scalar(3f);
-            var grad = (Tensor<float32>)(ImmutableTensor)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
+            var loss = ((Tensor<float32>)(Variable)splits[1]).Reduce(ReduceKind.Sum, keepDims: false).Scalar() * Scalar(3f);
+            var grad = (Tensor<float32>)(Variable)Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(x, loss);
 
-            var zeros = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(Scalar(0f), Vector(2L));
-            var threes = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(Scalar(3f), Vector(2L));
-            var expected = (Tensor<float32>)(ImmutableTensor)OnnxOp.Concat([(IValue)zeros, threes], axis: 0);
+            var zeros = (Tensor<float32>)(Variable)OnnxOp.Expand(Scalar(0f), Vector(2L));
+            var threes = (Tensor<float32>)(Variable)OnnxOp.Expand(Scalar(3f), Vector(2L));
+            var expected = (Tensor<float32>)(Variable)OnnxOp.Concat([(IValue)zeros, threes], axis: 0);
             var diff = (grad - expected).Abs();
             return diff.Reduce(ReduceKind.Max, keepDims: false).Scalar() < Scalar(1e-4f);
         }
@@ -731,9 +731,9 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Scalar<float32> a, Scalar<float32> b)
         {
-            var aMat = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(a, Vector(2L, 2L));
-            var bVec = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(b, Vector(2L));
-            var summed = (Tensor<float32>)(ImmutableTensor)OnnxOp.Sum(aMat, bVec);
+            var aMat = (Tensor<float32>)(Variable)OnnxOp.Expand(a, Vector(2L, 2L));
+            var bVec = (Tensor<float32>)(Variable)OnnxOp.Expand(b, Vector(2L));
+            var summed = (Tensor<float32>)(Variable)OnnxOp.Sum(aMat, bVec);
             var loss = summed.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var (gradA, gradB) = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(a, b, loss);
             return (gradA! - Scalar(4f)).Abs() < Scalar(1e-3f)
@@ -750,9 +750,9 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Scalar<float32> a, Scalar<float32> b)
         {
-            var aMat = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(a, Vector(2L, 2L));
-            var bVec = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(b, Vector(2L));
-            var meaned = (Tensor<float32>)(ImmutableTensor)OnnxOp.Mean(aMat, bVec);
+            var aMat = (Tensor<float32>)(Variable)OnnxOp.Expand(a, Vector(2L, 2L));
+            var bVec = (Tensor<float32>)(Variable)OnnxOp.Expand(b, Vector(2L));
+            var meaned = (Tensor<float32>)(Variable)OnnxOp.Mean(aMat, bVec);
             var loss = meaned.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var (gradA, gradB) = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(a, b, loss);
             return (gradA! - Scalar(2f)).Abs() < Scalar(1e-3f)
@@ -770,9 +770,9 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Scalar<float32> a, Scalar<float32> b)
         {
-            var aMat = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(a, Vector(2L, 2L));
-            var bVec = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(b, Vector(2L));
-            var maxed = (Tensor<float32>)(ImmutableTensor)OnnxOp.Max(aMat, bVec);
+            var aMat = (Tensor<float32>)(Variable)OnnxOp.Expand(a, Vector(2L, 2L));
+            var bVec = (Tensor<float32>)(Variable)OnnxOp.Expand(b, Vector(2L));
+            var maxed = (Tensor<float32>)(Variable)OnnxOp.Max(aMat, bVec);
             var loss = maxed.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var (gradA, gradB) = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(a, b, loss);
             return gradA!.Abs() < Scalar(1e-3f)
@@ -789,9 +789,9 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Scalar<float32> a, Scalar<float32> b)
         {
-            var aMat = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(a, Vector(2L, 2L));
-            var bVec = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(b, Vector(2L));
-            var minned = (Tensor<float32>)(ImmutableTensor)OnnxOp.Min(aMat, bVec);
+            var aMat = (Tensor<float32>)(Variable)OnnxOp.Expand(a, Vector(2L, 2L));
+            var bVec = (Tensor<float32>)(Variable)OnnxOp.Expand(b, Vector(2L));
+            var minned = (Tensor<float32>)(Variable)OnnxOp.Min(aMat, bVec);
             var loss = minned.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var (gradA, gradB) = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(a, b, loss);
             return gradA!.Abs() < Scalar(1e-3f)
@@ -809,9 +809,9 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Scalar<float32> a)
         {
-            var aVec = (Tensor<float32>)(ImmutableTensor)OnnxOp.Expand(a, Vector(3L));
+            var aVec = (Tensor<float32>)(Variable)OnnxOp.Expand(a, Vector(3L));
             var (output, _) = OnnxOp.Dropout(aVec, Scalar(0.5f), Scalar(false));
-            var loss = ((Tensor<float32>)(ImmutableTensor)output).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
+            var loss = ((Tensor<float32>)(Variable)output).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
             var grad = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(a, loss);
             return (grad - Scalar(3f)).Abs() < Scalar(1e-3f);
         }
