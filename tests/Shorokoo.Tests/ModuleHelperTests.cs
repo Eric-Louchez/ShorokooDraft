@@ -48,6 +48,10 @@ public class ModuleHelperCoverageTests
         // ──────────────────────────────────────────────────────────────────
         Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.RejectVariableParam(typeof(Variable)));
         ModuleHelper.RejectVariableParam(typeof(Scalar<float32>));   // a value handle is accepted (no throw)
+        // …including Variable nested in a tuple slot or array element.
+        Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.RejectVariableParam(typeof((Variable, Scalar<float32>))));
+        Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.RejectVariableParam(typeof(Variable[])));
+        ModuleHelper.RejectVariableParam(typeof((Scalar<float32>, Tensor<float32>)));   // tuple of handles is accepted
         Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.DefaultVariable(typeof(Variable)));
         Assert.Throws<InvalidTensorOperationException>(() => ModuleParamInputBasedOn(typeof(Variable), InputType.ReadyInput, "x"));
         Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.CreateFunctionSignature([], [typeof(Variable)], [typeof(Scalar<float32>)]));

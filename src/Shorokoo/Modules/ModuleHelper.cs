@@ -187,6 +187,13 @@ namespace Shorokoo.Core
                 throw new InvalidTensorOperationException(ErrorCodes.FW002, "module signature", type.Name,
                     "the internal graph node type 'Variable' cannot be a module input or output; use a value handle " +
                     "(Tensor<T>, Vector<T>, Scalar<T>, OptionalTensor<T>, TensorSequence<T>, TensorStruct<T>) instead");
+
+            // Walk into composite shapes so a Variable nested in a tuple ((Variable, Tensor<T>)) or an
+            // array (Variable[]) is rejected too — modules speak in value handles all the way down.
+            if (IsValueTuple(type))
+                foreach (var arg in type.GenericTypeArguments) RejectVariableParam(arg);
+            else if (type.IsArray)
+                RejectVariableParam(type.GetElementType().AssertNotNull());
         }
 
         internal static Variable DefaultVariable(Type type)
