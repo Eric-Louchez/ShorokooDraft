@@ -504,6 +504,15 @@ namespace Shorokoo
         /// <summary>ComputeContext execution failed with inner exception</summary>
         public const string CR007 = "CR007";
 
+        /// <summary>Variable→handle conversion: structural kind (tensor/optional/sequence/struct) mismatch</summary>
+        public const string CR011 = "CR011";
+
+        /// <summary>Variable→handle conversion: element dtype mismatch (use Cast&lt;T&gt;() to convert or As&lt;T&gt;() to reinterpret)</summary>
+        public const string CR012 = "CR012";
+
+        /// <summary>Variable→handle conversion: tensor rank mismatch (scalar/vector handle over a wrongly-ranked node)</summary>
+        public const string CR013 = "CR013";
+
         #endregion
 
         #region Framework Error Codes (FW001-FW050)

@@ -1076,7 +1076,7 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions
             for (int i = 0; i < attributeNameAndValues.Length; i += 2)
                 attrs.Add(((string)attributeNameAndValues[i].NotNull(), attributeNameAndValues[i + 1]));
 
-            return Shorokoo.Core.VariableHandle.Cast<T>(BuildNodeSingleOut(opCode, inputs, attrs.ToArray()));
+            return BuildNodeSingleOut(opCode, inputs, attrs.ToArray()).Cast<T>();
         }
 
         public static (T1, T2) CallCustomOperator<T1, T2>(string opCode, Variable?[] inputs, object?[] attributeNameAndValues)
@@ -1088,7 +1088,7 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions
                 attrs.Add(((string)attributeNameAndValues[i].NotNull(), attributeNameAndValues[i + 1]));
 
             var retvals = BuildNodeMultiOut(opCode, inputs, attrs.ToArray());
-            return (Shorokoo.Core.VariableHandle.Cast<T1>(retvals[0].AssertNotNull()), Shorokoo.Core.VariableHandle.Cast<T2>(retvals[1].AssertNotNull()));
+            return (retvals[0].AssertNotNull().Cast<T1>(), retvals[1].AssertNotNull().Cast<T2>());
         }
 
         public static (T1, T2, T3) CallCustomOperator<T1, T2, T3>(string opCode, Variable?[] inputs, object?[] attributeNameAndValues)
@@ -1101,7 +1101,7 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions
                 attrs.Add(((string)attributeNameAndValues[i].NotNull(), attributeNameAndValues[i + 1]));
 
             var retvals = BuildNodeMultiOut(opCode, inputs, attrs.ToArray());
-            return (Shorokoo.Core.VariableHandle.Cast<T1>(retvals[0].AssertNotNull()), Shorokoo.Core.VariableHandle.Cast<T2>(retvals[1].AssertNotNull()), Shorokoo.Core.VariableHandle.Cast<T3>(retvals[2].AssertNotNull()));
+            return (retvals[0].AssertNotNull().Cast<T1>(), retvals[1].AssertNotNull().Cast<T2>(), retvals[2].AssertNotNull().Cast<T3>());
         }
 
         public static (T1, T2, T3, T4) CallCustomOperator<T1, T2, T3, T4>(string opCode, Variable?[] inputs, object?[] attributeNameAndValues)
@@ -1115,7 +1115,7 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions
                 attrs.Add(((string)attributeNameAndValues[i].NotNull(), attributeNameAndValues[i + 1]));
 
             var retvals = BuildNodeMultiOut(opCode, inputs, attrs.ToArray());
-            return (Shorokoo.Core.VariableHandle.Cast<T1>(retvals[0].AssertNotNull()), Shorokoo.Core.VariableHandle.Cast<T2>(retvals[1].AssertNotNull()), Shorokoo.Core.VariableHandle.Cast<T3>(retvals[2].AssertNotNull()), Shorokoo.Core.VariableHandle.Cast<T4>(retvals[3].AssertNotNull()));
+            return (retvals[0].AssertNotNull().Cast<T1>(), retvals[1].AssertNotNull().Cast<T2>(), retvals[2].AssertNotNull().Cast<T3>(), retvals[3].AssertNotNull().Cast<T4>());
         }
 
         public static T[] CallCustomOperatorArrayOut<T>(string opCode, Variable?[] inputs, object?[] attributeNameAndValues)
@@ -1126,7 +1126,7 @@ namespace Shorokoo.Core.Nodes.NodeDefinitions
                 attrs.Add(((string)attributeNameAndValues[i].NotNull(), attributeNameAndValues[i + 1]));
 
             var retvals = BuildNodeMultiOut(opCode, inputs, attrs.ToArray());
-            return retvals.Select(v => Shorokoo.Core.VariableHandle.Cast<T>(v)).ToArray();
+            return retvals.Select(v => v.Cast<T>()).ToArray();
         }
 
         public static ImmutableDictionary<string, Variable?[]> BuildNodeFullOut(string opCode, Variable?[] inputs, (string attributeName, object? attributeValue)[] attrs, string? identifierTemplateString = null, string?[]? outputNames = null, Function? targetFunction = null, Node? openNode = null)

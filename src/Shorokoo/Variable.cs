@@ -225,27 +225,36 @@ namespace Shorokoo
         /// The node is non-generic; the runtime element <see cref="DType"/> is unchanged (this is a
         /// static-type reinterpret, not a dtype conversion — use <c>Cast</c> to convert).
         /// </summary>
-        public Tensor<V> As<V>() where V : IVarType => this;
+        public Tensor<V> As<V>() where V : IVarType => Tensor<V>.Reinterpret(this);
+
+        /// <summary>
+        /// Wraps this graph node in the value-handle type <typeparamref name="A"/> — the generic form of
+        /// the implicit <c>Variable</c>→handle conversion, for call sites where the target handle type is
+        /// only known as a type parameter (so the compiler cannot apply the operator and a plain
+        /// <c>(A)this</c> would be an illegal struct unbox). Routes through the handle's validating
+        /// <c>op_Implicit</c>, so structure / dtype / rank are checked exactly as a direct cast would be.
+        /// </summary>
+        public A Cast<A>() where A : IValue => (A)VariableHandle.WrapAsHandle(this, typeof(A));
 
         /// <summary>The structural kind of this graph value (graph-side mirror of <c>IValue.Structure()</c>).</summary>
         public DataStructure Structure() => this.Kind;
 
         // Element-type reinterprets — the typed tensor handle over this node (mirror of IValueExtensions
         // for graph-side Variable values; the runtime dtype is unchanged).
-        public Tensor<uint4> uint4() => this;
-        public Tensor<uint8> uint8() => this;
-        public Tensor<uint16> uint16() => this;
-        public Tensor<uint32> uint32() => this;
-        public Tensor<uint64> uint64() => this;
-        public Tensor<int4> int4() => this;
-        public Tensor<int8> int8() => this;
-        public Tensor<int16> int16() => this;
-        public Tensor<int32> int32() => this;
-        public Tensor<int64> int64() => this;
-        public Tensor<float16> float16() => this;
-        public Tensor<bfloat16> bfloat16() => this;
-        public Tensor<float32> float32() => this;
-        public Tensor<float64> float64() => this;
+        public Tensor<uint4> uint4() => Tensor<uint4>.Reinterpret(this);
+        public Tensor<uint8> uint8() => Tensor<uint8>.Reinterpret(this);
+        public Tensor<uint16> uint16() => Tensor<uint16>.Reinterpret(this);
+        public Tensor<uint32> uint32() => Tensor<uint32>.Reinterpret(this);
+        public Tensor<uint64> uint64() => Tensor<uint64>.Reinterpret(this);
+        public Tensor<int4> int4() => Tensor<int4>.Reinterpret(this);
+        public Tensor<int8> int8() => Tensor<int8>.Reinterpret(this);
+        public Tensor<int16> int16() => Tensor<int16>.Reinterpret(this);
+        public Tensor<int32> int32() => Tensor<int32>.Reinterpret(this);
+        public Tensor<int64> int64() => Tensor<int64>.Reinterpret(this);
+        public Tensor<float16> float16() => Tensor<float16>.Reinterpret(this);
+        public Tensor<bfloat16> bfloat16() => Tensor<bfloat16>.Reinterpret(this);
+        public Tensor<float32> float32() => Tensor<float32>.Reinterpret(this);
+        public Tensor<float64> float64() => Tensor<float64>.Reinterpret(this);
 
         // ── Graph-value introspection (the members the IValue handle interface exposes user-side) ──
         public bool IsConnectingTensor => OwningNode.IsOpenNode && OwningNode.ConnectingTensor == this;

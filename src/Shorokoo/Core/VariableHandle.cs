@@ -1,20 +1,10 @@
 using System;
 using System.Collections.Concurrent;
 using System.Reflection;
+using Shorokoo.Core.Nodes.NodeDefinitions;
 
 namespace Shorokoo.Core
 {
-    /// <summary>
-    /// Implemented by every value-type handle (<see cref="Tensor{T}"/>, <see cref="Vector{T}"/>, …)
-    /// so the framework can recover the backing <c>Immutable*</c> graph value from a boxed handle.
-    /// Graph-level machinery must hold immutables, never struct handles, as <see cref="Variable"/>.
-    /// </summary>
-    internal interface IValueHandle
-    {
-        // The backing Immutable* graph value, or null for a defaulted/absent handle.
-        Variable? Immutable { get; }
-    }
-
     /// <summary>
     /// Converts an <see cref="Variable"/> graph value (always one of the <c>Immutable*</c> classes)
     /// into a requested handle type. When the target is one of the value-type handles
@@ -29,29 +19,49 @@ namespace Shorokoo.Core
 
         /// <summary>The backing <c>Immutable*</c> graph value: a struct handle unwrapped, an immutable
         /// as-is, or null for a defaulted/absent struct handle.</summary>
-        public static Variable? Normalize(object? value)            => value is IValueHandle h ? h.Immutable : value as Variable;
+        public static Variable? Normalize(object? value)            => value is IValue h ? h.Immutable : value as Variable;
 
-        /// <summary>Reinterpret <paramref name="value"/> as the handle type <typeparamref name="A"/>.</summary>
-        public static A Cast<A>(object? value)
+        /// <summary>
+        /// Validate and adapt a graph <paramref name="node"/> for wrapping into a typed value handle —
+        /// the invariant the implicit <c>Variable</c>→handle operators must uphold:
+        /// <list type="bullet">
+        /// <item>the node's structural <see cref="DataStructure"/> equals <paramref name="kind"/>
+        ///   (structure must always match);</item>
+        /// <item>the node's runtime element <see cref="DType"/> equals <paramref name="expected"/> — an
+        ///   implicit dtype change is rejected (use <c>Cast&lt;T&gt;()</c> to convert or
+        ///   <c>As&lt;T&gt;()</c> to reinterpret). Skipped when either side is a generic-placeholder,
+        ///   unmapped, or invalid dtype (e.g. inside a generic module before specialization);</item>
+        /// <item>for the fixed-rank tensor handles (<see cref="Scalar{T}"/> = rank 0,
+        ///   <see cref="Vector{T}"/> = rank 1) a matching rank passes through, an <b>unknown</b> rank is
+        ///   adapted with an <c>Identity</c> rank-conversion node, and a known mismatching rank is an
+        ///   error.</item>
+        /// </list>
+        /// </summary>
+        internal static Variable ForHandle(Variable node, DType? expected, DataStructure kind, int? fixedRank)
         {
-            if (value is A already)
-                return already;
+            if (node.Kind != kind)
+                throw new InvalidTensorOperationException(ErrorCodes.CR011, "Variable→handle conversion",
+                    node.Kind.ToString(),
+                    $"cannot wrap a {node.Kind} graph value in a {kind} handle — structure must match");
 
-            if (value is null)
-                return default!;
+            if (expected is not null && expected.IsValid && node.Type.IsValid
+                && !expected.IsGenericType && !node.Type.IsGenericType
+                && !expected.IsGenericTypeReference && !node.Type.IsGenericTypeReference
+                && !node.Type.Equals(expected))
+                throw new InvalidTensorOperationException(ErrorCodes.CR012, "Variable→handle conversion",
+                    $"{node.Type} as {expected}",
+                    $"element-type mismatch — wrapping a {node.Type} graph value as a {expected} handle would silently " +
+                    $"reinterpret it; use Cast<{expected}>() to convert the dtype or As<{expected}>() to reinterpret");
 
-            var imm = Normalize(value);
-            if (imm is null)
-                return default!;
-            if (imm is A immA)
-                return immA;
-
-            var conv = MatchingConverter(typeof(A), imm.GetType());
-            if (conv != null)
-                return (A)conv.Invoke(null, [imm])!;
-
-            // No struct wrapper found — fall back to a direct cast so the runtime raises a clear error.
-            return (A)(object)imm;
+            if (fixedRank is int r)
+            {
+                if (node.Rank == r) return node;
+                if (node.Rank is null) return OnnxOp.Identity(node, r);
+                throw new InvalidTensorOperationException(ErrorCodes.CR013, "Variable→handle conversion",
+                    $"rank {node.Rank} as rank {r}",
+                    $"cannot wrap a rank-{node.Rank} tensor as a rank-{r} handle");
+            }
+            return node;
         }
 
         /// <summary>
@@ -92,7 +102,20 @@ namespace Shorokoo.Core
             return value;
         }
 
-        private static MethodInfo? MatchingConverter(Type handleType, Type valueType)
+        /// <summary>
+        /// Reflection core of <see cref="Variable.Cast{A}"/>: wrap <paramref name="node"/> into the value
+        /// handle <paramref name="handleType"/> by invoking that handle's <c>op_Implicit(Variable)</c>
+        /// (which validates structure/dtype/rank). Constraint-free so it also serves call sites whose
+        /// target type is statically unconstrained (e.g. <c>ModuleHelper.Reformat&lt;T&gt;</c>). When no
+        /// converter exists the node is returned boxed, so the caller's cast raises a clear error.
+        /// </summary>
+        internal static object WrapAsHandle(Variable node, Type handleType)
+        {
+            var conv = MatchingConverter(handleType, node.GetType());
+            return conv is not null ? conv.Invoke(null, [node])! : node;
+        }
+
+        internal static MethodInfo? MatchingConverter(Type handleType, Type valueType)
         {
             var candidates = wrappers.GetOrAdd(handleType, FindImplicitWrappers);
             foreach (var m in candidates)

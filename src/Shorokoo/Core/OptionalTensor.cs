@@ -40,19 +40,20 @@ namespace Shorokoo.Core
     /// <b>absent</b> optional on first use.
     /// </para>
     /// </summary>
-    public struct OptionalTensor<T> : IOptionalTensor, IValueHandle where T : IVarType
+    public struct OptionalTensor<T> : IOptionalTensor where T : IVarType
     {
         private Variable? inner;
 
-        Variable IValueHandle.Immutable => Imm;
+        Variable? IValue.Immutable => Imm;
 
         /// <summary>The wrapped immutable, materialising an absent optional for a defaulted handle.</summary>
         internal Variable Imm
             => inner ??= OnnxOp.Optional(null, DataStructure.Tensor, OnnxUtils.GetDType<T>());
 
         // Wrap / unwrap between the handle and its immutable.
+        private static readonly DType? expectedDType = OnnxUtils.GetDType(typeof(T));
         public static implicit operator OptionalTensor<T>(Variable imm)
-            => new OptionalTensor<T> { inner = imm };
+            => new OptionalTensor<T> { inner = VariableHandle.ForHandle(imm, expectedDType, DataStructure.Optional, null) };
         public static implicit operator Variable(OptionalTensor<T> handle)
             => handle.Imm;
 
@@ -77,7 +78,7 @@ namespace Shorokoo.Core
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public Tensor<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
+        public Tensor<V> As<V>() where V : IVarType => Tensor<V>.Reinterpret(Imm);
 
 #pragma warning disable CS0618 // forwarding the obsolete member is intentional
         string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;

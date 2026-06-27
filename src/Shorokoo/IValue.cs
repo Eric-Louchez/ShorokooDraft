@@ -36,6 +36,13 @@ namespace Shorokoo
         public DType DType => this.Type;
         public Tensor<V> As<V>() where V : IVarType;
         public Function? ModuleFn { get; }
+
+        /// <summary>
+        /// The backing graph-side <see cref="Variable"/> node this handle wraps, or <c>null</c> for a
+        /// defaulted/absent handle. Lets framework machinery recover the node from a boxed handle whose
+        /// concrete type has been erased (see <see cref="Shorokoo.Core.VariableHandle.Normalize"/>).
+        /// </summary>
+        Variable? Immutable { get; }
         
         /// <summary>
         /// The unique name for this tensor. Defaults to Key.ToString() but can be set to human-readable
@@ -134,21 +141,21 @@ namespace Shorokoo
     {
         // Element-type reinterprets — produce the typed tensor handle of element type T over the same
         // graph node (the node itself is non-generic; the runtime dtype is unchanged).
-        public static Tensor<T> As<T>(this IValue var) where T : IVarType => (Variable)var;
-        public static Tensor<uint4> uint4(this IValue var) => (Variable)var;
-        public static Tensor<uint8> uint8(this IValue var) => (Variable)var;
-        public static Tensor<uint16> uint16(this IValue var) => (Variable)var;
-        public static Tensor<uint32> uint32(this IValue var) => (Variable)var;
-        public static Tensor<uint64> uint64(this IValue var) => (Variable)var;
-        public static Tensor<int4> int4(this IValue var) => (Variable)var;
-        public static Tensor<int8> int8(this IValue var) => (Variable)var;
-        public static Tensor<int16> int16(this IValue var) => (Variable)var;
-        public static Tensor<int32> int32(this IValue var) => (Variable)var;
-        public static Tensor<int64> int64(this IValue var) => (Variable)var;
-        public static Tensor<float16> float16(this IValue var) => (Variable)var;
-        public static Tensor<bfloat16> bfloat16(this IValue var) => (Variable)var;
-        public static Tensor<float32> float32(this IValue var) => (Variable)var;
-        public static Tensor<float64> float64(this IValue var) => (Variable)var;
+        public static Tensor<T> As<T>(this IValue var) where T : IVarType => Tensor<T>.Reinterpret(var.ToVariable());
+        public static Tensor<uint4> uint4(this IValue var) => Tensor<uint4>.Reinterpret(var.ToVariable());
+        public static Tensor<uint8> uint8(this IValue var) => Tensor<uint8>.Reinterpret(var.ToVariable());
+        public static Tensor<uint16> uint16(this IValue var) => Tensor<uint16>.Reinterpret(var.ToVariable());
+        public static Tensor<uint32> uint32(this IValue var) => Tensor<uint32>.Reinterpret(var.ToVariable());
+        public static Tensor<uint64> uint64(this IValue var) => Tensor<uint64>.Reinterpret(var.ToVariable());
+        public static Tensor<int4> int4(this IValue var) => Tensor<int4>.Reinterpret(var.ToVariable());
+        public static Tensor<int8> int8(this IValue var) => Tensor<int8>.Reinterpret(var.ToVariable());
+        public static Tensor<int16> int16(this IValue var) => Tensor<int16>.Reinterpret(var.ToVariable());
+        public static Tensor<int32> int32(this IValue var) => Tensor<int32>.Reinterpret(var.ToVariable());
+        public static Tensor<int64> int64(this IValue var) => Tensor<int64>.Reinterpret(var.ToVariable());
+        public static Tensor<float16> float16(this IValue var) => Tensor<float16>.Reinterpret(var.ToVariable());
+        public static Tensor<bfloat16> bfloat16(this IValue var) => Tensor<bfloat16>.Reinterpret(var.ToVariable());
+        public static Tensor<float32> float32(this IValue var) => Tensor<float32>.Reinterpret(var.ToVariable());
+        public static Tensor<float64> float64(this IValue var) => Tensor<float64>.Reinterpret(var.ToVariable());
 
         public static DataStructure Structure(this IValue var)
             => var is Variable nodeVar ? nodeVar.Kind :
@@ -163,7 +170,7 @@ namespace Shorokoo
         public static bool IsModelInput(this IValue var) => var.OwningNode.IsModelInput;
 
         // Unwrap a module parameter to its graph-side Variable node. Handles (IValue) carry their
-        // backing node via IValueHandle; models/modules expose it through their *Variable handle.
+        // backing node via IValue.Immutable; models/modules expose it through their *Variable handle.
         internal static Variable ToVariable(this IModuleParam param) =>
                         param switch
                         {

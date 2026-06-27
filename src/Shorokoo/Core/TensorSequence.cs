@@ -39,17 +39,18 @@ namespace Shorokoo.Core
     /// a defaulted handle lazily materialises an empty sequence. This pass only makes mutation
     /// possible — behaviour is unchanged (de-facto immutable).
     /// </summary>
-    public struct TensorSequence<T> : ITensorSequence, IValueHandle where T : IVarType
+    public struct TensorSequence<T> : ITensorSequence where T : IVarType
     {
         private Variable? inner;
 
-        Variable IValueHandle.Immutable => Imm;
+        Variable? IValue.Immutable => Imm;
 
         /// <summary>The wrapped immutable, materialising an empty sequence for a defaulted handle.</summary>
         internal Variable Imm => inner ??= OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>());
 
+        private static readonly DType? expectedDType = OnnxUtils.GetDType(typeof(T));
         public static implicit operator TensorSequence<T>(Variable imm)
-            => new TensorSequence<T> { inner = imm };
+            => new TensorSequence<T> { inner = VariableHandle.ForHandle(imm, expectedDType, DataStructure.Sequence, null) };
         public static implicit operator Variable(TensorSequence<T> handle)
             => handle.Imm;
 
@@ -102,7 +103,7 @@ namespace Shorokoo.Core
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public Tensor<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
+        public Tensor<V> As<V>() where V : IVarType => Tensor<V>.Reinterpret(Imm);
 
 #pragma warning disable CS0618 // forwarding the obsolete member is intentional
         string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;

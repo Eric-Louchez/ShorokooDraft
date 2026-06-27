@@ -557,7 +557,7 @@ namespace Shorokoo.Core
 
             if (tType.IsAssignableTo(typeof(IValue)))
                 // T may be a value-struct handle; a plain unbox of the immutable would throw.
-                return Shorokoo.Core.VariableHandle.Cast<T>(vars[0]);
+                return (T)Shorokoo.Core.VariableHandle.WrapAsHandle(vars[0], typeof(T));
 
             if (IsValueTuple<T>())
             {

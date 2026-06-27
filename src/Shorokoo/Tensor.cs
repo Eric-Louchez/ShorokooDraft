@@ -63,8 +63,14 @@ namespace Shorokoo
         private Variable? inner;
         internal Variable Imm => inner ?? throw new InvalidOperationException("default(Tensor<T>) is not materialised; build one via a graph op.");
 
-        public static implicit operator Tensor<T>(Variable imm) => new Tensor<T> { inner = imm };
+        private static readonly DType? expectedDType = OnnxUtils.GetDType(typeof(T));
+        public static implicit operator Tensor<T>(Variable imm)
+            => new Tensor<T> { inner = VariableHandle.ForHandle(imm, expectedDType, DataStructure.Tensor, null) };
         public static implicit operator Variable(Tensor<T> h) => h.Imm;
+
+        /// <summary>Wrap a node as this handle WITHOUT validation — for dtype reinterprets (<c>As&lt;V&gt;</c>
+        /// and friends) that intentionally relabel the static element type without converting the value.</summary>
+        internal static Tensor<T> Reinterpret(Variable node) => new Tensor<T> { inner = node };
 
         // ITensor contract — forward to the wrapped immutable.
         public int? Rank => Imm.Rank;
@@ -84,7 +90,7 @@ namespace Shorokoo
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public Tensor<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
+        public Tensor<V> As<V>() where V : IVarType => Tensor<V>.Reinterpret(Imm);
 #pragma warning disable CS0618
         string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;
 #pragma warning restore CS0618

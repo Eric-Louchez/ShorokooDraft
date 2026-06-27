@@ -35,7 +35,9 @@ namespace Shorokoo
         private Variable? inner;
         internal Variable Imm => inner ?? throw new InvalidOperationException("default(Vector<T>) is not materialised; build one via a graph op.");
 
-        public static implicit operator Vector<T>(Variable imm) => new Vector<T> { inner = imm };
+        private static readonly DType? expectedDType = OnnxUtils.GetDType(typeof(T));
+        public static implicit operator Vector<T>(Variable imm)
+            => new Vector<T> { inner = VariableHandle.ForHandle(imm, expectedDType, DataStructure.Tensor, 1) };
         public static implicit operator Variable(Vector<T> h) => h.Imm;
         public static implicit operator Tensor<T>(Vector<T> h) => h.Imm;
 
@@ -58,7 +60,7 @@ namespace Shorokoo
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public Tensor<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
+        public Tensor<V> As<V>() where V : IVarType => Tensor<V>.Reinterpret(Imm);
 #pragma warning disable CS0618
         string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;
 #pragma warning restore CS0618

@@ -276,4 +276,51 @@ public class CoreUtilsCoverageTests
         Assert.Equal(gpu, InferenceBackend.SelectBackend([cpu, gpu], cudaAvailable: true)!.Value);
         Assert.Equal(cpu, InferenceBackend.SelectBackend([cpu, gpu], cudaAvailable: false)!.Value);
     }
+
+    [Fact]
+    public void TestVariableHandleConversionCoverage()
+    {
+        // A graph node carries the structural kind, runtime dtype and rank; wrapping it in a typed
+        // value handle (the implicit Variable->handle operators via VariableHandle.ForHandle) must
+        // enforce that all three are compatible.
+        Variable scalarNode = InputScalar<float32>("a");        // Tensor kind, rank 0, float32
+        Variable vectorNode = InputVector<float32>("b");        // Tensor kind, rank 1, float32
+        Variable rank2Node = InputTensor<float32>("c", rank: 2);
+        Variable seqNode = OnnxOp.SequenceEmpty(DType.Float32);
+        Variable optNode = OnnxOp.Optional(null, DataStructure.Tensor, DType.Float32);
+
+        // Valid conversions preserve structure + rank.
+        Assert.Equal(0, ((Variable)(Scalar<float32>)scalarNode).Rank);
+        Assert.Equal(1, ((Variable)(Vector<float32>)vectorNode).Rank);
+        Assert.Equal(2, ((Variable)(Tensor<float32>)rank2Node).Rank);
+        Assert.Equal(DataStructure.Sequence, ((Variable)(TensorSequence<float32>)seqNode).Structure());
+        Assert.Equal(DataStructure.Optional, ((Variable)(OptionalTensor<float32>)optNode).Structure());
+
+        // Structure must always match.
+        Assert.Throws<InvalidTensorOperationException>(() => (object)(Tensor<float32>)seqNode);
+        Assert.Throws<InvalidTensorOperationException>(() => (object)(TensorSequence<float32>)scalarNode);
+        Assert.Throws<InvalidTensorOperationException>(() => (object)(OptionalTensor<float32>)scalarNode);
+
+        // No implicit dtype reinterpretation (use Cast to convert, As to reinterpret).
+        Assert.Throws<InvalidTensorOperationException>(() => (object)(Tensor<float64>)scalarNode);
+        Assert.Throws<InvalidTensorOperationException>(() => (object)(Scalar<int64>)scalarNode);
+
+        // A known-mismatching rank is an error.
+        Assert.Throws<InvalidTensorOperationException>(() => (object)(Scalar<float32>)rank2Node);
+        Assert.Throws<InvalidTensorOperationException>(() => (object)(Vector<float32>)rank2Node);
+        Assert.Throws<InvalidTensorOperationException>(() => (object)(Scalar<float32>)vectorNode);
+
+        // An UNKNOWN-rank node is adapted to a fixed-rank handle with an Identity rank-conversion node.
+        Variable unranked = InputTensor<float32>("u"); Assert.Null(unranked.Rank);
+        var sFromNull = (Variable)(Scalar<float32>)unranked;
+        Assert.Equal(0, sFromNull.Rank); Assert.Equal(OpCodes.IDENTITY, sFromNull.OwningNode.OpCode);
+        Variable unranked2 = InputTensor<float32>("u2");
+        var vFromNull = (Variable)(Vector<float32>)unranked2;
+        Assert.Equal(1, vFromNull.Rank); Assert.Equal(OpCodes.IDENTITY, vFromNull.OwningNode.OpCode);
+
+        // Cast<V> is the explicit dtype CONVERSION (Cast node); As<V> is the explicit REINTERPRET
+        // (relabels the static type without converting — runtime dtype unchanged, no validation).
+        Assert.Equal(DType.Float64, ((Variable)scalarNode.Cast<float64>()).Type);
+        Assert.Equal(DType.Float32, ((Variable)scalarNode.As<float64>()).Type);
+    }
 }

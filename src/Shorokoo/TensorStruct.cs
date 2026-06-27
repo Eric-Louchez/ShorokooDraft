@@ -28,11 +28,11 @@ namespace Shorokoo
     /// accessing it throws — a TensorStruct must be produced by a graph op (e.g. <c>Globals.TensorStruct</c>).
     /// </para>
     /// </summary>
-    public struct TensorStruct<T> : ITensorStruct, Shorokoo.Core.IValueHandle where T : IStruct
+    public struct TensorStruct<T> : ITensorStruct where T : IStruct
     {
         private Variable? inner;
 
-        Variable Shorokoo.Core.IValueHandle.Immutable => Imm;
+        Variable? IValue.Immutable => Imm;
 
         /// <summary>The wrapped immutable. A defaulted handle has no recoverable field layout, so this throws.</summary>
         internal readonly Variable Imm
@@ -40,7 +40,7 @@ namespace Shorokoo
                 "default(TensorStruct<T>) has no field layout; create one via a graph op (e.g. Globals.TensorStruct<T>(...)).");
 
         public static implicit operator TensorStruct<T>(Variable imm)
-            => new TensorStruct<T> { inner = imm };
+            => new TensorStruct<T> { inner = Shorokoo.Core.VariableHandle.ForHandle(imm, null, DataStructure.TensorStruct, null) };
         public static implicit operator Variable(TensorStruct<T> handle)
             => handle.Imm;
 
@@ -50,7 +50,7 @@ namespace Shorokoo
         public Variable GetField(string name) => Imm.Field(name);
 
         public TField GetField<TField>(string name) where TField : IValue
-            => VariableHandle.Cast<TField>(Imm.Field(name));
+            => Imm.Field(name).Cast<TField>();
 
         public bool TryGetField(string name, out Variable? field) => Imm.Fields.TryGetValue(name, out field);
 
@@ -73,7 +73,7 @@ namespace Shorokoo
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public Tensor<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
+        public Tensor<V> As<V>() where V : IVarType => Tensor<V>.Reinterpret(Imm);
 
 #pragma warning disable CS0618 // forwarding the obsolete member is intentional
         string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;
