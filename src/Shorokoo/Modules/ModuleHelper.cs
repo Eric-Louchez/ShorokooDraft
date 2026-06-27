@@ -107,30 +107,20 @@ namespace Shorokoo.Core
         private static float? GetHyperDefaultValue(this ParameterInfo paramInfo)
             => paramInfo.GetCustomAttribute<HyperAttribute>() is { HasDefault: true } hyper ? hyper.DefaultValue : null;
 
-        internal static string ToSignatureString(IModuleParam moduleParam)
-            => ToSignatureStringWithOverride(moduleParam, (moduleParam as Variable)?.Rank);
+        // The signature string is computed from the internal graph node; callers cross the module
+        // boundary explicitly with IModuleParam.ToVariable() before reaching here.
+        internal static string ToSignatureString(Variable variable)
+            => ToSignatureStringWithOverride(variable, variable.Rank);
 
-        internal static string ToSignatureStringWithOverride(IModuleParam moduleParam, int? rank)
+        internal static string ToSignatureStringWithOverride(Variable variable, int? rank)
         {
-            if (moduleParam is IModel model)
-                return $"[{model.ModelVariable.ModuleFn!.ModelSignatureString}]";
-
-            if (moduleParam is IModule module)
-                return $"[{module.ModuleVariable.ModuleFn!.ModuleSignatureString}]";
-
             // Model/module params are scalar nodes distinguished by their runtime DType (formerly the
             // generic ImmutableScalar<IModelVarType> / ImmutableScalar<IModuleVarType>).
-            if (moduleParam is Variable modelVariable && modelVariable.Type == DType.Model)
-                return $"[{modelVariable.ModuleFn!.ModelSignatureString}]";
+            if (variable.Type == DType.Model)
+                return $"[{variable.ModuleFn!.ModelSignatureString}]";
 
-            if (moduleParam is Variable moduleVariable && moduleVariable.Type == DType.Module)
-                return $"[{moduleVariable.ModuleFn!.ModuleSignatureString}]";
-
-            // moduleParam may be a user handle (IValue) or a raw graph node; Normalize unwraps either
-            // to the backing Variable.
-            var variable = Shorokoo.Core.VariableHandle.Normalize(moduleParam);
-            if (variable is null)
-                throw new InvalidTensorOperationException(ErrorCodes.FW002, "Module Parameter Processing", $"parameter type {moduleParam?.GetType().Name ?? "null"}", "Module parameter must be convertible to Variable");
+            if (variable.Type == DType.Module)
+                return $"[{variable.ModuleFn!.ModuleSignatureString}]";
 
             var rankString = rank is null || rank == -1 ? "" : $"#{rank}";
 
@@ -140,7 +130,7 @@ namespace Shorokoo.Core
             {
                 case DataStructure.TensorStruct:
                     // "struct:{typeName}" where typeName is the IStruct interface name.
-                    return $"struct:{((Variable)variable).Definition?.TypeName ?? "anonymous"}";
+                    return $"struct:{variable.Definition?.TypeName ?? "anonymous"}";
                 case DataStructure.Tensor:
                     return $"{variable.Type.ToString().ToLower()}{rankString}";
                 case DataStructure.Optional:
@@ -149,7 +139,7 @@ namespace Shorokoo.Core
                     return $"{variable.Type.ToString().ToLower()}/seq{rankString}";
             }
 
-            throw new InvalidTensorOperationException(ErrorCodes.FW002, "Module Parameter Type Processing", $"parameter type {variable.GetType().Name}", "Unsupported module parameter type - expected Variable, Variable, Variable, or Variable");
+            throw new InvalidTensorOperationException(ErrorCodes.FW002, "Module Parameter Type Processing", $"parameter type {variable.GetType().Name}", "Unsupported module parameter structure");
         }
 
         internal static (string moduleSignature, string modelSignature) CreateFunctionSignatureString(Type[] hyperparams, Type[] inputs, Type[] outputs)
@@ -410,11 +400,11 @@ namespace Shorokoo.Core
             {
                 var paramType = parameters[i].ParameterType;
                 
-                if (typeof(IStruct).IsAssignableFrom(paramType) 
-                    && paramType != typeof(IStruct) 
+                if (typeof(IStruct).IsAssignableFrom(paramType)
+                    && paramType != typeof(IStruct)
                     && paramType != typeof(IVarType)
                     && !typeof(IValue).IsAssignableFrom(paramType)
-                    && inputs[i] is Variable tensorStruct)
+                    && inputs[i] is IValue structCarrier && structCarrier.Immutable is Variable tensorStruct)
                 {
                     if (paramType.IsInterface)
                     {

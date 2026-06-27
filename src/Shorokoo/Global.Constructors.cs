@@ -827,42 +827,62 @@ namespace Shorokoo
             if (type.IsAssignableTo(typeof(ITensorStruct)))
             {
                 var (_, structDType) = StructDefExtractor.ExtractFromTensorStructType(type, "module input creation");
-                return InternalOp.TensorStructInput(structDType, inputType, targetFunction: null, defaultName: paramName);
+                return WrapNodeAsModuleParam(InternalOp.TensorStructInput(structDType, inputType, targetFunction: null, defaultName: paramName), type);
             }
 
             // Check for IStruct types (interfaces like RealGenericPairStruct<U, V> or records like GenericPairRecord<U, V>).
-            // These define tensor struct field shapes — not TensorStruct<T> wrappers.
-            // We create a TensorStructInput node and return it. The InvokeAndFormat method will wrap
-            // it in a DispatchProxy (for interfaces) or construct via record constructor before passing to method.Invoke.
+            // These define tensor struct field shapes — not TensorStruct<T> wrappers — and have no value handle
+            // of their own. The created node rides inside a TensorStruct<T> carrier (handed across the module
+            // boundary as an IModuleParam); InvokeAndFormat unwraps it to the node and wraps it in a DispatchProxy
+            // (for interfaces) or constructs via the record constructor before passing to method.Invoke.
             if (typeof(IStruct).IsAssignableFrom(type) && type != typeof(IStruct) && type != typeof(IVarType) && !typeof(IValue).IsAssignableFrom(type))
             {
                 var structDef = StructDefExtractor.ExtractFromType(type);
                 var structDType = DType.GetOrCreateForTensorStruct(structDef);
-                return InternalOp.TensorStructInput(structDType, inputType, targetFunction: null, defaultName: paramName);
+                return WrapNodeAsModuleParam(InternalOp.TensorStructInput(structDType, inputType, targetFunction: null, defaultName: paramName), type);
             }
 
             var dtype = OnnxUtils.GetDType(type.GetGenericArguments()[0]);
             if (dtype is null)
-                throw new InvalidTensorOperationException(ErrorCodes.GC007, "CreateComputeGraphInput", type.Name, 
+                throw new InvalidTensorOperationException(ErrorCodes.GC007, "CreateComputeGraphInput", type.Name,
                     "Unable to determine DType from generic argument type");
 
             if (dtype == DType.Model || dtype == DType.Module)
-                throw new InvalidTensorOperationException(ErrorCodes.GC007, "CreateComputeGraphInput", dtype.ToString(), 
+                throw new InvalidTensorOperationException(ErrorCodes.GC007, "CreateComputeGraphInput", dtype.ToString(),
                     "Model and Module types are not supported as compute graph inputs");
 
             if (type.IsAssignableTo(typeof(ITensorSequence)))
-                return InternalOp.ModuleSequenceInput(dtype, inputType, null, paramName);
+                return WrapNodeAsModuleParam(InternalOp.ModuleSequenceInput(dtype, inputType, null, paramName), type);
             else if (type.IsAssignableTo(typeof(IOptionalTensor)))
-                return InternalOp.ModuleOptionalInput(dtype, inputType, null, paramName);
+                return WrapNodeAsModuleParam(InternalOp.ModuleOptionalInput(dtype, inputType, null, paramName), type);
             else if (type.IsAssignableTo(typeof(IScalar)))
-                return InternalOp.ModuleTensorInput(dtype, rank: 0, inputType, null, paramName, hyperDefaultValue);
+                return WrapNodeAsModuleParam(InternalOp.ModuleTensorInput(dtype, rank: 0, inputType, null, paramName, hyperDefaultValue), type);
             else if (type.IsAssignableTo(typeof(IVector)))
-                return InternalOp.ModuleTensorInput(dtype, rank: 1, inputType, null, paramName);
+                return WrapNodeAsModuleParam(InternalOp.ModuleTensorInput(dtype, rank: 1, inputType, null, paramName), type);
             else if (type.IsAssignableTo(typeof(ITensor)))
-                return InternalOp.ModuleTensorInput(dtype, rank: null, inputType, null, paramName);
+                return WrapNodeAsModuleParam(InternalOp.ModuleTensorInput(dtype, rank: null, inputType, null, paramName), type);
 
-            throw new UnsupportedDTypeException(ErrorCodes.GC006, type.Name, "CreateComputeGraphInput", 
+            throw new UnsupportedDTypeException(ErrorCodes.GC006, type.Name, "CreateComputeGraphInput",
                 $"Type '{type.FullName}' is not supported for compute graph input creation");
+        }
+
+        /// <summary>
+        /// Wrap a freshly-built internal graph <paramref name="node"/> into the user-facing
+        /// <see cref="IModuleParam"/> handle a module body expects, so the internal <see cref="Variable"/>
+        /// never escapes across the module boundary. Tensor-family and <c>TensorStruct&lt;T&gt;</c> parameters
+        /// are themselves <see cref="IValue"/> handles; a bare <see cref="IStruct"/> interface/record parameter
+        /// has no handle of its own, so the node rides inside a <c>TensorStruct&lt;T&gt;</c> carrier that
+        /// <c>InvokeAndFormat</c> unwraps.
+        /// </summary>
+        private static IModuleParam WrapNodeAsModuleParam(Variable node, Type userType)
+        {
+            var carrier = typeof(IValue).IsAssignableFrom(userType)
+                ? userType
+                : typeof(TensorStruct<>).MakeGenericType(userType);
+            var conv = Shorokoo.Core.VariableHandle.MatchingConverter(carrier, node.GetType())
+                ?? throw new InvalidTensorOperationException(ErrorCodes.GC006, "module input creation", userType.Name,
+                    $"no implicit Variable conversion to handle '{carrier.Name}'");
+            return (IModuleParam)conv.Invoke(null, [node])!;
         }
 
         /// <summary>Creates a runtime (graph) input tensor with optional name and rank/dims.</summary>

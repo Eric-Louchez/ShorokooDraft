@@ -134,7 +134,7 @@ namespace Shorokoo
     /// <see cref="Shorokoo.Core.VariableHandle"/> for the boxed/interface cases).
     /// </para>
     /// </summary>
-    public class Variable : IModuleParam
+    public class Variable
     {
         public Node OwningNode { get; private set; }
         public Node ParentNode => this.OwningNode;

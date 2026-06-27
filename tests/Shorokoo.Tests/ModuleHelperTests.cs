@@ -84,16 +84,17 @@ public class ModuleHelperCoverageTests
         Assert.Contains("struct:CovHelperStruct",
             ModuleHelper.ToSignatureStringWithOverride(tensorStruct, null));
 
-        // IModel arm (line 111) + Scalar<IModelVarType> arm (line 117).
+        // Model node arm (DType.Model) — reached via the explicit IModuleParam→Variable boundary.
         var hypersModel = HypersLayer.Model(Scalar(1.0f), Scalar(0.0f));
-        Assert.StartsWith("[", ModuleHelper.ToSignatureStringWithOverride(hypersModel, null));
+        Assert.StartsWith("[", ModuleHelper.ToSignatureStringWithOverride(((IModuleParam)hypersModel).ToVariable(), null));
 
-        // IModule arm (line 114) + Scalar<IModuleVarType> arm (line 120).
+        // Module node arm (DType.Module).
         var hypersModule = new HypersLayerModule();
-        Assert.StartsWith("[", ModuleHelper.ToSignatureStringWithOverride(hypersModule, null));
+        Assert.StartsWith("[", ModuleHelper.ToSignatureStringWithOverride(((IModuleParam)hypersModule).ToVariable(), null));
 
+        // A param that is neither a handle, model, nor module cannot cross the boundary.
         Assert.Throws<InvalidTensorOperationException>(
-            () => ModuleHelper.ToSignatureStringWithOverride(new NonVariableModuleParam(), null));
+            () => ((IModuleParam)new NonVariableModuleParam()).ToVariable());
 
         // ──────────────────────────────────────────────────────────────────
         // Format — every return-value-type arm

@@ -174,7 +174,6 @@ namespace Shorokoo
         internal static Variable ToVariable(this IModuleParam param) =>
                         param switch
                         {
-                            Variable v => v,
                             IModel model => (Variable)model.ModelVariable,
                             IModule module => (Variable)module.ModuleVariable,
                             IValue handle => handle.Immutable
