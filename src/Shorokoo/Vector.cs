@@ -37,7 +37,11 @@ namespace Shorokoo
 
         private static readonly DType? expectedDType = OnnxUtils.GetDType(typeof(T));
         public static implicit operator Vector<T>(Variable imm)
-            => new Vector<T> { inner = VariableHandle.ForHandle(imm, expectedDType, DataStructure.Tensor, 1) };
+        {
+            IValue.RequireKind(imm, DataStructure.Tensor);
+            IValue.RequireDType(imm, expectedDType);
+            return new Vector<T> { inner = IValue.RequireRank(imm, 1) };
+        }
         public static implicit operator Variable(Vector<T> h) => h.Imm;
         public static implicit operator Tensor<T>(Vector<T> h) => h.Imm;
 

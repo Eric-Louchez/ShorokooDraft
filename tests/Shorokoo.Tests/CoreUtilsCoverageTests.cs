@@ -281,8 +281,8 @@ public class CoreUtilsCoverageTests
     public void TestVariableHandleConversionCoverage()
     {
         // A graph node carries the structural kind, runtime dtype and rank; wrapping it in a typed
-        // value handle (the implicit Variable->handle operators via VariableHandle.ForHandle) must
-        // enforce that all three are compatible.
+        // value handle (the implicit Variable->handle operators, via VariableHandle.RequireKind/
+        // RequireDType/RequireRank) must enforce that all three are compatible.
         Variable scalarNode = InputScalar<float32>("a");        // Tensor kind, rank 0, float32
         Variable vectorNode = InputVector<float32>("b");        // Tensor kind, rank 1, float32
         Variable rank2Node = InputTensor<float32>("c", rank: 2);

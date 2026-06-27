@@ -115,6 +115,50 @@ namespace Shorokoo
                 return Enumerable.Range(1, rank.AssertNotNull()).Select(x => new TensorDim()).ToArray();
             }
         }
+
+        // ── The three checks an implicit Variable→handle operator composes ──
+        // They live here, on the value abstraction whose handles they gate, rather than being copied
+        // into each operator: the dtype condition and the error messages would otherwise be duplicated
+        // five times. Each operator still calls them explicitly so its own invariant — which of
+        // structure / dtype / rank it enforces — is visible at the site.
+
+        /// <summary>Structure must always match: a <paramref name="variable"/>'s <see cref="Variable.Kind"/>
+        /// has to equal the <paramref name="kind"/> the handle represents.</summary>
+        internal static void RequireKind(Variable variable, DataStructure kind)
+        {
+            if (variable.Kind != kind)
+                throw new InvalidTensorOperationException(ErrorCodes.CR011, "Variable→handle conversion",
+                    variable.Kind.ToString(),
+                    $"cannot wrap a {variable.Kind} graph value in a {kind} handle — structure must match");
+        }
+
+        /// <summary>Reject an implicit element-type change: if both the <paramref name="variable"/>'s runtime
+        /// dtype and the handle's <paramref name="expected"/> dtype are concretely known and differ, wrapping
+        /// would silently reinterpret the value. Skipped when either side is a generic-placeholder, unmapped,
+        /// or invalid dtype (e.g. inside a generic module before specialization).</summary>
+        internal static void RequireDType(Variable variable, DType? expected)
+        {
+            if (expected is not null && expected.IsValid && variable.Type.IsValid
+                && !expected.IsGenericType && !variable.Type.IsGenericType
+                && !expected.IsGenericTypeReference && !variable.Type.IsGenericTypeReference
+                && !variable.Type.Equals(expected))
+                throw new InvalidTensorOperationException(ErrorCodes.CR012, "Variable→handle conversion",
+                    $"{variable.Type} as {expected}",
+                    $"element-type mismatch — wrapping a {variable.Type} graph value as a {expected} handle would silently " +
+                    $"reinterpret it; use Cast<{expected}>() to convert the dtype or As<{expected}>() to reinterpret");
+        }
+
+        /// <summary>Adapt a <paramref name="variable"/> to a fixed-rank handle (<see cref="Scalar{T}"/> = 0,
+        /// <see cref="Vector{T}"/> = 1): a matching rank passes through unchanged, an <b>unknown</b> rank is
+        /// materialised with an <c>Identity</c> rank-conversion, and a known mismatch is an error.</summary>
+        internal static Variable RequireRank(Variable variable, int rank)
+        {
+            if (variable.Rank == rank) return variable;
+            if (variable.Rank is null) return OnnxOp.Identity(variable, rank);
+            throw new InvalidTensorOperationException(ErrorCodes.CR013, "Variable→handle conversion",
+                $"rank {variable.Rank} as rank {rank}",
+                $"cannot wrap a rank-{variable.Rank} tensor as a rank-{rank} handle");
+        }
     }
 
     /// <summary>

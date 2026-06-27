@@ -50,7 +50,11 @@ namespace Shorokoo.Core
 
         private static readonly DType? expectedDType = OnnxUtils.GetDType(typeof(T));
         public static implicit operator TensorSequence<T>(Variable imm)
-            => new TensorSequence<T> { inner = VariableHandle.ForHandle(imm, expectedDType, DataStructure.Sequence, null) };
+        {
+            IValue.RequireKind(imm, DataStructure.Sequence);
+            IValue.RequireDType(imm, expectedDType);
+            return new TensorSequence<T> { inner = imm };
+        }
         public static implicit operator Variable(TensorSequence<T> handle)
             => handle.Imm;
 

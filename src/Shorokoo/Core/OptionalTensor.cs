@@ -53,7 +53,11 @@ namespace Shorokoo.Core
         // Wrap / unwrap between the handle and its immutable.
         private static readonly DType? expectedDType = OnnxUtils.GetDType(typeof(T));
         public static implicit operator OptionalTensor<T>(Variable imm)
-            => new OptionalTensor<T> { inner = VariableHandle.ForHandle(imm, expectedDType, DataStructure.Optional, null) };
+        {
+            IValue.RequireKind(imm, DataStructure.Optional);
+            IValue.RequireDType(imm, expectedDType);
+            return new OptionalTensor<T> { inner = imm };
+        }
         public static implicit operator Variable(OptionalTensor<T> handle)
             => handle.Imm;
 

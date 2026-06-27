@@ -65,7 +65,11 @@ namespace Shorokoo
 
         private static readonly DType? expectedDType = OnnxUtils.GetDType(typeof(T));
         public static implicit operator Tensor<T>(Variable imm)
-            => new Tensor<T> { inner = VariableHandle.ForHandle(imm, expectedDType, DataStructure.Tensor, null) };
+        {
+            IValue.RequireKind(imm, DataStructure.Tensor);
+            IValue.RequireDType(imm, expectedDType);
+            return new Tensor<T> { inner = imm };
+        }
         public static implicit operator Variable(Tensor<T> h) => h.Imm;
 
         /// <summary>Wrap a node as this handle WITHOUT validation — for dtype reinterprets (<c>As&lt;V&gt;</c>

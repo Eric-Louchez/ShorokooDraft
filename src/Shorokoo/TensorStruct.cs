@@ -40,7 +40,11 @@ namespace Shorokoo
                 "default(TensorStruct<T>) has no field layout; create one via a graph op (e.g. Globals.TensorStruct<T>(...)).");
 
         public static implicit operator TensorStruct<T>(Variable imm)
-            => new TensorStruct<T> { inner = Shorokoo.Core.VariableHandle.ForHandle(imm, null, DataStructure.TensorStruct, null) };
+        {
+            // A struct's dtype is its field layout, not T, so only the structural kind is checked here.
+            IValue.RequireKind(imm, DataStructure.TensorStruct);
+            return new TensorStruct<T> { inner = imm };
+        }
         public static implicit operator Variable(TensorStruct<T> handle)
             => handle.Imm;
 
