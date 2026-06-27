@@ -63,9 +63,9 @@ namespace Shorokoo
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public ImmutableVariable<V> As<V>() where V : IVarType => ((IVariable)Imm).As<V>();
+        public ImmutableVariable<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
 #pragma warning disable CS0618
-        string? IVariable.FriendlyName => ((IVariable)Imm).FriendlyName;
+        string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;
 #pragma warning restore CS0618
         public override bool Equals(object? obj) => obj is Scalar<T> t && Equals(Imm, t.Imm);
         public override int GetHashCode() => Imm.GetHashCode();

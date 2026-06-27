@@ -20,7 +20,7 @@ namespace Shorokoo
     public static class OnnxEngine
     {
         /// <summary>Evaluates the given output variables and returns their values, in order.</summary>
-        public static TensorData[] Eval(IVariable[] outputs)
+        public static TensorData[] Eval(IValue[] outputs)
         {
 
             var graph = new Shorokoo.Graph.FastComputationGraph([], [.. outputs]);
@@ -32,14 +32,14 @@ namespace Shorokoo
         }
 
         /// <summary>Evaluates two or more output variables and returns their values, in order.</summary>
-        public static TensorData[] Eval(IVariable output1, IVariable output2, params IVariable[] outputs)
+        public static TensorData[] Eval(IValue output1, IValue output2, params IValue[] outputs)
         {
             var allOutputs = new[] { output1, output2 }.Concat(outputs).ToArray();
             return Eval(allOutputs);
         }
 
         /// <summary>Evaluates a single output variable and returns its value.</summary>
-        public static TensorData Eval(IVariable output)
+        public static TensorData Eval(IValue output)
         {
             var allOutputs = new[] { output };
             return Eval(allOutputs)[0];

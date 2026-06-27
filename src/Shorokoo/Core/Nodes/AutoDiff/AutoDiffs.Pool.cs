@@ -11,7 +11,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== GlobalAveragePool =====
 
         [AutoDiff(GLOBAL_AVERAGE_POOL)]
-        public static IVariable?[] GlobalAveragePool<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static IValue?[] GlobalAveragePool<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // GlobalAveragePool averages over spatial dimensions (dims 2, 3, ...)
             // Output shape: [N, C, 1, 1, ...]
@@ -30,7 +30,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== GlobalMaxPool =====
 
         [AutoDiff(GLOBAL_MAX_POOL)]
-        public static IVariable?[] GlobalMaxPool<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static IValue?[] GlobalMaxPool<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // GlobalMaxPool takes max over spatial dimensions
             // Gradient flows only to the element(s) that achieved the maximum
@@ -59,7 +59,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== GlobalLpPool =====
 
         [AutoDiff(GLOBAL_LP_POOL)]
-        public static IVariable?[] GlobalLpPool<T>(Tensor<T> x, Tensor<T> grad, long? p) where T : IVarType
+        public static IValue?[] GlobalLpPool<T>(Tensor<T> x, Tensor<T> grad, long? p) where T : IVarType
         {
             // GlobalLpPool: Y = (Σ|X_i|^p)^(1/p) over spatial dimensions (dims 2, 3, ...)
             // Output shape: [N, C, 1, 1, ...]

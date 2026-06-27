@@ -401,13 +401,13 @@ namespace Shorokoo
             where T : IVarType
             => tensors.Length == 0 ?
                     (ImmutableTensorSequence<T>)OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>()) :
-                    (ImmutableTensorSequence<T>)OnnxOp.SequenceConstruct([.. tensors.Cast<IVariable>()]);
+                    (ImmutableTensorSequence<T>)OnnxOp.SequenceConstruct([.. tensors.Cast<IValue>()]);
 
         /// <summary>Creates a tensor sequence from the given tensors; an empty sequence when none are supplied.</summary>
         public static ITensorSequence TensorSequence(DType dtype, params ITensor[] tensors)
             => tensors.Length == 0 ?
                     (ITensorSequence)OnnxOp.SequenceEmpty(dtype) :
-                    (ITensorSequence)OnnxOp.SequenceConstruct([.. tensors.Cast<IVariable>()]);
+                    (ITensorSequence)OnnxOp.SequenceConstruct([.. tensors.Cast<IValue>()]);
         #endregion
 
         #region Optional Tensor constructors
@@ -684,7 +684,7 @@ namespace Shorokoo
         }
 
         /// <summary>Creates a placeholder variable: a default-valued tensor constant, an empty optional, or an empty sequence, depending on structure.</summary>
-        public static IVariable CreateVariable(DType type, int rank, DataStructure structure)
+        public static IValue CreateVariable(DType type, int rank, DataStructure structure)
         {
             switch (structure)
             {
@@ -790,7 +790,7 @@ namespace Shorokoo
         #region Input Tensors Constructors
 
         /// <summary>Creates a module input node matching the variable's dtype, rank, and data structure.</summary>
-        public static IVariable ToInput(this IVariable var)
+        public static IValue ToInput(this IValue var)
         {
             var structure = var.Structure();
             var dtype = var.Type;
@@ -832,7 +832,7 @@ namespace Shorokoo
             // These define tensor struct field shapes — not TensorStruct<T> wrappers.
             // We create a TensorStructInput node and return it. The InvokeAndFormat method will wrap
             // it in a DispatchProxy (for interfaces) or construct via record constructor before passing to method.Invoke.
-            if (typeof(IStruct).IsAssignableFrom(type) && type != typeof(IStruct) && type != typeof(IVarType) && !typeof(IVariable).IsAssignableFrom(type))
+            if (typeof(IStruct).IsAssignableFrom(type) && type != typeof(IStruct) && type != typeof(IVarType) && !typeof(IValue).IsAssignableFrom(type))
             {
                 var structDef = StructDefExtractor.ExtractFromType(type);
                 var structDType = DType.GetOrCreateForTensorStruct(structDef);
@@ -932,7 +932,7 @@ namespace Shorokoo
         /// <typeparam name="T">The IStruct interface type defining the struct fields</typeparam>
         /// <param name="fields">Field values, positional in IStruct declaration order</param>
         /// <returns>A proxy implementing T with property access wired to graph operations</returns>
-        public static T TensorStruct<T>(params IVariable[] fields) where T : IStruct
+        public static T TensorStruct<T>(params IValue[] fields) where T : IStruct
         {
             if (typeof(T) == typeof(DTypeStruct))
                 throw new InvalidOperationException("Globals.TensorStruct<DTypeStruct> requires a concrete IStruct interface type");
@@ -944,14 +944,14 @@ namespace Shorokoo
         }
 
         /// <summary>
-        /// Wraps an existing struct-shaped IVariable (e.g. the result of <c>IfElse</c> or
+        /// Wraps an existing struct-shaped IValue (e.g. the result of <c>IfElse</c> or
         /// <c>SequenceAt</c> over a struct sequence) in a DispatchProxy implementing the given
         /// IStruct interface, so callers can read fields via property access (e.g.
         /// <c>proxy.First</c>) instead of <c>InternalOp.TensorStructGetField</c> calls.
         /// </summary>
         /// <typeparam name="T">The IStruct interface to expose</typeparam>
-        /// <param name="existingStruct">An IVariable carrying struct-shaped data.</param>
-        public static T AsTensorStruct<T>(IVariable existingStruct) where T : IStruct
+        /// <param name="existingStruct">An IValue carrying struct-shaped data.</param>
+        public static T AsTensorStruct<T>(IValue existingStruct) where T : IStruct
         {
             if (typeof(T) == typeof(DTypeStruct))
                 throw new InvalidOperationException("Globals.AsTensorStruct<DTypeStruct> requires a concrete IStruct interface type");

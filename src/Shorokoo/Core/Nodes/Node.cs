@@ -135,14 +135,14 @@ namespace Shorokoo.Core.Nodes
 
         public string? FriendlyName { get; protected set; }
 
-        // public virtual ImmutableArray<IVariable?> Inputs => FullInputs.OrderBy(x => x.Key, comparer: StringComparer.Ordinal).SelectMany(x => x.Value).ToImmutableArray();
+        // public virtual ImmutableArray<IValue?> Inputs => FullInputs.OrderBy(x => x.Key, comparer: StringComparer.Ordinal).SelectMany(x => x.Value).ToImmutableArray();
 
-        private ImmutableArray<IVariable?>? inputs = null;
+        private ImmutableArray<IValue?>? inputs = null;
 
         /// <summary>
         /// All inputs to this node, except the connecting tensor of a close node.
         /// </summary>
-        public virtual ImmutableArray<IVariable?> Inputs
+        public virtual ImmutableArray<IValue?> Inputs
         {
             get
             {
@@ -157,33 +157,33 @@ namespace Shorokoo.Core.Nodes
         /// <summary>
         /// All inputs to this node, including the connecting tensor of a close node.
         /// </summary>
-        public virtual ImmutableArray<IVariable?> AllInputs => !this.IsCloseNode ? this.Inputs : this.Inputs.Insert(0, this.ConnectingTensor);
+        public virtual ImmutableArray<IValue?> AllInputs => !this.IsCloseNode ? this.Inputs : this.Inputs.Insert(0, this.ConnectingTensor);
 
-        public virtual IVariable?[] InputsWithConnectingTensor => this.IsCloseNode ? this.Inputs.Append(this.ConnectingTensor).ToArray() : this.Inputs.ToArray();
+        public virtual IValue?[] InputsWithConnectingTensor => this.IsCloseNode ? this.Inputs.Append(this.ConnectingTensor).ToArray() : this.Inputs.ToArray();
 
-        public virtual IVariable?[] Outputs => FullOutputs.OrderBy(x => x.Key, comparer: StringComparer.Ordinal).SelectMany(x => x.Value).ToArray();
+        public virtual IValue?[] Outputs => FullOutputs.OrderBy(x => x.Key, comparer: StringComparer.Ordinal).SelectMany(x => x.Value).ToArray();
 
 
         /// <summary>
         /// All outputs of this node, except the connecting tensor of an open node.
         /// </summary>
-        public virtual ImmutableArray<IVariable?> OutputsImmutable => Outputs.ToImmutableArray();
+        public virtual ImmutableArray<IValue?> OutputsImmutable => Outputs.ToImmutableArray();
 
         /// <summary>
         /// All outputs of this node, including the connecting tensor of an open node.
         /// </summary>
-        public virtual ImmutableArray<IVariable?> AllOutputs => !this.IsOpenNode ? this.OutputsImmutable : this.OutputsImmutable.Insert(0, this.ConnectingTensor);
+        public virtual ImmutableArray<IValue?> AllOutputs => !this.IsOpenNode ? this.OutputsImmutable : this.OutputsImmutable.Insert(0, this.ConnectingTensor);
 
-        public IVariable? ConnectingTensor;
+        public IValue? ConnectingTensor;
 
         /// <summary>
         /// Input variables classified by the attribute name of the graph attribute they correspond to.
         /// For input variables not associated with a graph (the typical case) the input variables are found in the empty string entry.
         /// REMINDER: The outputs of a graph attribute are found here as the inputs of the close node.
         /// </summary>
-        public virtual ImmutableDictionary<string, IVariable?[]> FullInputs { get; protected set; }
+        public virtual ImmutableDictionary<string, IValue?[]> FullInputs { get; protected set; }
 
-        public virtual ImmutableDictionary<string, ImmutableArray<IVariable?>> FullInputsImmutable
+        public virtual ImmutableDictionary<string, ImmutableArray<IValue?>> FullInputsImmutable
             => FullInputs.ToImmutableDictionary(x => x.Key, x => x.Value.ToImmutableArray());
 
         /// <summary>
@@ -191,13 +191,13 @@ namespace Shorokoo.Core.Nodes
         /// For output variables not associated with a graph (the typical case) the output variables are found in the empty string entry.
         /// REMINDER: The inputs of a graph attribute are found here as the outputs of the open node.
         /// </summary>
-        public virtual ImmutableDictionary<string, IVariable?[]> FullOutputs { get; protected set; }
-        public ImmutableDictionary<string, ImmutableArray<IVariable?>> FullOutputsImmutable
+        public virtual ImmutableDictionary<string, IValue?[]> FullOutputs { get; protected set; }
+        public ImmutableDictionary<string, ImmutableArray<IValue?>> FullOutputsImmutable
             => FullOutputs.ToImmutableDictionary(x => x.Key, x => x.Value.ToImmutableArray());
 
         public int NumTrailingNullInputs { get; protected set; } = 0;
 
-        public IVariable?[] InputsWithTrailingNulls => [.. Inputs, .. Enumerable.Repeat((ImmutableVariable<AnyLike>?)null, this.NumTrailingNullInputs)];
+        public IValue?[] InputsWithTrailingNulls => [.. Inputs, .. Enumerable.Repeat((ImmutableVariable<AnyLike>?)null, this.NumTrailingNullInputs)];
 
         public string? StackTrace { get; protected set; }
 
@@ -235,7 +235,7 @@ namespace Shorokoo.Core.Nodes
 
         public bool IsWithStateDeps => this.OpCode == InternalOpCodes.WITH_STATE_DEPS;
 
-        public Node(NodeDefinition nodeDef, OnnxCSharpAttributes? attributes, ImmutableDictionary<string, IVariable?[]> inputs, ImmutableDictionary<string, OutputTensorInfo[]> outputs, string? stackTrace, string? defaultName, string? identifierTemplateString, Function? targetFunction = null, Node? openNode = null, NodeKey? existingKey = null, long? existingOrderingHint = null)
+        public Node(NodeDefinition nodeDef, OnnxCSharpAttributes? attributes, ImmutableDictionary<string, IValue?[]> inputs, ImmutableDictionary<string, OutputTensorInfo[]> outputs, string? stackTrace, string? defaultName, string? identifierTemplateString, Function? targetFunction = null, Node? openNode = null, NodeKey? existingKey = null, long? existingOrderingHint = null)
         {
 
             if (inputs.SelectMany(x => x.Value).NotNulls().Any(x => !x.IsValid))
@@ -282,7 +282,7 @@ namespace Shorokoo.Core.Nodes
             var moduleFnOverride = targetFnIsModuleFn ? targetFunction : null;
             if (this.OpCode == InternalOpCodes.MODULE_SET_HYPERPARAMS)
                 moduleFnOverride = ((ITensor)this.Inputs[0]!).ModuleFn;
-            if (this.OpCode == OpCodes.SEQUENCE_AT && this.Inputs[0] is IVariable inputVar)
+            if (this.OpCode == OpCodes.SEQUENCE_AT && this.Inputs[0] is IValue inputVar)
                 moduleFnOverride = inputVar.ModuleFn;
 
             this.FullOutputs = outputs.ToImmutableDictionary(x => x.Key,
@@ -354,10 +354,10 @@ namespace Shorokoo.Core.Nodes
             }
         }
 
-        public IVariable?[] TrimNulls(IVariable?[] inputs)
+        public IValue?[] TrimNulls(IValue?[] inputs)
             => inputs.Reverse().SkipWhile(x => x is null).Reverse().ToArray();
 
-        protected IVariable MakeOutput(DType type, Function? moduleFn, DataStructure structure, int? rank, string? name)
+        protected IValue MakeOutput(DType type, Function? moduleFn, DataStructure structure, int? rank, string? name)
         {
             switch(structure)
             {

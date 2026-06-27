@@ -115,8 +115,8 @@ namespace Shorokoo
     /// </summary>
     public interface DTypeStruct : IStruct;
 
-    public interface IVariable<out T> : IVariable where T : IVarType;
-    public abstract class ImmutableVariable<T> : IVariable<T> where T : IVarType
+    public interface IValue<out T> : IValue where T : IVarType;
+    public abstract class ImmutableVariable<T> : IValue<T> where T : IVarType
     {
         public Node OwningNode { get; private set; }
 
@@ -184,7 +184,7 @@ namespace Shorokoo
         [Obsolete("FriendlyName is deprecated. Use UniqueName for ONNX names or Key.ToString() for stable identifiers.")]
         public string? FriendlyName => this.uniqueName;
 
-        ImmutableVariable<V> IVariable.As<V>()
+        ImmutableVariable<V> IValue.As<V>()
         {
             if (typeof(V) == typeof(T))
                 return (ImmutableVariable<V>)(object)this;

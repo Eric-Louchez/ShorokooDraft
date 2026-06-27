@@ -72,8 +72,8 @@ public class TrainingGraphBuilderQuickTests
         var input = Globals.InputTensor<float32>("input", rank: 1);
         var output = OnnxOp.Identity(input, null);
         var modelGraph = new FastComputationGraph(
-            ImmutableArray.Create<IVariable>(input),
-            ImmutableArray.Create((IVariable)output));
+            ImmutableArray.Create<IValue>(input),
+            ImmutableArray.Create((IValue)output));
 
         var lossGraph = SimpleSumSquaredLoss.ComputationGraph;
 

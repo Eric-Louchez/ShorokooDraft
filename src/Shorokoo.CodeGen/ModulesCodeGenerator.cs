@@ -965,7 +965,7 @@ public class ModuleSourceGenerator : IIncrementalGenerator
                 }
                 else
                 {
-                    // For non-generic initializers, wrap the IVariable result into the value-struct
+                    // For non-generic initializers, wrap the IValue result into the value-struct
                     // return type. A plain cast would unbox the interface to a struct and throw;
                     // VariableHandle.Cast invokes the immutable→struct conversion instead.
                     sb.AppendLine($"        public static {outputTypeName} {methodName}{typeParamList}({inputNamedTypeList}){typeConstraints}")

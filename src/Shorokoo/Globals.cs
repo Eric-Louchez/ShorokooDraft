@@ -24,7 +24,7 @@ namespace Shorokoo
         /// Creates a trainable parameter node whose value is produced by the given
         /// [TrainableParamInitializer] delegate, invoked with the supplied inputs.
         /// </summary>
-        public static ITensor CallTrainableParamInitializer(Delegate trainableParamInitializerImplementation, params IVariable[] inputs)
+        public static ITensor CallTrainableParamInitializer(Delegate trainableParamInitializerImplementation, params IValue[] inputs)
         {
             return (ITensor)CallTrainableParamInitializer(trainableParamInitializerImplementation, defaultName: null, isTrainable: true, inputs);
         }
@@ -36,7 +36,7 @@ namespace Shorokoo
         /// <see cref="StateOwnership.ModuleOwned"/>; use the overload taking a
         /// <see cref="StateOwnership"/> for optimizer-owned state.
         /// </summary>
-        public static ITensor CallTrainableParamInitializer(Delegate trainableParamInitializerImplementation, string? defaultName, bool isTrainable, params IVariable[] inputs)
+        public static ITensor CallTrainableParamInitializer(Delegate trainableParamInitializerImplementation, string? defaultName, bool isTrainable, params IValue[] inputs)
             => CallTrainableParamInitializer(trainableParamInitializerImplementation, defaultName, isTrainable, StateOwnership.ModuleOwned, inputs);
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace Shorokoo
         /// (<see cref="StateOwnership.ModuleOwned"/>) or an optimizer module
         /// (<see cref="StateOwnership.OptimizerOwned"/>).
         /// </summary>
-        public static ITensor CallTrainableParamInitializer(Delegate trainableParamInitializerImplementation, string? defaultName, bool isTrainable, StateOwnership stateOwnership, params IVariable[] inputs)
+        public static ITensor CallTrainableParamInitializer(Delegate trainableParamInitializerImplementation, string? defaultName, bool isTrainable, StateOwnership stateOwnership, params IValue[] inputs)
         {
             Vector<int64> iterationIndices = [.. LoopAPI.IterationIndices];
 
@@ -72,7 +72,7 @@ namespace Shorokoo
         /// <param name="isTrainable">True for trainable parameters, false for state parameters</param>
         /// <param name="inputs">The input variables to the initializer</param>
         /// <returns>A tensor with the correct generic type</returns>
-        public static Tensor<T> CallTrainableParamInitializer<T>(Delegate trainableParamInitializerImplementation, string? defaultName, bool isTrainable, params IVariable[] inputs) where T : IVarType
+        public static Tensor<T> CallTrainableParamInitializer<T>(Delegate trainableParamInitializerImplementation, string? defaultName, bool isTrainable, params IValue[] inputs) where T : IVarType
             => CallTrainableParamInitializer<T>(trainableParamInitializerImplementation, defaultName, isTrainable, StateOwnership.ModuleOwned, inputs);
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace Shorokoo
         /// generic type; for state parameters (<paramref name="isTrainable"/> false),
         /// <paramref name="stateOwnership"/> records who updates the state.
         /// </summary>
-        public static Tensor<T> CallTrainableParamInitializer<T>(Delegate trainableParamInitializerImplementation, string? defaultName, bool isTrainable, StateOwnership stateOwnership, params IVariable[] inputs) where T : IVarType
+        public static Tensor<T> CallTrainableParamInitializer<T>(Delegate trainableParamInitializerImplementation, string? defaultName, bool isTrainable, StateOwnership stateOwnership, params IValue[] inputs) where T : IVarType
         {
             Vector<int64> iterationIndices = [.. LoopAPI.IterationIndices];
 
@@ -115,7 +115,7 @@ namespace Shorokoo
             // Create the trainable param ref with the appropriate dtype and generic type args
             var result = InternalOp.TrainableParamRef(inputs, iterationIndices, localModelId: null, dtype, rank, targetFn, isTrainable, genericTypeArgs);
 
-            // The result is IVariable but we know it's a tensor with the specified dtype.
+            // The result is IValue but we know it's a tensor with the specified dtype.
             // Cast through ITensor first (the interface), then to the concrete Tensor<T>.
             // This cast succeeds because TrainableParamRef creates a Variable with the correct dtype.
             return (ImmutableTensor<T>)(ITensor)result;
@@ -162,9 +162,9 @@ namespace Shorokoo
         /// </exception>
         public static void StateUpdate<T>(T originalState, T updatedState) where T : ITensor
         {
-            // Get the underlying IVariable for both tensors
-            var originalVar = originalState as IVariable;
-            var updatedVar = updatedState as IVariable;
+            // Get the underlying IValue for both tensors
+            var originalVar = originalState as IValue;
+            var updatedVar = updatedState as IValue;
 
             if (originalVar is null || updatedVar is null)
             {
@@ -178,7 +178,7 @@ namespace Shorokoo
             var producer = originalVar.OwningNode;
             while (producer.OpCode == OpCodes.IDENTITY
                    && producer.Inputs.Length > 0
-                   && producer.Inputs[0] is IVariable identityInput)
+                   && producer.Inputs[0] is IValue identityInput)
             {
                 producer = identityInput.OwningNode;
             }

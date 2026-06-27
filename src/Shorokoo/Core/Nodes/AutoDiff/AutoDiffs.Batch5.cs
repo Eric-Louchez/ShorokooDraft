@@ -12,7 +12,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Gemm =====
 
         [AutoDiff(GEMM)]
-        public static IVariable?[] Gemm<T>(
+        public static IValue?[] Gemm<T>(
             Tensor<T> a, Tensor<T> b, Tensor<T>? c,
             Tensor<T> grad, float? alpha, float? beta, long? transA, long? transB)
             where T : IVarType
@@ -81,7 +81,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             }
 
             // Compute gradient w.r.t. C
-            IVariable? gradC = null;
+            IValue? gradC = null;
             if (c is not null)
             {
                 var betaConst = TypedConst(effectiveBeta, (Tensor<T>)grad);
@@ -94,7 +94,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== InstanceNormalization =====
 
         [AutoDiff(INSTANCE_NORMALIZATION)]
-        public static IVariable?[] InstanceNormalization<T>(
+        public static IValue?[] InstanceNormalization<T>(
             Tensor<T> x, Tensor<T> scale, Tensor<T> bias,
             Tensor<T> grad, float? epsilon) where T : IVarType
         {
@@ -152,7 +152,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== SpaceToDepth =====
 
         [AutoDiff(SPACE_TO_DEPTH)]
-        public static IVariable?[] SpaceToDepth<T>(
+        public static IValue?[] SpaceToDepth<T>(
             Tensor<T> input, Tensor<T> grad, long? blocksize)
             where T : IVarType
         {
@@ -188,7 +188,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Trilu =====
 
         [AutoDiff(TRILU)]
-        public static IVariable?[] Trilu<T1>(
+        public static IValue?[] Trilu<T1>(
             Tensor<T1> input, Tensor<int64>? k, Tensor<T1> grad, long? upper)
             where T1 : IVarType
         {
@@ -196,7 +196,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // Gradient: apply the same triangular mask to the upstream gradient
             var effectiveUpper = upper ?? 1;
 
-            IVariable gradResult;
+            IValue gradResult;
             if (k is not null)
                 gradResult = OnnxOp.Trilu(grad, k, upper: effectiveUpper);
             else
@@ -208,7 +208,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== LpNormalization =====
 
         [AutoDiff(LP_NORMALIZATION)]
-        public static IVariable?[] LpNormalization<T>(
+        public static IValue?[] LpNormalization<T>(
             Tensor<T> input, Tensor<T> grad, long? axis, long? p)
             where T : IVarType
         {
@@ -251,7 +251,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
         // ===== Conv (variadic registration) =====
 
-        internal static IVariable?[] ConvGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] ConvGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             // Conv(x, w, b) → y
             // dx = ConvTranspose(grad, w) with matching parameters
@@ -307,7 +307,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // concatenate the per-group [Cout/g, Cin/g, KH', KW'] pieces along the output-
             // channel axis — matching w's grouped [Cout, Cin/g, KH, KW] layout. See
             // GroupedConvWeightGradient.
-            IVariable? gradW = GroupedConvWeightGradient(
+            IValue? gradW = GroupedConvWeightGradient(
                 image: x, kernel: grad, group: group,
                 strides: strides, dilations: dilations, pads: pads);
 
@@ -321,7 +321,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             }
 
             // db = ReduceSum(grad, axes=[0, 2, 3, ...]) → [outChannels]
-            IVariable? gradB = null;
+            IValue? gradB = null;
             if (b is not null)
             {
                 var gradShape = OnnxOp.Shape(grad);
@@ -339,7 +339,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
         // ===== ConvTranspose (variadic registration) =====
 
-        internal static IVariable?[] ConvTransposeGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] ConvTransposeGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             // ConvTranspose(x, w, b) → y, with w laid out [Cin, Cout/group, KH, KW] and
             //   y[n, co, j] = Σ_{ci, i, k : i·stride + k·dilation − pad_begin = j} x[n, ci, i] · w[ci, co, k]
@@ -384,7 +384,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // the trick per channel group and concatenate the per-group [Cin/g, Cout/g, …]
             // pieces along axis 0 — matching w's grouped [Cin, Cout/g, KH, KW] layout. See
             // GroupedConvWeightGradient (image/kernel roles swapped vs. Conv's call).
-            IVariable? gradW = GroupedConvWeightGradient(
+            IValue? gradW = GroupedConvWeightGradient(
                 image: grad, kernel: x, group: group,
                 strides: strides, dilations: dilations, pads: pads);
 
@@ -396,7 +396,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             }
 
             // db = ReduceSum(grad, axes=[0, 2, 3, ...])
-            IVariable? gradB = null;
+            IValue? gradB = null;
             if (b is not null)
             {
                 var gradShape = OnnxOp.Shape(grad);
@@ -423,8 +423,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // (after the trailing [1,0,2,3] transpose; KH'/KW' may overrun the true kernel size —
         // callers slice down to w's shape). 2-D only, mirroring the dx implementations.
 
-        private static IVariable ConvWeightGradientViaSwappedRoles(
-            IVariable image, IVariable kernel, long[] strides, long[] dilations, long[]? pads)
+        private static IValue ConvWeightGradientViaSwappedRoles(
+            IValue image, IValue kernel, long[] strides, long[] dilations, long[]? pads)
         {
             var imageT = OnnxOp.Transpose(image, [1L, 0L, 2L, 3L]);
             var kernelT = OnnxOp.Transpose(kernel, [1L, 0L, 2L, 3L]);
@@ -442,8 +442,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ConvTranspose ([Cin, Cout/g, …]) alike. Note: for large group counts (e.g.
         // depthwise convs over many channels) this emits 'group' Conv nodes.
 
-        private static IVariable GroupedConvWeightGradient(
-            IVariable image, IVariable kernel, long group,
+        private static IValue GroupedConvWeightGradient(
+            IValue image, IValue kernel, long group,
             long[] strides, long[] dilations, long[]? pads)
         {
             if (group <= 1L)
@@ -456,7 +456,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 OnnxOp.Slice(OnnxOp.Shape(kernel), Globals.Vector(1L), Globals.Vector(2L)),
                 Globals.Vector(group));
 
-            var parts = new IVariable[group];
+            var parts = new IValue[group];
             for (long g = 0; g < group; g++)
             {
                 var imageG = OnnxOp.Slice(image,
@@ -511,7 +511,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // are not preserved on the node. ceil_mode doesn't affect this gradient — the
         // window count is taken from grad's actual shape.
 
-        internal static IVariable?[] AveragePoolGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] AveragePoolGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             var x = inputs[0]!;
             var grad = outputGrads[0]!;
@@ -590,14 +590,14 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // We can't pass these to Col2Im's static `pads` attribute, so instead we
             // inflate Col2Im's dynamic `image_shape` input to absorb them and Slice the
             // result down to x's spatial shape at the end.
-            IVariable[]? padBeginVars = null;
-            IVariable? paddedImageShape = null;
+            IValue[]? padBeginVars = null;
+            IValue? paddedImageShape = null;
             if (isSameMode)
             {
                 var xShapeSame = OnnxOp.Shape(x);
                 var gradShapeSame = OnnxOp.Shape(grad);
-                padBeginVars = new IVariable[nDims];
-                var imageShapeParts = new IVariable[nDims];
+                padBeginVars = new IValue[nDims];
+                var imageShapeParts = new IValue[nDims];
 
                 for (int d = 0; d < nDims; d++)
                 {
@@ -630,7 +630,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // varies (windows near the edges touch padded zeros that aren't counted),
             // so we use the same AvgPool(ones, count_include_pad=true) trick — passing
             // the original auto_pad/pads so the divisor tensor has the right shape.
-            IVariable scaledGrad;
+            IValue scaledGrad;
             if (countIncludePad || (!hasPads && !isSameMode))
             {
                 // Constant divisor kernel_size everywhere.
@@ -689,7 +689,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             //             the dynamic padding), pads attr = zeros. We then Slice off the
             //             padding edges to recover x's exact spatial extent.
             var blockShape = Globals.Vector(kernelShape);
-            IVariable imageShape;
+            IValue imageShape;
             long[] col2imPads;
             if (isSameMode)
             {
@@ -711,8 +711,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // (padded - pad_end) because the latter is a plain Sub we already have. But
             // start + x_size is simpler — compute that.
             var xShapeFinal = OnnxOp.Shape(x);
-            var startsParts = new IVariable[nDims];
-            var endsParts = new IVariable[nDims];
+            var startsParts = new IValue[nDims];
+            var endsParts = new IValue[nDims];
             var axesArray = new long[nDims];
             for (int d = 0; d < nDims; d++)
             {
@@ -743,7 +743,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // storage_order=1 (column-major within each spatial slice) would need an index
         // remap and is not supported.
 
-        internal static IVariable?[] MaxPoolGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] MaxPoolGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             var x = inputs[0]!;
             // grad of y. May be null when only the forward Indices output was consumed

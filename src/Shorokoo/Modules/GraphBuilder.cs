@@ -143,8 +143,8 @@ namespace Shorokoo.Core
             LoopAPI.PushLooperContext();
             try
             {
-                IVariable[] fnOutputs;
-                IVariable[] stateUpdates;
+                IValue[] fnOutputs;
+                IValue[] stateUpdates;
                 try
                 {
                     fnOutputs = ModuleHelper.InvokeAndFormat(methodInfo, fnInputs, invokeTarget);
@@ -165,7 +165,7 @@ namespace Shorokoo.Core
                 }
 
                 // For generic methods, prepend GENERIC_TYPE_INPUT nodes for each generic type parameter
-                var allInputs = new List<IVariable>();
+                var allInputs = new List<IValue>();
 
                 if (originalGenericMethod != null)
                 {
@@ -302,7 +302,7 @@ namespace Shorokoo.Core
         /// model-input node carries <see cref="InputType.Hyperparam"/>). Used to keep the graph's
         /// input list ordered hyperparameters-first even though Inline signatures are inputs-first.
         /// </summary>
-        private static bool IsHyperparamInput(IVariable v)
+        private static bool IsHyperparamInput(IValue v)
             => v.OwningNode.Attributes.GetEnumVal<InputType>(OnnxOpAttributeNames.ShrkAttrInputType) == InputType.Hyperparam;
 
         /// <summary>
@@ -312,7 +312,7 @@ namespace Shorokoo.Core
         /// <param name="outputs">The original output tensors from the module's Inline method</param>
         /// <param name="stateUpdates">The registered state update tensors</param>
         /// <returns>The wrapped output tensors</returns>
-        private static IVariable[] WrapOutputsWithStateDeps(IVariable[] outputs, IVariable[] stateUpdates)
+        private static IValue[] WrapOutputsWithStateDeps(IValue[] outputs, IValue[] stateUpdates)
         {
             if (stateUpdates.Length == 0)
                 return outputs;
@@ -320,7 +320,7 @@ namespace Shorokoo.Core
             // Wrap all output tensors with WithStateDeps to create a dependency on all state updates
             // This ensures that when any output is used, the state updates are also included in the graph
             // We wrap all outputs (not just the first) to handle cases where only some outputs are used
-            var wrappedOutputs = new IVariable[outputs.Length];
+            var wrappedOutputs = new IValue[outputs.Length];
             for (int i = 0; i < outputs.Length; i++)
             {
                 wrappedOutputs[i] = InternalOp.WithStateDeps(outputs[i], stateUpdates);

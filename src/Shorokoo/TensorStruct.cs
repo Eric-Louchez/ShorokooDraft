@@ -18,33 +18,33 @@ namespace Shorokoo
 {
     /// <summary>
     /// Immutable (class) graph node for a TensorStruct — a composite that groups multiple
-    /// <see cref="IVariable"/>s into one. This is the value the graph stores; it holds the field
+    /// <see cref="IValue"/>s into one. This is the value the graph stores; it holds the field
     /// data and definition and satisfies the <see cref="ITensorStruct"/> contract. The user-facing
     /// API lives on the value-type handle <see cref="TensorStruct{T}"/>.
     /// </summary>
     /// <typeparam name="T">The IStruct type that defines the struct fields. Use DTypeStruct for dynamic struct definitions.</typeparam>
     public class ImmutableTensorStruct<T> : ImmutableVariable<T>, ITensorStruct where T : IStruct
     {
-        private readonly ImmutableDictionary<string, IVariable> _fields;
+        private readonly ImmutableDictionary<string, IValue> _fields;
         private readonly TensorStructDef _definition;
 
         internal ImmutableTensorStruct(DType dtype, Node owningNode, Function? moduleFn, string? name,
-            TensorStructDef definition, ImmutableDictionary<string, IVariable>? fields = null)
+            TensorStructDef definition, ImmutableDictionary<string, IValue>? fields = null)
             : base(dtype, owningNode, moduleFn, name)
         {
             _definition = definition ?? throw new ArgumentNullException(nameof(definition));
-            _fields = fields ?? ImmutableDictionary<string, IVariable>.Empty;
+            _fields = fields ?? ImmutableDictionary<string, IValue>.Empty;
         }
 
         // ITensorStruct contract (the minimal graph-node surface).
         TensorStructDef ITensorStruct.Definition => _definition;
-        IVariable ITensorStruct.GetField(string name) => Field(name);
+        IValue ITensorStruct.GetField(string name) => Field(name);
 
         // Internal accessors used by the value-struct handle to build the public surface.
         internal TensorStructDef Def => _definition;
-        internal ImmutableDictionary<string, IVariable> Fields => _fields;
+        internal ImmutableDictionary<string, IValue> Fields => _fields;
 
-        internal IVariable Field(string name)
+        internal IValue Field(string name)
         {
             if (_fields.TryGetValue(name, out var field))
                 return field;
@@ -52,7 +52,7 @@ namespace Shorokoo
             throw new KeyNotFoundException($"Field '{name}' not found in TensorStruct. Available fields: {string.Join(", ", _fields.Keys)}");
         }
 
-        internal ImmutableTensorStruct<T> WithFields(ImmutableDictionary<string, IVariable> newFields)
+        internal ImmutableTensorStruct<T> WithFields(ImmutableDictionary<string, IValue> newFields)
             => new ImmutableTensorStruct<T>(this.Type, this.OwningNode, this.ModuleFn, this.UniqueName, _definition, newFields);
 
         public override string ToString()
@@ -77,7 +77,7 @@ namespace Shorokoo
     {
         private ImmutableTensorStruct<T>? inner;
 
-        IVariable Shorokoo.Core.IValueHandle.Immutable => Imm;
+        IValue Shorokoo.Core.IValueHandle.Immutable => Imm;
 
         /// <summary>The wrapped immutable. A defaulted handle has no recoverable field layout, so this throws.</summary>
         internal readonly ImmutableTensorStruct<T> Imm
@@ -92,9 +92,9 @@ namespace Shorokoo
         // ── User-facing API (the struct surface lives here, not on the immutable) ──
         public TensorStructDef Definition => Imm.Def;
 
-        public IVariable GetField(string name) => Imm.Field(name);
+        public IValue GetField(string name) => Imm.Field(name);
 
-        public TField GetField<TField>(string name) where TField : IVariable
+        public TField GetField<TField>(string name) where TField : IValue
         {
             var field = Imm.Field(name);
             if (field is TField typedField)
@@ -103,31 +103,31 @@ namespace Shorokoo
             throw new InvalidCastException($"Field '{name}' is of type {field.GetType().Name}, not {typeof(TField).Name}");
         }
 
-        public bool TryGetField(string name, out IVariable? field) => Imm.Fields.TryGetValue(name, out field);
+        public bool TryGetField(string name, out IValue? field) => Imm.Fields.TryGetValue(name, out field);
 
         public IEnumerable<string> FieldNames => Imm.Fields.Keys;
 
-        public IEnumerable<KeyValuePair<string, IVariable>> AllFields => Imm.Fields;
+        public IEnumerable<KeyValuePair<string, IValue>> AllFields => Imm.Fields;
 
-        internal TensorStruct<T> WithFields(ImmutableDictionary<string, IVariable> newFields) => Imm.WithFields(newFields);
+        internal TensorStruct<T> WithFields(ImmutableDictionary<string, IValue> newFields) => Imm.WithFields(newFields);
 
         public override readonly string ToString() => Imm.ToString();
 
         // ITensorStruct explicit members.
         TensorStructDef ITensorStruct.Definition => Imm.Def;
-        IVariable ITensorStruct.GetField(string name) => Imm.Field(name);
+        IValue ITensorStruct.GetField(string name) => Imm.Field(name);
 
-        // IVariable surface — forward to the wrapped immutable.
+        // IValue surface — forward to the wrapped immutable.
         public Node OwningNode => Imm.OwningNode;
         public DType Type => Imm.Type;
         public Function? ModuleFn => Imm.ModuleFn;
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public ImmutableVariable<V> As<V>() where V : IVarType => ((IVariable)Imm).As<V>();
+        public ImmutableVariable<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
 
 #pragma warning disable CS0618 // forwarding the obsolete member is intentional
-        string? IVariable.FriendlyName => ((IVariable)Imm).FriendlyName;
+        string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;
 #pragma warning restore CS0618
     }
 }

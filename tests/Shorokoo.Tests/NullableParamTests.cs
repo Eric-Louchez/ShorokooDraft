@@ -18,7 +18,7 @@ namespace Shorokoo.Tests;
 [Trait("Purpose", "Coverage")]
 public class NullableParamTests
 {
-    private static System.Collections.Immutable.ImmutableArray<IVariable> InputsOf(FastComputationGraph graph)
+    private static System.Collections.Immutable.ImmutableArray<IValue> InputsOf(FastComputationGraph graph)
         => FastComputationGraphConverter.BuildNodes(graph).inputs;
 
     private static byte[] Bytes(params float[] values) => TensorData([(long)values.Length], values).AccessRawMemory().ToArray();
@@ -242,15 +242,15 @@ public class NullableParamTests
         => Assert.True(typeof(OptionalTensor<float32>).IsValueType);
 
     /// <summary>Unwrapping the handle to its immutable and re-wrapping returns the same graph value
-    /// (same <see cref="IVariable.Key"/>); boxing the handle as <see cref="IVariable"/> keeps that identity.</summary>
+    /// (same <see cref="IValue.Key"/>); boxing the handle as <see cref="IValue"/> keeps that identity.</summary>
     [Fact]
     public void OptionalTensorHandle_WrapUnwrap_PreservesGraphIdentity()
     {
         OptionalTensor<float32> handle = OptionalTensor<float32>(Vector(1f, 2f, 3f));
         Shorokoo.Core.ImmutableOptionalTensor<float32> imm = handle;   // unwrap (implicit)
         OptionalTensor<float32> rewrapped = imm;                       // wrap (implicit)
-        Assert.Equal(imm.Key, ((IVariable)rewrapped).Key);
-        Assert.Equal(imm.Key, ((IVariable)handle).Key);                // boxing keeps Key
+        Assert.Equal(imm.Key, ((IValue)rewrapped).Key);
+        Assert.Equal(imm.Key, ((IValue)handle).Key);                // boxing keeps Key
     }
 
     /// <summary>A defaulted handle (<c>inner == null</c>) reports as an optional and lazily
@@ -259,7 +259,7 @@ public class NullableParamTests
     public void OptionalTensorHandle_Default_MaterialisesAbsentOptional()
     {
         OptionalTensor<float32> defaulted = default;
-        var asVar = (IVariable)defaulted;
+        var asVar = (IValue)defaulted;
         Assert.Equal(DataStructure.Optional, asVar.Structure());
         Assert.NotNull(asVar.OwningNode);                              // forces default materialisation
     }

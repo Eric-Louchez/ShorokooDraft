@@ -78,7 +78,7 @@ namespace Shorokoo.Modules
                 // The generated model constructor takes the value-struct Scalar<IModelVarType>; wrap
                 // the immutable scalar so reflective Invoke can bind it.
                 var ctor = type.GetConstructor([typeof(Scalar<IModelVarType>)]).AssertNotNull();
-                return (T)ctor.Invoke([Shorokoo.Core.VariableHandle.WrapForParam((IVariable)modelVariable, typeof(Scalar<IModelVarType>))]);
+                return (T)ctor.Invoke([Shorokoo.Core.VariableHandle.WrapForParam((IValue)modelVariable, typeof(Scalar<IModelVarType>))]);
             }
         }
 

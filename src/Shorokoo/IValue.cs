@@ -27,7 +27,7 @@ namespace Shorokoo
     {
     }
 
-    public interface IVariable : IModuleParam
+    public interface IValue : IModuleParam
     {
         public Node OwningNode { get; }
 
@@ -111,10 +111,10 @@ namespace Shorokoo
     }
 
     /// <summary>
-    /// Interface for TensorStruct instances. TensorStruct is a mechanism for grouping multiple IVariables together into a single composite IVariable.
+    /// Interface for TensorStruct instances. TensorStruct is a mechanism for grouping multiple IValues together into a single composite IValue.
     /// Parallel to ITensor, ITensorSequence, and IOptionalTensor.
     /// </summary>
-    public interface ITensorStruct : IVariable
+    public interface ITensorStruct : IValue
     {
         /// <summary>
         /// Gets the definition describing the structure of this TensorStruct (field names, types, order).
@@ -125,41 +125,41 @@ namespace Shorokoo
         /// Gets a field from this TensorStruct by name.
         /// </summary>
         /// <param name="name">The name of the field to retrieve</param>
-        /// <returns>The IVariable for the specified field</returns>
-        IVariable GetField(string name);
+        /// <returns>The IValue for the specified field</returns>
+        IValue GetField(string name);
     }
 
-    public static class IVariableExtensions
+    public static class IValueExtensions
     {
-        public static ImmutableVariable<T> As<T>(this IVariable var) where T : IVarType => ((ImmutableVariable<T>)var);
-        public static ImmutableVariable<uint4> uint4(this IVariable var) => ((ImmutableVariable<uint4>)var);
-        public static ImmutableVariable<uint8> uint8(this IVariable var) => ((ImmutableVariable<uint8>)var);
-        public static ImmutableVariable<uint16> uint16(this IVariable var) => ((ImmutableVariable<uint16>)var);
-        public static ImmutableVariable<uint32> uint32(this IVariable var) => ((ImmutableVariable<uint32>)var);
-        public static ImmutableVariable<uint64> uint64(this IVariable var) => ((ImmutableVariable<uint64>)var);
-        public static ImmutableVariable<int4> int4(this IVariable var) => ((ImmutableVariable<int4>)var);
-        public static ImmutableVariable<int8> int8(this IVariable var) => ((ImmutableVariable<int8>)var);
-        public static ImmutableVariable<int16> int16(this IVariable var) => ((ImmutableVariable<int16>)var);
-        public static ImmutableVariable<int32> int32(this IVariable var) => ((ImmutableVariable<int32>)var);
-        public static ImmutableVariable<int64> int64(this IVariable var) => ((ImmutableVariable<int64>)var);
-        public static ImmutableVariable<float16> float16(this IVariable var) => ((ImmutableVariable<float16>)var);
-        public static ImmutableVariable<bfloat16> bfloat16(this IVariable var) => ((ImmutableVariable<bfloat16>)var);
-        public static ImmutableVariable<float32> float32(this IVariable var) => ((ImmutableVariable<float32>)var);
-        public static ImmutableVariable<float64> float64(this IVariable var) => ((ImmutableVariable<float64>)var);
+        public static ImmutableVariable<T> As<T>(this IValue var) where T : IVarType => ((ImmutableVariable<T>)var);
+        public static ImmutableVariable<uint4> uint4(this IValue var) => ((ImmutableVariable<uint4>)var);
+        public static ImmutableVariable<uint8> uint8(this IValue var) => ((ImmutableVariable<uint8>)var);
+        public static ImmutableVariable<uint16> uint16(this IValue var) => ((ImmutableVariable<uint16>)var);
+        public static ImmutableVariable<uint32> uint32(this IValue var) => ((ImmutableVariable<uint32>)var);
+        public static ImmutableVariable<uint64> uint64(this IValue var) => ((ImmutableVariable<uint64>)var);
+        public static ImmutableVariable<int4> int4(this IValue var) => ((ImmutableVariable<int4>)var);
+        public static ImmutableVariable<int8> int8(this IValue var) => ((ImmutableVariable<int8>)var);
+        public static ImmutableVariable<int16> int16(this IValue var) => ((ImmutableVariable<int16>)var);
+        public static ImmutableVariable<int32> int32(this IValue var) => ((ImmutableVariable<int32>)var);
+        public static ImmutableVariable<int64> int64(this IValue var) => ((ImmutableVariable<int64>)var);
+        public static ImmutableVariable<float16> float16(this IValue var) => ((ImmutableVariable<float16>)var);
+        public static ImmutableVariable<bfloat16> bfloat16(this IValue var) => ((ImmutableVariable<bfloat16>)var);
+        public static ImmutableVariable<float32> float32(this IValue var) => ((ImmutableVariable<float32>)var);
+        public static ImmutableVariable<float64> float64(this IValue var) => ((ImmutableVariable<float64>)var);
 
-        public static DataStructure Structure(this IVariable var)
+        public static DataStructure Structure(this IValue var)
             => var is ITensorStruct ? DataStructure.TensorStruct :
                var is ITensor ? DataStructure.Tensor :
                var is IOptionalTensor ? DataStructure.Optional :
                DataStructure.Sequence;
 
-        public static int? Rank(this IVariable var)
+        public static int? Rank(this IValue var)
             => var is ITensor tensor ? tensor.Rank : null;
 
-        public static bool IsModelInput(this IVariable var) => var.OwningNode.IsModelInput;
+        public static bool IsModelInput(this IValue var) => var.OwningNode.IsModelInput;
 
-        internal static IVariable ToVariable(this IModuleParam param) => 
-                        param is IVariable var ? var :
+        internal static IValue ToVariable(this IModuleParam param) => 
+                        param is IValue var ? var :
                         param is IModel model ? model.ModelVariable :
                         param is IModule module ? module.ModuleVariable :
                         throw new InvalidTensorOperationException(ErrorCodes.CR001, "ToVariable", param?.GetType()?.Name ?? "null", 

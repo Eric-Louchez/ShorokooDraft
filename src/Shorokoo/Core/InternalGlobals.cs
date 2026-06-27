@@ -23,13 +23,13 @@ namespace Shorokoo.Core
         /// Each pair represents (original state, updated state) registered via StateUpdate.
         /// </summary>
         [ThreadStatic]
-        private static List<(IVariable original, IVariable updated)>? _stateUpdatePairs;
+        private static List<(IValue original, IValue updated)>? _stateUpdatePairs;
 
         /// <summary>
         /// Gets the current state update pairs collection, creating it if necessary.
         /// </summary>
-        private static List<(IVariable original, IVariable updated)> StateUpdatePairs
-            => _stateUpdatePairs ??= new List<(IVariable original, IVariable updated)>();
+        private static List<(IValue original, IValue updated)> StateUpdatePairs
+            => _stateUpdatePairs ??= new List<(IValue original, IValue updated)>();
 
         /// <summary>
         /// Registers a state update relationship between an original state tensor and its updated value.
@@ -38,7 +38,7 @@ namespace Shorokoo.Core
         /// <param name="original">The original state tensor from a state initializer</param>
         /// <param name="updated">The computed updated value for the state</param>
         /// <returns>The linked updated state tensor (output of STATE_UPDATE_LINK node)</returns>
-        internal static IVariable RegisterStateUpdate(IVariable original, IVariable updated)
+        internal static IValue RegisterStateUpdate(IValue original, IValue updated)
         {
             
             // Create the STATE_UPDATE_LINK node to track the relationship in the graph
@@ -55,10 +55,10 @@ namespace Shorokoo.Core
         /// Called after the module's Inline method returns to wrap outputs with WithStateDeps.
         /// </summary>
         /// <returns>Array of updated state tensors (the linked versions)</returns>
-        internal static IVariable[] GetAndClearStateUpdates()
+        internal static IValue[] GetAndClearStateUpdates()
         {
             if (_stateUpdatePairs == null || _stateUpdatePairs.Count == 0)
-                return Array.Empty<IVariable>();
+                return Array.Empty<IValue>();
 
             var updates = _stateUpdatePairs.Select(p => p.updated).ToArray();
             _stateUpdatePairs.Clear();
@@ -149,7 +149,7 @@ namespace Shorokoo.Core
         internal static OnnxTensorData<float32> OnnxTensorData(Shape shape, params float[] data) => new OnnxTensorData<float32>(shape, OnnxUtils.CreateTensorValue<float>(shape, data));
         internal static OnnxTensorData<float64> OnnxTensorData(Shape shape, params double[] data) => new OnnxTensorData<float64>(shape, OnnxUtils.CreateTensorValue<double>(shape, data));
 
-        internal static T IdentityOp<T>(T var) where T : IVariable
+        internal static T IdentityOp<T>(T var) where T : IValue
             => (T)OnnxOp.Identity(var, var.Rank());
     }
 }

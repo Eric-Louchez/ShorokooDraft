@@ -107,7 +107,7 @@ namespace Shorokoo.Core
             => paramInfo.GetCustomAttribute<HyperAttribute>() is { HasDefault: true } hyper ? hyper.DefaultValue : null;
 
         internal static string ToSignatureString(IModuleParam moduleParam)
-            => ToSignatureStringWithOverride(moduleParam, (moduleParam as IVariable)?.Rank());
+            => ToSignatureStringWithOverride(moduleParam, (moduleParam as IValue)?.Rank());
 
         internal static string ToSignatureStringWithOverride(IModuleParam moduleParam, int? rank)
         {
@@ -123,9 +123,9 @@ namespace Shorokoo.Core
             if (moduleParam is ImmutableScalar<IModuleVarType> moduleVariable)
                 return $"[{moduleVariable.ModuleFn!.ModuleSignatureString}]";
 
-            var variable = moduleParam as IVariable;
+            var variable = moduleParam as IValue;
             if (variable is null)
-                throw new InvalidTensorOperationException(ErrorCodes.FW002, "Module Parameter Processing", $"parameter type {moduleParam?.GetType().Name ?? "null"}", "Module parameter must be convertible to IVariable");
+                throw new InvalidTensorOperationException(ErrorCodes.FW002, "Module Parameter Processing", $"parameter type {moduleParam?.GetType().Name ?? "null"}", "Module parameter must be convertible to IValue");
 
             var rankString = rank is null || rank == -1 ? "" : $"#{rank}";
 
@@ -157,7 +157,7 @@ namespace Shorokoo.Core
             return CreateFunctionSignatureString(hyperparamInputs, inputInputs, outputInputs, null);
         }
 
-        internal static (string moduleSignature, string modelSignature) CreateFunctionSignatureString(IVariable[] hyperparams, IVariable[] inputs, IVariable[] outputs, int?[]? outputOverrideRanks)
+        internal static (string moduleSignature, string modelSignature) CreateFunctionSignatureString(IValue[] hyperparams, IValue[] inputs, IValue[] outputs, int?[]? outputOverrideRanks)
         {
             var signatureHyperparamPart = string.Join(", ", hyperparams.Select(ToSignatureString));
             var signatureInputPart = string.Join(", ", inputs.Select(ToSignatureString));
@@ -169,7 +169,7 @@ namespace Shorokoo.Core
                 $"{signatureInputPart} > {signatureOutputPart}");
         }
 
-        internal static IVariable DefaultVariable(Type type)
+        internal static IValue DefaultVariable(Type type)
         {
             if (type.IsAssignableTo(typeof(ITensorStruct)))
             {
@@ -373,7 +373,7 @@ namespace Shorokoo.Core
         /// <paramref name="target"/> is the invocation receiver: null for static methods, or the
         /// delegate's bound target for compiler-generated (non-capturing) lambda methods.
         /// </summary>
-        public static IVariable[] InvokeAndFormat(MethodInfo method, IModuleParam[] inputs, object? target = null)
+        public static IValue[] InvokeAndFormat(MethodInfo method, IModuleParam[] inputs, object? target = null)
         {
             var parameters = method.GetParameters();
             var invokeArgs = new object?[inputs.Length];
@@ -385,7 +385,7 @@ namespace Shorokoo.Core
                 if (typeof(IStruct).IsAssignableFrom(paramType) 
                     && paramType != typeof(IStruct) 
                     && paramType != typeof(IVarType)
-                    && !typeof(IVariable).IsAssignableFrom(paramType)
+                    && !typeof(IValue).IsAssignableFrom(paramType)
                     && inputs[i] is ITensorStruct tensorStruct)
                 {
                     if (paramType.IsInterface)
@@ -429,7 +429,7 @@ namespace Shorokoo.Core
         {
             if (input is null
                 || !paramType.IsValueType
-                || !typeof(IVariable).IsAssignableFrom(paramType)
+                || !typeof(IValue).IsAssignableFrom(paramType)
                 || paramType.IsInstanceOfType(input))
                 return input;
 
@@ -476,7 +476,7 @@ namespace Shorokoo.Core
                 // value so reflective Invoke can bind it (it does not apply the implicit conversion).
                 args[i] = Shorokoo.Core.VariableHandle.WrapForParam(
                     InternalOp.TensorStructGetField(
-                        (IVariable)tensorStruct,
+                        (IValue)tensorStruct,
                         fieldDef.Name,
                         fieldDef.ElementType,
                         fieldDef.Rank,
@@ -497,12 +497,12 @@ namespace Shorokoo.Core
             return genericDefinition.Namespace == "System" && genericDefinition.Name.StartsWith("ValueTuple`");
         }
 
-        internal static IVariable[] Format(object? retval)
+        internal static IValue[] Format(object? retval)
         {
             if (retval is null)
                 throw new InvalidTensorOperationException(ErrorCodes.FW002, "Method Invocation Result", "method return value", "Method invocation returned null when non-null result expected");
 
-            if (retval is IVariable[] vars)
+            if (retval is IValue[] vars)
                 return vars;
 
             if (retval is IModuleParam[] moduleParams)
@@ -513,27 +513,27 @@ namespace Shorokoo.Core
 
             // Handle TensorStructProxy (DispatchProxy wrapping an ITensorStruct).
             // When a module passes an IStruct interface object (created by DispatchProxy) to
-            // another module's Call method, extract the backing TensorStruct IVariable.
+            // another module's Call method, extract the backing TensorStruct IValue.
             if (retval is ITensorStructProxy proxy)
-                return [(IVariable)proxy.BackingTensorStruct];
+                return [(IValue)proxy.BackingTensorStruct];
 
             // Handle IStruct records/classes — extract field values and create a TensorStruct graph node.
             // When a module passes a record implementing IStruct to another module's Call method,
-            // we convert it to a TensorStruct by reading its property values (which are IVariable graph nodes).
+            // we convert it to a TensorStruct by reading its property values (which are IValue graph nodes).
             if (retval is IStruct)
             {
                 var structType = retval.GetType();
                 var def = StructDefExtractor.ExtractFromType(structType);
                 var dtype = DType.GetOrCreateForTensorStruct(def);
 
-                var fieldValues = new IVariable[def.Fields.Length];
+                var fieldValues = new IValue[def.Fields.Length];
                 for (int i = 0; i < def.Fields.Length; i++)
                 {
                     var prop = structType.GetProperty(def.Fields[i].Name);
                     if (prop == null)
                         throw new InvalidOperationException(
                             $"Property '{def.Fields[i].Name}' not found on type '{structType.Name}'");
-                    fieldValues[i] = (IVariable)prop.GetValue(retval)!;
+                    fieldValues[i] = (IValue)prop.GetValue(retval)!;
                 }
 
                 return [InternalOp.TensorStructCreate(dtype, fieldValues)];
@@ -545,14 +545,14 @@ namespace Shorokoo.Core
             if (retval is ITuple tuple)
                 return tuple.Cast<IModuleParam>().Select(x => x.ToVariable()).ToArray();
 
-            throw new InvalidTensorOperationException(ErrorCodes.FW002, "Return Value Processing", $"return type {retval.GetType().Name}", "Unsupported return value type - expected IVariable[], IModuleParam[], IModuleParam, or ITuple");
+            throw new InvalidTensorOperationException(ErrorCodes.FW002, "Return Value Processing", $"return type {retval.GetType().Name}", "Unsupported return value type - expected IValue[], IModuleParam[], IModuleParam, or ITuple");
         }
 
-        internal static T Reformat<T>(IVariable[] vars)
+        internal static T Reformat<T>(IValue[] vars)
         {
             var tType = typeof(T);
 
-            if (tType.IsAssignableTo(typeof(IVariable)))
+            if (tType.IsAssignableTo(typeof(IValue)))
                 // T may be a value-struct handle; a plain unbox of the immutable would throw.
                 return Shorokoo.Core.VariableHandle.Cast<T>(vars[0]);
 
@@ -599,8 +599,8 @@ namespace Shorokoo.Core
             }
             else
             {
-                if (!tType.IsAssignableTo(typeof(IVariable)))
-                    throw new UnsupportedDTypeException(ErrorCodes.FW002, tType.Name, "InfosFromTouts", $"Type must be assignable to IVariable. Received: {tType.Name}");
+                if (!tType.IsAssignableTo(typeof(IValue)))
+                    throw new UnsupportedDTypeException(ErrorCodes.FW002, tType.Name, "InfosFromTouts", $"Type must be assignable to IValue. Received: {tType.Name}");
                 types = [tType];
             }
 

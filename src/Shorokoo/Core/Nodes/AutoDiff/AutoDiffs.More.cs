@@ -11,7 +11,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Abs =====
 
         [AutoDiff(ABS)]
-        public static IVariable?[] Abs<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static IValue?[] Abs<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d|x|/dx = sign(x)
             return [grad * (ImmutableTensor<T>)OnnxOp.Sign(x)];
@@ -20,7 +20,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Reciprocal =====
 
         [AutoDiff(RECIPROCAL)]
-        public static IVariable?[] Reciprocal<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static IValue?[] Reciprocal<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(1/x)/dx = -1/x²
             return [-(grad / (x * x))];
@@ -29,7 +29,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== LeakyRelu =====
 
         [AutoDiff(LEAKY_RELU)]
-        public static IVariable?[] LeakyRelu<T>(Tensor<T> x, Tensor<T> grad, float? alpha) where T : IVarType
+        public static IValue?[] LeakyRelu<T>(Tensor<T> x, Tensor<T> grad, float? alpha) where T : IVarType
         {
             // d(leaky_relu(x))/dx = 1 if x > 0, alpha if x <= 0
             var effectiveAlpha = alpha ?? 0.01f;
@@ -44,7 +44,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Gelu =====
 
         [AutoDiff(GELU)]
-        public static IVariable?[] Gelu<T>(Tensor<T> x, Tensor<T> grad, GeluApproximate? approximate) where T : IVarType
+        public static IValue?[] Gelu<T>(Tensor<T> x, Tensor<T> grad, GeluApproximate? approximate) where T : IVarType
         {
             var half = TypedConst(0.5f, x);
             var one = TypedConst(1.0f, x);
@@ -81,7 +81,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Elu =====
 
         [AutoDiff(ELU)]
-        public static IVariable?[] Elu<T>(Tensor<T> x, Tensor<T> grad, float? alpha) where T : IVarType
+        public static IValue?[] Elu<T>(Tensor<T> x, Tensor<T> grad, float? alpha) where T : IVarType
         {
             // elu(x) = x if x > 0, alpha * (exp(x) - 1) if x <= 0
             // elu'(x) = 1 if x > 0, alpha * exp(x) if x <= 0
@@ -97,7 +97,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Selu =====
 
         [AutoDiff(SELU)]
-        public static IVariable?[] Selu<T>(Tensor<T> x, Tensor<T> grad, float? alpha, float? gamma) where T : IVarType
+        public static IValue?[] Selu<T>(Tensor<T> x, Tensor<T> grad, float? alpha, float? gamma) where T : IVarType
         {
             // selu(x) = gamma * (x if x > 0, alpha * (exp(x) - 1) if x <= 0)
             // selu'(x) = gamma if x > 0, gamma * alpha * exp(x) if x <= 0
@@ -115,7 +115,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Celu =====
 
         [AutoDiff(CELU)]
-        public static IVariable?[] Celu<T>(Tensor<T> x, Tensor<T> grad, float? alpha) where T : IVarType
+        public static IValue?[] Celu<T>(Tensor<T> x, Tensor<T> grad, float? alpha) where T : IVarType
         {
             // celu(x) = max(0, x) + min(0, alpha * (exp(x/alpha) - 1))
             // celu'(x) = 1 if x > 0, exp(x/alpha) if x <= 0
@@ -131,7 +131,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Flatten =====
 
         [AutoDiff(FLATTEN)]
-        public static IVariable?[] Flatten<T>(Tensor<T> input, Tensor<T> grad, long? axis) where T : IVarType
+        public static IValue?[] Flatten<T>(Tensor<T> input, Tensor<T> grad, long? axis) where T : IVarType
         {
             // Gradient of Flatten: reshape grad back to original shape
             var originalShape = input.DShape;
@@ -141,7 +141,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Squeeze =====
 
         [AutoDiff(SQUEEZE)]
-        public static IVariable?[] Squeeze<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad)
+        public static IValue?[] Squeeze<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad)
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -153,7 +153,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Unsqueeze =====
 
         [AutoDiff(UNSQUEEZE)]
-        public static IVariable?[] Unsqueeze<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad)
+        public static IValue?[] Unsqueeze<T1, T2>(Tensor<T1> data, Tensor<T2>? axes, Tensor<T1> grad)
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -165,7 +165,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Expand =====
 
         [AutoDiff(EXPAND)]
-        public static IVariable?[] Expand<T1, T2>(Tensor<T1> input, Tensor<T2> shape, Tensor<T1> grad)
+        public static IValue?[] Expand<T1, T2>(Tensor<T1> input, Tensor<T2> shape, Tensor<T1> grad)
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -177,7 +177,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Clip =====
 
         [AutoDiff(CLIP)]
-        public static IVariable?[] Clip<T>(Tensor<T> input, Tensor<T>? min, Tensor<T>? max, Tensor<T> grad) where T : IVarType
+        public static IValue?[] Clip<T>(Tensor<T> input, Tensor<T>? min, Tensor<T>? max, Tensor<T> grad) where T : IVarType
         {
             // d(clip(x, min, max))/dx = 1 where min <= x <= max, 0 otherwise
             // Apply mask in two steps: zero out where x < min, then zero out where x > max
@@ -194,7 +194,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Where =====
 
         [AutoDiff(WHERE)]
-        public static IVariable?[] Where<T>(Tensor<bit> condition, Tensor<T> x, Tensor<T> y, Tensor<T> grad) where T : IVarType
+        public static IValue?[] Where<T>(Tensor<bit> condition, Tensor<T> x, Tensor<T> y, Tensor<T> grad) where T : IVarType
         {
             // Gradient flows to x where condition is true, to y where condition is false
             var zero = TypedConst(0.0f, x);
@@ -206,7 +206,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Erf =====
 
         [AutoDiff(ERF)]
-        public static IVariable?[] Erf<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static IValue?[] Erf<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // d(erf(x))/dx = 2/√π · exp(-x²)
             var twoOverSqrtPi = TypedConst(2.0f / MathF.Sqrt(MathF.PI), x);
@@ -217,7 +217,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Sign =====
 
         [AutoDiff(SIGN)]
-        public static IVariable?[] Sign<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static IValue?[] Sign<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // sign(x) is not differentiable; gradient is zero everywhere
             var zero = TypedConst(0.0f, x);
@@ -227,7 +227,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Ceil =====
 
         [AutoDiff(CEIL)]
-        public static IVariable?[] Ceil<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static IValue?[] Ceil<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // ceil(x) is piecewise constant; gradient is zero
             var zero = TypedConst(0.0f, x);
@@ -237,7 +237,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Floor =====
 
         [AutoDiff(FLOOR)]
-        public static IVariable?[] Floor<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
+        public static IValue?[] Floor<T>(Tensor<T> x, Tensor<T> grad) where T : IVarType
         {
             // floor(x) is piecewise constant; gradient is zero
             var zero = TypedConst(0.0f, x);
@@ -247,7 +247,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Pad (constant mode) =====
 
         [AutoDiff(PAD)]
-        public static IVariable?[] Pad<T1, T2, T3>(
+        public static IValue?[] Pad<T1, T2, T3>(
             Tensor<T1> data, Tensor<T2> pads, Tensor<T1> constantValue, Tensor<T3>? axes,
             Tensor<T1> grad, PadMode? mode)
             where T1 : IVarType
@@ -291,7 +291,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Slice =====
 
         [AutoDiff(SLICE)]
-        public static IVariable?[] Slice<T1, T2>(
+        public static IValue?[] Slice<T1, T2>(
             Tensor<T1> data, Tensor<T2> starts, Tensor<T2> ends, Tensor<T2>? axes, Tensor<T2>? steps,
             Tensor<T1> grad)
             where T1 : IVarType
@@ -360,7 +360,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Gather =====
 
         [AutoDiff(GATHER)]
-        public static IVariable?[] Gather<T1, T2>(Tensor<T1> data, Tensor<T2> indices, Tensor<T1> grad, long? axis)
+        public static IValue?[] Gather<T1, T2>(Tensor<T1> data, Tensor<T2> indices, Tensor<T1> grad, long? axis)
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -492,7 +492,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== GatherND =====
 
         [AutoDiff(GATHER_ND)]
-        public static IVariable?[] GatherND<T1, T2>(Tensor<T1> data, Tensor<T2> indices, Tensor<T1> grad, long? batchDims)
+        public static IValue?[] GatherND<T1, T2>(Tensor<T1> data, Tensor<T2> indices, Tensor<T1> grad, long? batchDims)
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -517,7 +517,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Tile =====
 
         [AutoDiff(TILE)]
-        public static IVariable?[] Tile<T1, T2>(Tensor<T1> input, Tensor<T2> repeats, Tensor<T1> grad)
+        public static IValue?[] Tile<T1, T2>(Tensor<T1> input, Tensor<T2> repeats, Tensor<T1> grad)
             where T1 : IVarType
             where T2 : IVarType
         {
@@ -550,7 +550,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ScatterND =====
 
         [AutoDiff(SCATTER_ND)]
-        public static IVariable?[] ScatterND<T1, T2>(
+        public static IValue?[] ScatterND<T1, T2>(
             Tensor<T1> data, Tensor<T2> indices, Tensor<T1> updates,
             Tensor<T1> grad, ScatterNDReduction? reduction)
             where T1 : IVarType
@@ -594,7 +594,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== DepthToSpace =====
 
         [AutoDiff(DEPTH_TO_SPACE)]
-        public static IVariable?[] DepthToSpace<T>(
+        public static IValue?[] DepthToSpace<T>(
             Tensor<T> input, Tensor<T> grad, long? blocksize, DepthColumnRowMode? mode)
             where T : IVarType
         {
@@ -640,7 +640,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Mod =====
 
         [AutoDiff(MOD)]
-        public static IVariable?[] Mod<T>(Tensor<T> a, Tensor<T> b, Tensor<T> grad, bool? fmod) where T : IVarType
+        public static IValue?[] Mod<T>(Tensor<T> a, Tensor<T> b, Tensor<T> grad, bool? fmod) where T : IVarType
         {
             // Float Mod is piecewise linear in `a` with slope 1 (a.e.) and piecewise linear
             // in `b` with slope -q (a.e.), where q is the quotient the op rounds:
@@ -671,7 +671,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== GroupNormalization =====
 
         [AutoDiff(GROUP_NORMALIZATION)]
-        public static IVariable?[] GroupNormalization<T>(
+        public static IValue?[] GroupNormalization<T>(
             Tensor<T> x, Tensor<T> scale, Tensor<T> bias,
             Tensor<T> grad, float? epsilon, long? numGroups, long? stashType) where T : IVarType
         {
@@ -753,7 +753,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== GatherElements =====
 
         [AutoDiff(GATHER_ELEMENTS)]
-        public static IVariable?[] GatherElements<T1, T2>(
+        public static IValue?[] GatherElements<T1, T2>(
             Tensor<T1> data, Tensor<T2> indices, Tensor<T1> grad, long? axis)
             where T1 : IVarType
             where T2 : IVarType
@@ -777,7 +777,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== ScatterElements =====
 
         [AutoDiff(SCATTER_ELEMENTS)]
-        public static IVariable?[] ScatterElements<T1, T2>(
+        public static IValue?[] ScatterElements<T1, T2>(
             Tensor<T1> data, Tensor<T2> indices, Tensor<T1> updates,
             Tensor<T1> grad, long? axis, ScatterNDReduction? reduction)
             where T1 : IVarType

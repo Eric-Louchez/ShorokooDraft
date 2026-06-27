@@ -24,7 +24,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         //   dSequenceLens = null (int64, not differentiable)
 
         [AutoDiff(REVERSE_SEQUENCE)]
-        public static IVariable?[] ReverseSequence<T1, T2>(
+        public static IValue?[] ReverseSequence<T1, T2>(
             Tensor<T1> input, Tensor<T2> sequenceLens,
             Tensor<T1> grad,
             long? batch_axis, long? time_axis)

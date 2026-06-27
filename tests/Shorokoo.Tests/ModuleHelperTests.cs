@@ -83,7 +83,7 @@ public class ModuleHelperCoverageTests
         // ──────────────────────────────────────────────────────────────────
         var v = InputScalar<float32>("v");
         Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.Format(null));
-        Assert.Single(ModuleHelper.Format(new IVariable[] { v }));
+        Assert.Single(ModuleHelper.Format(new IValue[] { v }));
         Assert.Single(ModuleHelper.Format(v));
         // IModuleParam[] arm (line 408-409).
         Assert.Single(ModuleHelper.Format(new IModuleParam[] { v }));
@@ -104,23 +104,23 @@ public class ModuleHelperCoverageTests
         Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.Format(42));
 
         // ──────────────────────────────────────────────────────────────────
-        // Reformat<T> — array, ValueTuple, IVariable, throw branches
+        // Reformat<T> — array, ValueTuple, IValue, throw branches
         // ──────────────────────────────────────────────────────────────────
         var a = InputScalar<float32>("a");
         var b = InputScalar<float32>("b");
-        Assert.NotNull(ModuleHelper.Reformat<Scalar<float32>>(new IVariable[] { a }));
+        Assert.NotNull(ModuleHelper.Reformat<Scalar<float32>>(new IValue[] { a }));
 
-        var tuple = ModuleHelper.Reformat<(Scalar<float32>, Scalar<float32>)>(new IVariable[] { a, b });
+        var tuple = ModuleHelper.Reformat<(Scalar<float32>, Scalar<float32>)>(new IValue[] { a, b });
         Assert.NotNull(tuple.Item1);
         Assert.NotNull(tuple.Item2);
 
-        var array = ModuleHelper.Reformat<Scalar<float32>[]>(new IVariable[] { a, b });
+        var array = ModuleHelper.Reformat<Scalar<float32>[]>(new IValue[] { a, b });
         Assert.Equal(2, array.Length);
 
         Assert.Throws<UnsupportedDTypeException>(
-            () => ModuleHelper.Reformat<List<IVariable>>(new IVariable[] { a }));
+            () => ModuleHelper.Reformat<List<IValue>>(new IValue[] { a }));
         Assert.Throws<InvalidTensorOperationException>(
-            () => ModuleHelper.Reformat<(Scalar<float32>, Scalar<float32>)>(new IVariable[] { a }));
+            () => ModuleHelper.Reformat<(Scalar<float32>, Scalar<float32>)>(new IValue[] { a }));
 
         // ──────────────────────────────────────────────────────────────────
         // InfosFromTouts — each per-element-type arm + tuple / non-tuple split
@@ -235,7 +235,7 @@ public class ModuleHelperCoverageTests
 
     private class NonVariableModuleParam : IModuleParam
     {
-        public IVariable ToVariable() => throw new NotImplementedException();
+        public IValue ToVariable() => throw new NotImplementedException();
     }
 
     private static Tensor<float32> DoubleTensor(Tensor<float32> x) => x + x;

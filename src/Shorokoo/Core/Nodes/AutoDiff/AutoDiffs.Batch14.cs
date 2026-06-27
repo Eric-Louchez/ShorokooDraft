@@ -31,7 +31,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         //   4. Create zeros of input shape, ScatterElements grad back along axis
 
         [AutoDiff(COMPRESS)]
-        public static IVariable?[] Compress<T1>(
+        public static IValue?[] Compress<T1>(
             Tensor<T1> input, Tensor<bit> condition,
             Tensor<T1> grad,
             long? axis)

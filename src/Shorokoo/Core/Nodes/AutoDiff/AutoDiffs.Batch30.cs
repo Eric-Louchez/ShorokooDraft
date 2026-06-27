@@ -9,7 +9,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 {
     /// <summary>
     /// Multi-output / multi-input gradient implementations that need the variadic
-    /// <c>(inputs, outputGrads, attributes) =&gt; IVariable?[]</c> shape because their
+    /// <c>(inputs, outputGrads, attributes) =&gt; IValue?[]</c> shape because their
     /// natural method signature does not fit the [AutoDiff] reflection model
     /// (more than one differentiable output, optional inputs whose absence changes
     /// the gradient layout, or sequence outputs).
@@ -33,8 +33,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // mean/invStd statistics outputs would be unusual in practice — accumulating them
         // here would just shift the same closed form so we treat them as zero.
 
-        internal static IVariable?[] LayerNormalizationGradient(
-            IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] LayerNormalizationGradient(
+            IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             var x = inputs[0]!;
             var scale = inputs[1]!;
@@ -57,7 +57,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var xRankShape = OnnxOp.Shape(xShape);                                     // [1] containing rank
             var xRankScalar = OnnxOp.Squeeze(xRankShape, Vector(0L));
             var effectiveAxisScalar = axisAttr >= 0
-                ? (IVariable)Scalar(axisAttr)
+                ? (IValue)Scalar(axisAttr)
                 : OnnxOp.Add(xRankScalar, Scalar(axisAttr));
             var reduceAxes = OnnxOp.Range(effectiveAxisScalar, xRankScalar, Scalar(1L));
             var nonFeatureAxes = OnnxOp.Range(Scalar(0L), effectiveAxisScalar, Scalar(1L));
@@ -102,8 +102,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         //   For "none" : upstream = grad[i, d1, ...]
         // ignore_index masks both the loss contribution and the gradient.
 
-        internal static IVariable?[] NegativeLogLikelihoodLossGradient(
-            IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] NegativeLogLikelihoodLossGradient(
+            IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             var input = inputs[0]!;
             var target = inputs[1]!;
@@ -117,7 +117,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             // Build a [C]-shaped per-class weight vector (defaulting to 1.0 when absent).
             var cVec = OnnxOp.Slice(OnnxOp.Shape(input), Vector(1L), Vector(2L));
-            IVariable wVec;
+            IValue wVec;
             if (weight is null)
             {
                 wVec = OnnxOp.Expand(OnnxOp.Cast(Scalar(1.0f), saturate: null, to: floatType), cVec);
@@ -143,7 +143,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             }
 
             // upstream gradient shaped [N, d1, ...]
-            IVariable upstream;
+            IValue upstream;
             if (reduction == "none")
             {
                 upstream = grad;
@@ -172,7 +172,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var perSampleExp = OnnxOp.Unsqueeze(perSample, Vector(1L));
             var dInput = OnnxOp.Mul(perSampleExp, onehot);
 
-            var result = new IVariable?[inputs.Length];
+            var result = new IValue?[inputs.Length];
             result[0] = dInput;
             // target gradient = null (integer indices, non-diff)
             // weight gradient = null (treated as constant)
@@ -192,8 +192,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         //   broadcasts the scalar grad; "none" uses the per-element grad directly.
         // Gradients into the log_prob output (outputGrads[1]) flow back through LogSoftmax.
 
-        internal static IVariable?[] SoftmaxCrossEntropyLossGradient(
-            IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] SoftmaxCrossEntropyLossGradient(
+            IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             var scores = inputs[0]!;
             var labels = inputs[1]!;
@@ -212,7 +212,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             // weight vector and ignore mask (same shape as labels)
             var cScalar = OnnxOp.Gather(OnnxOp.Shape(scores), Scalar(1L), axis: 0);
-            IVariable wVec;
+            IValue wVec;
             if (weight is null)
             {
                 wVec = OnnxOp.Expand(OnnxOp.Cast(Scalar(1.0f), saturate: null, to: floatType), OnnxOp.Reshape(cScalar, Vector(1L), allowZero: false));
@@ -232,7 +232,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             }
 
             // Upstream gradient (shape of labels) for the loss path
-            IVariable upstream;
+            IValue upstream;
             if (lossGrad is null)
             {
                 // Loss output unused; zero-grad path for this term.
@@ -265,7 +265,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             // dscores from the log_prob output (if used downstream): LogSoftmax gradient
             // applied to logProbGrad. Closed form: grad - softmax * sum(grad, axis=1, keepdims).
-            IVariable dScores = dScoresLoss;
+            IValue dScores = dScoresLoss;
             if (logProbGrad is not null)
             {
                 var sumLp = OnnxOp.ReduceSum(logProbGrad, axes: Vector(1L), keepdims: true, noopWithEmptyAxes: false);
@@ -273,7 +273,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 dScores = OnnxOp.Add(dScores, dFromLp);
             }
 
-            var result = new IVariable?[inputs.Length];
+            var result = new IValue?[inputs.Length];
             result[0] = dScores;
             // labels grad = null; weight grad = null
             return result;
@@ -301,8 +301,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // (This replaces the AD-B1 ZERO-STUB that silently returned null gradients —
         // a silently frozen parameter is the worst failure mode for training.)
 
-        internal static IVariable?[] STFTGradient(
-            IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] STFTGradient(
+            IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             var signal = inputs[0]!;                                     // [B, T] or [B, T, 1|2]
             var frameStep = inputs[1]!;                                  // int64 scalar
@@ -336,7 +336,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var bVec = OnnxOp.Slice(sigShape, Vector(0L), Vector(1L));   // [B]
             var tVec = OnnxOp.Slice(sigShape, Vector(1L), Vector(2L));   // [T]
             var cVec = signalRank == 2
-                ? (IVariable)Vector(1L)
+                ? (IValue)Vector(1L)
                 : OnnxOp.Slice(sigShape, Vector(2L), Vector(3L));        // [C]
             var sig3Shape = OnnxOp.Concat([bVec, tVec, cVec], axis: 0);  // [B, T, C]
             var sig3 = signalRank == 2
@@ -375,7 +375,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // 4. dWindow[n] = Σ_{b,m,c} gAdjC[b,m,n,c] · signal[b, m·S+n, c]
             //    (BEFORE the window scaling — the adjoint of z = w·x w.r.t. real w is
             //    Σ_c Re-pair products, which the channel-sliced gAdjC already encodes.)
-            IVariable? dWindow = null;
+            IValue? dWindow = null;
             if (window is not null)
             {
                 var frames = OnnxOp.Gather(sig3, idx2d, axis: 1);        // [B, F, L, C]
@@ -402,7 +402,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 ? OnnxOp.Reshape(dSig3, sigShape, allowZero: false)
                 : dSig3;
 
-            var result = new IVariable?[inputs.Length];
+            var result = new IValue?[inputs.Length];
             result[0] = dSignal;
             // frame_step (int64) non-differentiable
             if (inputs.Length > 2) result[2] = dWindow;
@@ -422,8 +422,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // parameter behind a DeformConv. Use a standard Conv when training end-to-end is
         // required.
 
-        internal static IVariable?[] DeformConvGradient(
-            IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] DeformConvGradient(
+            IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             _ = inputs;
             _ = outputGrads;
@@ -442,8 +442,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // Gradient: concatenate the sequence's gradient tensors along the split axis,
         // restoring keepdims=false by unsqueezing each element first.
 
-        internal static IVariable?[] SplitToSequenceGradient(
-            IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] SplitToSequenceGradient(
+            IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             // Single-output op: the dispatcher skips invocation when outputGrads[0] is null,
             // so dSeq is guaranteed non-null here.
@@ -466,7 +466,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             var dInput = OnnxOp.ConcatFromSequence(pieces, axis: axis, newAxis: false);
 
-            var result = new IVariable?[inputs.Length];
+            var result = new IValue?[inputs.Length];
             result[0] = dInput;
             // split argument is non-differentiable (integer)
             return result;
@@ -481,12 +481,12 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // method returns an array of nulls of the right length so the autograd
         // dispatcher does not throw NotImplementedException.
 
-        internal static IVariable?[] NullInputGradient(
-            IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] NullInputGradient(
+            IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             _ = outputGrads;
             _ = attributes;
-            return new IVariable?[inputs.Length];
+            return new IValue?[inputs.Length];
         }
     }
 }

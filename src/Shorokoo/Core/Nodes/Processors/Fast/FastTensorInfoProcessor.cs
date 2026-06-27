@@ -19,12 +19,12 @@ namespace Shorokoo.Core.Nodes.Processors.Fast
     /// <para>
     /// <see cref="FastNode"/> stores op codes, attributes, and tensor-key references but not
     /// per-tensor metadata. To produce that metadata this processor rebuilds the equivalent
-    /// <see cref="IVariable"/>s via
-    /// <see cref="FastComputationGraphConverter.BuildTensorMapping"/> — the IVariable
+    /// <see cref="IValue"/>s via
+    /// <see cref="FastComputationGraphConverter.BuildTensorMapping"/> — the IValue
     /// factories are the canonical source of dtype/structure/rank propagation rules, and
-    /// <see cref="IVariable.UniqueName"/> / <see cref="IVariable.ModuleFn"/> are intrinsic
+    /// <see cref="IValue.UniqueName"/> / <see cref="IValue.ModuleFn"/> are intrinsic
     /// to that side of the model. No <c>ComputationGraph</c> is constructed; we
-    /// only need the FastTensorKey → IVariable map.
+    /// only need the FastTensorKey → IValue map.
     /// </para>
     /// </summary>
     internal static class FastTensorInfoProcessor
@@ -89,7 +89,7 @@ namespace Shorokoo.Core.Nodes.Processors.Fast
             return false;
         }
 
-        private static FastTensorInfo BuildTensorInfo(FastTensorKey key, IVariable variable) =>
+        private static FastTensorInfo BuildTensorInfo(FastTensorKey key, IValue variable) =>
             new FastTensorInfo
             {
                 Key = key,

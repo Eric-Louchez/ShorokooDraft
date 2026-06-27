@@ -28,7 +28,7 @@ namespace Shorokoo
     /// Non-generic view of a symbolic tensor: a graph variable with a queryable shape, an optional
     /// statically known rank, and conversions to the typed <see cref="Tensor{T}"/> family.
     /// </summary>
-    public interface ITensor : IVariable
+    public interface ITensor : IValue
     {
         /// <summary>The shape of this tensor as a symbolic rank-1 tensor of dimension sizes.</summary>
         public Vector<int64> TShape { get; }
@@ -58,7 +58,7 @@ namespace Shorokoo
     /// </summary>
     /// <summary>
     /// Immutable (class) graph node for a tensor — the value the graph stores (Node outputs are
-    /// IVariable). Holds shape state and the minimal ITensor contract; the full user-facing op
+    /// IValue). Holds shape state and the minimal ITensor contract; the full user-facing op
     /// surface lives on the value-type handle <see cref="Tensor{T}"/>.
     /// </summary>
     public partial class ImmutableTensor<T> : ImmutableVariable<T>, ITensor
@@ -166,16 +166,16 @@ namespace Shorokoo
         IScalar ITensor.Scalar() => Imm.Scalar();
         Scalar<V> ITensor.Scalar<V>() => Imm.Cast<V>().Scalar();
 
-        // IVariable surface — forward to the wrapped immutable.
+        // IValue surface — forward to the wrapped immutable.
         public Node OwningNode => Imm.OwningNode;
         public DType Type => Imm.Type;
         public Function? ModuleFn => Imm.ModuleFn;
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public ImmutableVariable<V> As<V>() where V : IVarType => ((IVariable)Imm).As<V>();
+        public ImmutableVariable<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
 #pragma warning disable CS0618
-        string? IVariable.FriendlyName => ((IVariable)Imm).FriendlyName;
+        string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;
 #pragma warning restore CS0618
 
         // user-facing reinterpret casts (forward to the immutable, which handles already-typed nodes)

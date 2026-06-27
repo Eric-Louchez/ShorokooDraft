@@ -22,7 +22,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         //
         //   dTensor_i = SequenceAt(dOutputSequence, i)  for i in [0, N)
 
-        internal static IVariable?[] SequenceConstructGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] SequenceConstructGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             // dSeq is guaranteed non-null: FastProcessAutoGrad/AutoDiffEngine elide single-output
             // gradients whose only outputGrad is null. SequenceConstruct's variadic tensor inputs
@@ -30,7 +30,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var dSeq = outputGrads[0]!;
             Debug.Assert(dSeq is not null);
 
-            var result = new IVariable?[inputs.Length];
+            var result = new IValue?[inputs.Length];
             for (int i = 0; i < inputs.Length; i++)
             {
                 Debug.Assert(inputs[i] is not null);
@@ -54,7 +54,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         //   dSequence[position] = dY
         //   dPosition = null (int64, not differentiable)
 
-        internal static IVariable?[] SequenceAtGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] SequenceAtGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             var inputSeq = inputs[0]!;
             var position = inputs[1]!;
@@ -94,7 +94,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         //     — the gradient at the inserted position is the gradient for the tensor
         //   dPosition = null (int64, not differentiable)
 
-        internal static IVariable?[] SequenceInsertGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] SequenceInsertGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             // inputs[0] = input_sequence, inputs[1] = tensor, inputs[2] = position (optional, may be null)
             // dOutputSeq is guaranteed non-null: dispatcher elides single-output gradients whose
@@ -103,7 +103,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             Debug.Assert(dOutputSeq is not null);
 
             // Determine the effective position
-            IVariable effectivePosition;
+            IValue effectivePosition;
             if (inputs.Length <= 2 || inputs[2] is null)
             {
                 // Null position means append — inserted element is at the end
@@ -135,7 +135,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         //   dInputSequence = SequenceInsert(dOutputSequence, zeros_like(erased_element), position)
         //   dPosition = null (int64, not differentiable)
 
-        internal static IVariable?[] SequenceEraseGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] SequenceEraseGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             var inputSeq = inputs[0]!;
             var position = inputs[1]!;
@@ -169,7 +169,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         //   For newAxis=true: each element contributes size 1 along the new axis;
         //     slice and squeeze to remove the new axis dimension
 
-        internal static IVariable?[] ConcatFromSequenceGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] ConcatFromSequenceGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             var inputSeq = inputs[0]!;
             // dY is guaranteed non-null: dispatcher elides single-output gradients whose only
@@ -182,13 +182,13 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             var len = OnnxOp.SequenceLength(inputSeq).As<int64>().Scalar();
             var dSeq = OnnxOp.SequenceEmpty(inputSeq.Type);
-            IVariable offset = Scalar(0L);
+            IValue offset = Scalar(0L);
 
             foreach (var ctx in LoopAPI.Iterate(len))
             {
                 var element = OnnxOp.SequenceAt(inputSeq, ctx.IterationIndex);
 
-                IVariable elemSize;
+                IValue elemSize;
                 if (newAxis)
                 {
                     // Each element contributes 1 along the new axis

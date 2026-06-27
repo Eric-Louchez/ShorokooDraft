@@ -8,13 +8,13 @@ namespace Shorokoo.Tests.Utils
 {
     public static class AutoTest
     {
-        private static IVariable[] tupleToArray(object tuple)
+        private static IValue[] tupleToArray(object tuple)
         {
             return [..tuple.GetType().GetFields()
                         .Where(f => f.Name.StartsWith("Item"))
                         .OrderBy(f => f.Name)
                                 .Select(f => f.GetValue(tuple))
-                                .Cast<IVariable>(),
+                                .Cast<IValue>(),
                     ..tuple.GetType().GetFields()
                         .Where(f => f.Name == "Rest")
                         .Select(f => f.GetValue(tuple))
@@ -66,9 +66,9 @@ namespace Shorokoo.Tests.Utils
                 var csharpLambda = new CSharpModelBuilder().BuildLambda<object>(graph, "testModel");
                 var csharpResults = csharpLambda();
 
-                IVariable[] csharpOutputs =
-                                (csharpResults is IVariable singleOut) ? [singleOut] :
-                                (csharpResults is IVariable[] arrayOut) ? arrayOut :
+                IValue[] csharpOutputs =
+                                (csharpResults is IValue singleOut) ? [singleOut] :
+                                (csharpResults is IValue[] arrayOut) ? arrayOut :
                                 tupleToArray(csharpResults); // Treat it as a tuple.
 
                 var csRoundtrip = new FastComputationGraph([], [.. csharpOutputs]);

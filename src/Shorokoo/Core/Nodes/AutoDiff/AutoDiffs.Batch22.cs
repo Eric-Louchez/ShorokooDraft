@@ -29,7 +29,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         //     output (OptionalGetElementGradient, AccumulateGradients for
         //     IOptionalTensor) preserves the Optional wrap.
 
-        internal static IVariable?[] OptionalGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] OptionalGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             Debug.Assert(inputs.Length > 0 && inputs[0] is not null);
             var dOptional = outputGrads[0];
@@ -45,7 +45,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // single-output nodes with a null outputGrad, so dTensor is always
         // non-null here.
 
-        internal static IVariable?[] OptionalGetElementGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] OptionalGetElementGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             var dTensor = outputGrads[0];
             Debug.Assert(dTensor is not null);

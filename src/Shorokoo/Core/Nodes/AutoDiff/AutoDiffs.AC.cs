@@ -42,7 +42,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         }
 
         [AutoDiff(ADD)]
-        public static IVariable?[] Add<T>(Tensor<T> a, Tensor<T> b, Tensor<T> grad) where T : IVarType
+        public static IValue?[] Add<T>(Tensor<T> a, Tensor<T> b, Tensor<T> grad) where T : IVarType
         {
             var aGrad = ReverseBroadcast(grad, a.DShape);
             var bGrad = ReverseBroadcast(grad, b.DShape);
@@ -51,7 +51,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         }
 
         [AutoDiff(MUL)]
-        public static IVariable?[] Mul<T>(Tensor<T> a, Tensor<T> b, Tensor<T> grad) where T : IVarType
+        public static IValue?[] Mul<T>(Tensor<T> a, Tensor<T> b, Tensor<T> grad) where T : IVarType
         {
             var aGrad = ReverseBroadcast(grad * b, a.DShape);
             var bGrad = ReverseBroadcast(grad * a, b.DShape);
@@ -60,7 +60,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         }
 
         [AutoDiff(CAST)]
-        public static IVariable? Cast<TFrom, TTo>(Tensor<TFrom> input, Tensor<TTo> grad) 
+        public static IValue? Cast<TFrom, TTo>(Tensor<TFrom> input, Tensor<TTo> grad) 
             where TFrom : IVarType 
             where TTo : IVarType
         {
@@ -71,7 +71,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         }
 
         [AutoDiff(CAST_LIKE)]
-        public static IVariable?[] CastLike<TFrom, TTo>(Tensor<TFrom> input, Tensor<TTo> targetType, Tensor<TTo> grad, bool? saturate)
+        public static IValue?[] CastLike<TFrom, TTo>(Tensor<TFrom> input, Tensor<TTo> targetType, Tensor<TTo> grad, bool? saturate)
             where TFrom : IVarType
             where TTo : IVarType
         {
@@ -82,7 +82,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         }
 
         [AutoDiff(CONSTANT_OF_SHAPE)]
-        public static IVariable? ConstantOfShape<T>(Tensor<int64> shape, Tensor<T> grad) where T : IVarType
+        public static IValue? ConstantOfShape<T>(Tensor<int64> shape, Tensor<T> grad) where T : IVarType
         {
             // The only input is `shape` (int64), which is non-differentiable.
             // The constant `value` is a fixed attribute, not a learnable input.
@@ -108,7 +108,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         }
 
 
-        private static IVariable?[] CallGradientOps(MethodInfo gradientOp, IVariable?[] inputs, IVariable?[] outputs, OnnxCSharpAttributes attributes)
+        private static IValue?[] CallGradientOps(MethodInfo gradientOp, IValue?[] inputs, IValue?[] outputs, OnnxCSharpAttributes attributes)
         {
             // MethodInfo input params has the following structure:
             // (input0, input1, ..., outputGrad0, outputGrad1, ..., attr0, attr1, ...)
@@ -142,7 +142,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                         if (IsGenericTypeOrContainsGeneric(paramType, genericParam))
                         {
                             // Determine which input/output this corresponds to
-                            IVariable? var = null;
+                            IValue? var = null;
                             if (paramIdx < inputs.Length)
                                 var = inputs[paramIdx];
                             else if (paramIdx < inputs.Length + outputs.Length)
@@ -168,7 +168,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var paramValues = new object?[methodParams.Length];
             
             // The leading graph-input parameters are everything before the output-grad params and
-            // the trailing attribute (non-IVariable) params. The forward op may have omitted trailing
+            // the trailing attribute (non-IValue) params. The forward op may have omitted trailing
             // optional inputs (e.g. Trilu's diagonal), so derive the expected input-parameter count
             // from the method signature and pad the provided inputs with nulls to keep the
             // input/output-grad/attribute slots aligned.
@@ -176,7 +176,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             for (int p = methodParams.Length - 1; p >= 0; p--)
             {
                 var pt = Nullable.GetUnderlyingType(methodParams[p].ParameterType) ?? methodParams[p].ParameterType;
-                if (typeof(IVariable).IsAssignableFrom(pt))
+                if (typeof(IValue).IsAssignableFrom(pt))
                     break;
                 attrParamCount++;
             }
@@ -241,23 +241,23 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 throw; // unreachable
             }
 
-            // Step 4: Convert the result to IVariable?[]. Gradient methods return either
-            //   - IVariable?[] (most cases) — pass straight through, including when boxed
+            // Step 4: Convert the result to IValue?[]. Gradient methods return either
+            //   - IValue?[] (most cases) — pass straight through, including when boxed
             //     to a non-null array containing nulls
-            //   - IVariable? — handle both a non-null IVariable and the all-inputs-non-
+            //   - IValue? — handle both a non-null IValue and the all-inputs-non-
             //     differentiable case (e.g. ConstantOfShape returns null).
             if (result is null)
                 return [];
-            if (result is IVariable?[] array)
+            if (result is IValue?[] array)
                 return array;
-            Debug.Assert(result is IVariable,
+            Debug.Assert(result is IValue,
                 $"Unexpected gradient return type: {result.GetType()}");
-            return [(IVariable)result];
+            return [(IValue)result];
         }
 
-        public static Dictionary<string, Func<IVariable?[], IVariable?[], OnnxCSharpAttributes, IVariable?[]>> GetGradientOps()
+        public static Dictionary<string, Func<IValue?[], IValue?[], OnnxCSharpAttributes, IValue?[]>> GetGradientOps()
         {
-            var retval = new Dictionary<string, Func<IVariable?[], IVariable?[], OnnxCSharpAttributes, IVariable?[]>>();
+            var retval = new Dictionary<string, Func<IValue?[], IValue?[], OnnxCSharpAttributes, IValue?[]>>();
 
             // Use reflection to find all methods with AutoDiffAttribute
             var autoDiffMethods = typeof(AutoDiffs).GetMethods(BindingFlags.Public | BindingFlags.Static)
@@ -282,7 +282,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // ===== Concat (variadic) =====
 
         private static void RegisterVariadicGradientOps(
-            Dictionary<string, Func<IVariable?[], IVariable?[], OnnxCSharpAttributes, IVariable?[]>> retval)
+            Dictionary<string, Func<IValue?[], IValue?[], OnnxCSharpAttributes, IValue?[]>> retval)
         {
             retval[CONCAT] = ConcatGradient;
             retval[SPLIT] = SplitGradient;
@@ -379,7 +379,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             retval[InternalOpCodes.SEQUENCE_SLICE] = NullInputGradient;
         }
 
-        private static IVariable?[] ConcatGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        private static IValue?[] ConcatGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             // Concat(inputs, axis) → output
             // Gradient: split the output gradient along axis according to each input's size
@@ -387,7 +387,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var grad = outputGrads[0]!;
 
             // Compute split sizes from each input's dimension along the concat axis
-            var splitSizeList = new List<IVariable>();
+            var splitSizeList = new List<IValue>();
             foreach (var input in inputs)
             {
                 if (input is null) continue;
@@ -403,7 +403,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 variadicOutputCount: nonNullCount);
 
             // Return one gradient per input (null for null inputs)
-            var result = new IVariable?[inputs.Length];
+            var result = new IValue?[inputs.Length];
             var splitIdx = 0;
             for (var i = 0; i < inputs.Length; i++)
             {
@@ -414,7 +414,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             return result;
         }
 
-        private static IVariable?[] SplitGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        private static IValue?[] SplitGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             // Split(input, split?, axis) → [output_0, output_1, ..., output_N]
             // Gradient: concatenate all output gradients along the split axis. Outputs that
@@ -428,7 +428,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // skip elides the gradient method before this point.
             Debug.Assert(outputGrads.Any(g => g is not null));
 
-            IVariable gradInput;
+            IValue gradInput;
             if (outputGrads.All(g => g is not null))
             {
                 gradInput = OnnxOp.Concat(outputGrads!, axis: axis);
@@ -440,7 +440,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 var pieces = OnnxOp.Split(inputs[0]!, split, axis: axis,
                     numOutputs: numOutputs, variadicOutputCount: outputGrads.Length);
 
-                var parts = new IVariable[outputGrads.Length];
+                var parts = new IValue[outputGrads.Length];
                 for (var i = 0; i < outputGrads.Length; i++)
                     parts[i] = outputGrads[i] ?? OnnxOp.Sub(pieces[i], pieces[i]);
                 gradInput = OnnxOp.Concat(parts, axis: axis);
@@ -450,7 +450,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             return [gradInput, null];
         }
 
-        private static IVariable?[] BatchNormalizationGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        private static IValue?[] BatchNormalizationGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             // BatchNormalization(x, scale, b, inputMean, inputVar) → y [, runningMean, runningVar]
             //
@@ -514,7 +514,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             // Normalization statistics: the running stats (inputs) in inference mode, the
             // recomputed CURRENT batch statistics in training mode (biased variance).
-            IVariable meanBC, varBC;
+            IValue meanBC, varBC;
             if (isTrainingMode)
             {
                 meanBC = OnnxOp.ReduceMean(x, reduceAxes, keepdims: true);             // [1,C,1,...]
@@ -533,7 +533,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // normalized_x = (x - mean) * inv_std
             var normalizedX = OnnxOp.Mul(OnnxOp.Sub(x, meanBC), invStd);
 
-            IVariable gradX;
+            IValue gradX;
             if (isTrainingMode)
             {
                 // Training mode: μ_B/σ²_B depend on x, so the backprop carries the
@@ -565,7 +565,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
         // ===== Max (variadic) =====
 
-        private static IVariable?[] MaxGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        private static IValue?[] MaxGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             // Max(x0, x1, ..., xN) → element-wise maximum across inputs
             // Gradient flows to the input(s) that achieved the max value.
@@ -580,8 +580,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var maxVal = OnnxOp.Max(nonNullInputs);
 
             // For each input, create a mask where input == max, then normalize by tie count
-            var masks = new IVariable?[inputs.Length];
-            IVariable? totalMask = null;
+            var masks = new IValue?[inputs.Length];
+            IValue? totalMask = null;
             for (var i = 0; i < inputs.Length; i++)
             {
                 if (inputs[i] is null) continue;
@@ -591,7 +591,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             }
 
             // Compute gradient for each input: mask / totalMask * grad
-            var result = new IVariable?[inputs.Length];
+            var result = new IValue?[inputs.Length];
             for (var i = 0; i < inputs.Length; i++)
             {
                 if (masks[i] is null) continue;
@@ -605,7 +605,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
         // ===== Min (variadic) =====
 
-        private static IVariable?[] MinGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        private static IValue?[] MinGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             // Min(x0, x1, ..., xN) → element-wise minimum across inputs
             // Gradient flows to the input(s) that achieved the min value.
@@ -620,8 +620,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var minVal = OnnxOp.Min(nonNullInputs);
 
             // For each input, create a mask where input == min, then normalize by tie count
-            var masks = new IVariable?[inputs.Length];
-            IVariable? totalMask = null;
+            var masks = new IValue?[inputs.Length];
+            IValue? totalMask = null;
             for (var i = 0; i < inputs.Length; i++)
             {
                 if (inputs[i] is null) continue;
@@ -631,7 +631,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             }
 
             // Compute gradient for each input: mask / totalMask * grad
-            var result = new IVariable?[inputs.Length];
+            var result = new IValue?[inputs.Length];
             for (var i = 0; i < inputs.Length; i++)
             {
                 if (masks[i] is null) continue;
@@ -645,13 +645,13 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
         // ===== Sum (variadic) =====
 
-        private static IVariable?[] SumGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        private static IValue?[] SumGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             // Sum(x0, x1, ..., xN) → element-wise sum across inputs (with broadcasting)
             // Gradient: each input receives grad, reduced to its original shape
             var grad = outputGrads[0]!;
 
-            var result = new IVariable?[inputs.Length];
+            var result = new IValue?[inputs.Length];
             for (var i = 0; i < inputs.Length; i++)
             {
                 if (inputs[i] is null) continue;
@@ -665,7 +665,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
         // ===== Mean (variadic) =====
 
-        private static IVariable?[] MeanGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        private static IValue?[] MeanGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             // Mean(x0, x1, ..., xN) → element-wise mean across inputs (with broadcasting)
             // Gradient: each input receives grad / N, reduced to its original shape
@@ -678,7 +678,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var nConst = OnnxOp.Cast(Scalar((float)nonNullCount), saturate: null, to: inputs.First(i => i is not null)!.Type);
             var scaledGrad = OnnxOp.Div(grad, nConst);
 
-            var result = new IVariable?[inputs.Length];
+            var result = new IValue?[inputs.Length];
             for (var i = 0; i < inputs.Length; i++)
             {
                 if (inputs[i] is null) continue;
@@ -701,14 +701,14 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         /// gets a <c>Tensor&lt;bit&gt;</c> stand-in.
         /// </summary>
         [AutoDiff(DROPOUT)]
-        public static IVariable?[] DropoutGradientStandInTypes(
+        public static IValue?[] DropoutGradientStandInTypes(
             Tensor<float32> data, Tensor<float32>? ratio, Scalar<bit>? trainingMode, Tensor<bit>? mask,
             Tensor<float32> gradOutput, Tensor<bit>? gradMask, long? seed)
             => throw new InvalidOperationException(
                 "DropoutGradientStandInTypes exists only for stand-in dtype resolution; "
                 + "dispatch goes through the dict-registered DropoutGradient.");
 
-        private static IVariable?[] DropoutGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        private static IValue?[] DropoutGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             // Dropout(data, ratio, training_mode) → (output, mask)
             // Inference mode (training_mode absent/false): output = data → identity gradient.

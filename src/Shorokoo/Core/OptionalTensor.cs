@@ -21,13 +21,13 @@ using Shorokoo;
 
 namespace Shorokoo.Core
 {
-    public interface IOptionalTensor : IVariable
+    public interface IOptionalTensor : IValue
     {
     }
 
     /// <summary>
     /// Immutable (class) graph node for an optional tensor — the value the graph actually stores
-    /// (<see cref="Shorokoo.Core.Nodes.Node"/> outputs are <see cref="IVariable"/>). This type is
+    /// (<see cref="Shorokoo.Core.Nodes.Node"/> outputs are <see cref="IValue"/>). This type is
     /// deliberately minimal: the user-facing API lives on the value-type handle
     /// <see cref="OptionalTensor{T}"/>, which wraps one of these.
     /// </summary>
@@ -55,7 +55,7 @@ namespace Shorokoo.Core
     {
         private ImmutableOptionalTensor<T>? inner;
 
-        IVariable IValueHandle.Immutable => Imm;
+        IValue IValueHandle.Immutable => Imm;
 
         /// <summary>The wrapped immutable, materialising an absent optional for a defaulted handle.</summary>
         internal ImmutableOptionalTensor<T> Imm
@@ -76,22 +76,22 @@ namespace Shorokoo.Core
             => optional.inner is null ? default(Tensor<T>?) : optional.TensorValue();
 
         // ── User-facing API (the optional surface lives here, not on the immutable) ──
-        public IVariable Value() => OnnxOp.OptionalGetElement(Imm);
+        public IValue Value() => OnnxOp.OptionalGetElement(Imm);
         public Tensor<T> TensorValue() => (ImmutableTensor<T>)Value();
         public Tensor<T> SequenceValue() => (ImmutableTensor<T>)Value();
         public Scalar<bit> HasValue() => (ImmutableScalar<bit>)OnnxOp.OptionalHasElement(Imm);
 
-        // IVariable surface — forward to the wrapped immutable.
+        // IValue surface — forward to the wrapped immutable.
         public Node OwningNode => Imm.OwningNode;
         public DType Type => Imm.Type;
         public Function? ModuleFn => Imm.ModuleFn;
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public ImmutableVariable<V> As<V>() where V : IVarType => ((IVariable)Imm).As<V>();
+        public ImmutableVariable<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
 
 #pragma warning disable CS0618 // forwarding the obsolete member is intentional
-        string? IVariable.FriendlyName => ((IVariable)Imm).FriendlyName;
+        string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;
 #pragma warning restore CS0618
     }
 }

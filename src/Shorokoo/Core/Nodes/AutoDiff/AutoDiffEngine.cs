@@ -15,7 +15,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 {
     internal class AutoDiffEngine
     {
-        public static IVariable AccumulateGradients(IVariable a, IVariable b)
+        public static IValue AccumulateGradients(IValue a, IValue b)
         {
             if (a is ITensor tensorA)
             {

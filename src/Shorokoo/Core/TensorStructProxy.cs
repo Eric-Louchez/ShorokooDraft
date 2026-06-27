@@ -24,18 +24,18 @@ namespace Shorokoo.Core
     /// </summary>
     internal class TensorStructProxy : DispatchProxy, ITensorStructProxy
     {
-        private IVariable? _backingTensorStruct;
+        private IValue? _backingTensorStruct;
         private TensorStructDef? _definition;
-        private Dictionary<string, IVariable>? _fieldCache;
+        private Dictionary<string, IValue>? _fieldCache;
 
         /// <summary>
-        /// Gets the backing TensorStruct IVariable that this proxy wraps. Typically an
-        /// <see cref="ITensorStruct"/> but may be a plain <see cref="IVariable"/> when the
+        /// Gets the backing TensorStruct IValue that this proxy wraps. Typically an
+        /// <see cref="ITensorStruct"/> but may be a plain <see cref="IValue"/> when the
         /// proxy was built from the result of a struct-typed graph op (e.g. SequenceAt over
-        /// a struct sequence) whose IVariable instance carries struct-shaped data but is
+        /// a struct sequence) whose IValue instance carries struct-shaped data but is
         /// not declared as ITensorStruct in the type system.
         /// </summary>
-        public IVariable BackingTensorStruct => _backingTensorStruct
+        public IValue BackingTensorStruct => _backingTensorStruct
             ?? throw new InvalidOperationException("TensorStructProxy has not been initialized. Call Initialize() first.");
 
         /// <summary>
@@ -48,11 +48,11 @@ namespace Shorokoo.Core
         /// Initializes the proxy with the backing TensorStruct and definition.
         /// Must be called after DispatchProxy.Create() since the constructor is parameterless.
         /// </summary>
-        internal void Initialize(IVariable backingTensorStruct, TensorStructDef definition)
+        internal void Initialize(IValue backingTensorStruct, TensorStructDef definition)
         {
             _backingTensorStruct = backingTensorStruct ?? throw new ArgumentNullException(nameof(backingTensorStruct));
             _definition = definition ?? throw new ArgumentNullException(nameof(definition));
-            _fieldCache = new Dictionary<string, IVariable>();
+            _fieldCache = new Dictionary<string, IValue>();
         }
 
         /// <summary>
@@ -74,7 +74,7 @@ namespace Shorokoo.Core
                     GetOrCreateFieldVariable(fieldName, targetMethod.ReturnType), targetMethod.ReturnType);
             }
 
-            // IModuleParam.ToVariable support — convert to the backing IVariable
+            // IModuleParam.ToVariable support — convert to the backing IValue
             // This shouldn't normally be called on the proxy, but handle it for safety
             if (targetMethod.Name == "ToVariable" && targetMethod.DeclaringType == typeof(IModuleParam))
             {
@@ -87,10 +87,10 @@ namespace Shorokoo.Core
         }
 
         /// <summary>
-        /// Gets or creates the IVariable for a field, using TensorStructGetField to create
+        /// Gets or creates the IValue for a field, using TensorStructGetField to create
         /// graph operations for field access.
         /// </summary>
-        private IVariable GetOrCreateFieldVariable(string fieldName, Type returnType)
+        private IValue GetOrCreateFieldVariable(string fieldName, Type returnType)
         {
             if (_fieldCache!.TryGetValue(fieldName, out var cached))
                 return cached;
@@ -128,9 +128,9 @@ namespace Shorokoo.Core
     internal interface ITensorStructProxy
     {
         /// <summary>
-        /// Gets the backing TensorStruct IVariable that this proxy wraps.
+        /// Gets the backing TensorStruct IValue that this proxy wraps.
         /// </summary>
-        IVariable BackingTensorStruct { get; }
+        IValue BackingTensorStruct { get; }
 
         /// <summary>
         /// Gets the struct definition.
@@ -152,7 +152,7 @@ namespace Shorokoo.Core
         /// <param name="backingTensorStruct">The TensorStruct variable to wrap</param>
         /// <param name="definition">The TensorStructDef describing the struct</param>
         /// <returns>An object implementing the interface with property access wired to graph operations</returns>
-        public static object Create(Type interfaceType, IVariable backingTensorStruct, TensorStructDef definition)
+        public static object Create(Type interfaceType, IValue backingTensorStruct, TensorStructDef definition)
         {
             if (!interfaceType.IsInterface)
                 throw new ArgumentException(

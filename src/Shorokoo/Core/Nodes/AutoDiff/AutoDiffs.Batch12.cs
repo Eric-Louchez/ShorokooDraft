@@ -23,7 +23,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
         // receive zero gradient. If the same element appears at multiple positions
         // (ties), gradients accumulate via Add reduction.
 
-        internal static IVariable?[] TopKGradient(IVariable?[] inputs, IVariable?[] outputGrads, OnnxCSharpAttributes attributes)
+        internal static IValue?[] TopKGradient(IValue?[] inputs, IValue?[] outputGrads, OnnxCSharpAttributes attributes)
         {
             var x = inputs[0]!;            // X: [..., N, ...] (N along axis)
             var k = inputs[1]!;            // K: [1] int64

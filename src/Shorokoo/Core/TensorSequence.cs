@@ -22,7 +22,7 @@ using static Shorokoo.Core.Nodes.AutoDiff.Ops;
 
 namespace Shorokoo.Core
 {
-    public interface ITensorSequence : IVariable
+    public interface ITensorSequence : IValue
     {
         public Scalar<int64> Count { get; }
         ITensor Concat(long axis, bool newAxis = false);
@@ -31,24 +31,24 @@ namespace Shorokoo.Core
         ITensorSequence InsertAt(ITensor tensor, Scalar<int64> index);
 
         /// <summary>
-        /// Inserts an arbitrary IVariable (e.g. an <see cref="ITensorStruct"/> for
+        /// Inserts an arbitrary IValue (e.g. an <see cref="ITensorStruct"/> for
         /// sequence-of-struct cases) at the given position, or appends when
         /// <paramref name="index"/> is null. Default implementation lowers directly to
         /// <c>SEQUENCE_INSERT</c>.
         /// </summary>
-        public ITensorSequence Insert(IVariable variable, Scalar<int64>? index = null)
+        public ITensorSequence Insert(IValue variable, Scalar<int64>? index = null)
             => (ITensorSequence)OnnxOp.SequenceInsert(this, variable, index);
 
         public static ITensorSequence CreateEmpty(DType dtype)
                 => (ITensorSequence)OnnxOp.SequenceEmpty(dtype);
 
-        public static ITensorSequence Create(IVariable[] variables)
+        public static ITensorSequence Create(IValue[] variables)
             => (ITensorSequence)OnnxOp.SequenceConstruct(variables);
     }
 
     /// <summary>
     /// Immutable (class) graph node for a tensor sequence — the value the graph stores
-    /// (<see cref="Shorokoo.Core.Nodes.Node"/> outputs are <see cref="IVariable"/>). Minimal by
+    /// (<see cref="Shorokoo.Core.Nodes.Node"/> outputs are <see cref="IValue"/>). Minimal by
     /// design: it satisfies the <see cref="ITensorSequence"/> contract (so a graph value is
     /// recognised as a sequence) via explicit implementations and keeps only the internal
     /// graph-plumbing factories. The user-facing typed API lives on the value-type handle
@@ -74,11 +74,11 @@ namespace Shorokoo.Core
 
         internal static ImmutableTensorSequence<T> Create(Tensor<T>[] tensors)
             => tensors.Length == 0 ? CreateEmpty() :
-                    (ImmutableTensorSequence<T>)OnnxOp.SequenceConstruct([.. tensors.Cast<IVariable>()]);
+                    (ImmutableTensorSequence<T>)OnnxOp.SequenceConstruct([.. tensors.Cast<IValue>()]);
 
         internal static ImmutableTensorSequence<T> Create(Tensor<T>[] tensors, Function targetFunction)
             => tensors.Length == 0 ? CreateEmpty(targetFunction) :
-                    (ImmutableTensorSequence<T>)OnnxOp.SequenceConstruct(targetFunction, [.. tensors.Cast<IVariable>()]);
+                    (ImmutableTensorSequence<T>)OnnxOp.SequenceConstruct(targetFunction, [.. tensors.Cast<IValue>()]);
     }
 
     /// <summary>
@@ -93,7 +93,7 @@ namespace Shorokoo.Core
     {
         private ImmutableTensorSequence<T>? inner;
 
-        IVariable IValueHandle.Immutable => Imm;
+        IValue IValueHandle.Immutable => Imm;
 
         /// <summary>The wrapped immutable, materialising an empty sequence for a defaulted handle.</summary>
         internal ImmutableTensorSequence<T> Imm => inner ??= ImmutableTensorSequence<T>.CreateEmpty();
@@ -138,17 +138,17 @@ namespace Shorokoo.Core
         ITensorSequence ITensorSequence.RemoveAt(Scalar<int64> index) => this.RemoveAt(index);
         ITensorSequence ITensorSequence.InsertAt(ITensor tensor, Scalar<int64> index) => this.InsertAt((Tensor<T>)tensor, index);
 
-        // IVariable surface — forward to the wrapped immutable.
+        // IValue surface — forward to the wrapped immutable.
         public Node OwningNode => Imm.OwningNode;
         public DType Type => Imm.Type;
         public Function? ModuleFn => Imm.ModuleFn;
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public ImmutableVariable<V> As<V>() where V : IVarType => ((IVariable)Imm).As<V>();
+        public ImmutableVariable<V> As<V>() where V : IVarType => ((IValue)Imm).As<V>();
 
 #pragma warning disable CS0618 // forwarding the obsolete member is intentional
-        string? IVariable.FriendlyName => ((IVariable)Imm).FriendlyName;
+        string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;
 #pragma warning restore CS0618
     }
 }

@@ -49,7 +49,7 @@ namespace Shorokoo
 
         /// <summary>Concatenates the tensors along the given axis (ONNX Concat).</summary>
         public static Tensor<T> Concat<T>(Tensor<T>[] inputs, long axis) where T : IVarType
-            => (ImmutableTensor<T>)OnnxOp.Concat([.. inputs.Cast<IVariable>()], axis);
+            => (ImmutableTensor<T>)OnnxOp.Concat([.. inputs.Cast<IValue>()], axis);
 
         /// <summary>N-dimensional convolution (ONNX Conv) with geometry supplied as static attributes.</summary>
         public static Tensor<T> Conv<T>(Tensor<T> x, Tensor<T> w, Vector<T> b, AutoPad autoPad,
@@ -197,7 +197,7 @@ namespace Shorokoo
             => (ImmutableTensor<T>)OnnxOp.GroupNormalization(x, scale, bias, epsilon, numGroups, stashType);
 
         /// <summary>Passes the variable through unchanged (ONNX Identity).</summary>
-        public static T Identity<T>(T x) where T : IVariable
+        public static T Identity<T>(T x) where T : IValue
             => Shorokoo.Core.VariableHandle.Cast<T>(OnnxOp.Identity(x, x.Rank()));
 
         /// <summary>Integer matrix product with zero points, producing an int32 result (ONNX MatMulInteger).</summary>
@@ -209,7 +209,7 @@ namespace Shorokoo
         /// <summary>Element-wise maximum of the given tensors, with broadcasting (ONNX Max).</summary>
         public static Tensor<T> Max<T>(params Tensor<T>[] toMax)
             where T : NumLike
-            => (ImmutableTensor<T>)OnnxOp.Max([.. toMax.Cast<IVariable>()]);
+            => (ImmutableTensor<T>)OnnxOp.Max([.. toMax.Cast<IValue>()]);
 
         /// <summary>Max pooling over spatial windows (ONNX MaxPool).</summary>
         public static Tensor<T> MaxPool<T>(Tensor<T> x, bool ceilMode, long[]? dilations, long[]? kernelShape, long[]? pads, long storageOrder, long[]? strides, AutoPad autoPad = AutoPad.NotSet)
@@ -220,7 +220,7 @@ namespace Shorokoo
         public static (Tensor<T> result, Tensor<int64> indices) MaxPoolWithIndices<T>(Tensor<T> x, bool ceilMode, long[] kernelShape, long[] pads, long[] strides, AutoPad autoPad = AutoPad.NotSet)
             where T : FloatLike
         {
-            (IVariable result, IVariable indices) = OnnxOp.MaxPoolWithIndices(x, autoPad, ceilMode,
+            (IValue result, IValue indices) = OnnxOp.MaxPoolWithIndices(x, autoPad, ceilMode,
                 kernelShape: kernelShape, pads: pads, strides: strides);
             return ((ImmutableTensor<T>)result, (ImmutableTensor<int64>)indices);
         }
@@ -228,7 +228,7 @@ namespace Shorokoo
         /// <summary>Element-wise minimum of the given tensors, with broadcasting (ONNX Min).</summary>
         public static Tensor<T> Min<T>(params Tensor<T>[] toMax)
             where T : NumLike
-            => (ImmutableTensor<T>)OnnxOp.Min([.. toMax.Cast<IVariable>()]);
+            => (ImmutableTensor<T>)OnnxOp.Min([.. toMax.Cast<IValue>()]);
 
         /// <summary>Element-wise integer remainder of a / b; fmod=true selects C-style fmod sign semantics (ONNX Mod).</summary>
         public static Tensor<T> Mod<T>(Tensor<T> a, Tensor<T> b, bool fmod = false)
@@ -458,7 +458,7 @@ namespace Shorokoo
         }
 
         /// <summary>Splits a tensor along an axis into a sequence of tensors (ONNX SplitToSequence).</summary>
-        public static IVariable SplitToSequence<T>(Tensor<T> input, Vector<int64>? split = null, long? axis = null, long? keepdims = null)
+        public static IValue SplitToSequence<T>(Tensor<T> input, Vector<int64>? split = null, long? axis = null, long? keepdims = null)
             where T : IVarType
             => OnnxOp.SplitToSequence(input, split, axis, keepdims);
 
@@ -503,7 +503,7 @@ namespace Shorokoo
 
         /// <summary>Scaled dot-product attention returning Y only (ONNX Attention, opset 23+).</summary>
         public static Tensor<T> Attention<T>(Tensor<T> q, Tensor<T> k, Tensor<T> v,
-            IVariable? attnMask = null, bool? isCausal = null,
+            IValue? attnMask = null, bool? isCausal = null,
             long? kvNumHeads = null, long? qNumHeads = null, float? scale = null, float? softcap = null)
             where T : FloatLike
             => (ImmutableTensor<T>)OnnxOp.Attention(q, k, v, attnMask, nonpadKvSeqlen: null,
@@ -513,7 +513,7 @@ namespace Shorokoo
         /// <summary>Scaled dot-product attention with KV-cache update: (Y, present_key, present_value) (ONNX Attention, opset 23+).</summary>
         public static (Tensor<T> y, Tensor<T> presentKey, Tensor<T> presentValue) AttentionWithKVCache<T>(
             Tensor<T> q, Tensor<T> k, Tensor<T> v,
-            Tensor<T> pastKey, Tensor<T> pastValue, IVariable? attnMask = null,
+            Tensor<T> pastKey, Tensor<T> pastValue, IValue? attnMask = null,
             bool? isCausal = null, long? kvNumHeads = null, long? qNumHeads = null,
             float? scale = null, float? softcap = null)
             where T : FloatLike

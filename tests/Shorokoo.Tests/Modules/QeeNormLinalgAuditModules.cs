@@ -285,12 +285,12 @@ namespace Shorokoo.Tests.Modules
                 2f, 1f, 0f, 0f, 1f, 0f, 1f, 0f, 1f).Reshape(Vector(2L, 3L, 3L));
             var d22 = Vector(3f, 1f, 1f, 2f).Reshape(Vector(2L, 2L));
 
-            var eMatMul = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IVariable[] { x, k34 }, "ij,jk->ik");
-            var eTrans = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IVariable[] { x }, "ij->ji");
-            var eReduce = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IVariable[] { x }, "ij->i");
-            var eDiag = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IVariable[] { sq33 }, "ii->i");
-            var eImplicit = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IVariable[] { x, k34 }, "ij,jk");
-            var eBatch = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IVariable[] { b223, b232 }, "bij,bjk->bik");
+            var eMatMul = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IValue[] { x, k34 }, "ij,jk->ik");
+            var eTrans = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IValue[] { x }, "ij->ji");
+            var eReduce = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IValue[] { x }, "ij->i");
+            var eDiag = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IValue[] { sq33 }, "ii->i");
+            var eImplicit = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IValue[] { x, k34 }, "ij,jk");
+            var eBatch = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.Einsum(new IValue[] { b223, b232 }, "bij,bjk->bik");
             var detBatch = NN.DeterminantMatrix(d233);
             var detSingle = NN.DeterminantMatrix(d22);
 

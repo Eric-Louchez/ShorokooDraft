@@ -42,7 +42,7 @@ namespace Shorokoo.Tests.Modules
 
     internal static class RecurrentReverseHelpers
     {
-        public static Scalar<float32> RnnRevLoss(IVariable x)
+        public static Scalar<float32> RnnRevLoss(IValue x)
         {
             var (y, yh) = OnnxOp.Rnn(x, RecurrentTestData.RnnWConst(), RecurrentTestData.RnnRConst(),
                 RecurrentTestData.RnnBConst(), null, null,
@@ -51,7 +51,7 @@ namespace Shorokoo.Tests.Modules
                  + ((Tensor<float32>)(ImmutableTensor<float32>)yh).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
         }
 
-        public static Scalar<float32> GruRevLoss(IVariable x)
+        public static Scalar<float32> GruRevLoss(IValue x)
         {
             var (y, yh) = OnnxOp.Gru(x, RecurrentTestData.GruWConst(), RecurrentTestData.GruRConst(),
                 RecurrentTestData.GruBConst(), null, null,
@@ -60,7 +60,7 @@ namespace Shorokoo.Tests.Modules
                  + ((Tensor<float32>)(ImmutableTensor<float32>)yh).Reduce(ReduceKind.Sum, keepDims: false).Scalar();
         }
 
-        public static Scalar<float32> LstmRevLoss(IVariable x)
+        public static Scalar<float32> LstmRevLoss(IValue x)
         {
             var (y, yh, yc) = OnnxOp.Lstm(x, RecurrentTestData.LstmWConst(), RecurrentTestData.LstmRConst(),
                 RecurrentTestData.LstmBConst(), null, null, null, null,

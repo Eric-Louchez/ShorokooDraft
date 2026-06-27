@@ -117,10 +117,10 @@ namespace Shorokoo.Core
             }
         }
 
-        internal ImmutableArray<IVariable> Inputs { get { EnsureConvertedSnapshot(); return _inputs; } }
-        internal ImmutableArray<IVariable> HyperparamInputs { get { EnsureConvertedSnapshot(); return _hyperparamInputs; } }
-        internal ImmutableArray<IVariable> NonHyperparamInputs { get { EnsureConvertedSnapshot(); return _nonHyperparamInputs; } }
-        internal ImmutableArray<IVariable> Outputs { get { EnsureConvertedSnapshot(); return _outputs; } }
+        internal ImmutableArray<IValue> Inputs { get { EnsureConvertedSnapshot(); return _inputs; } }
+        internal ImmutableArray<IValue> HyperparamInputs { get { EnsureConvertedSnapshot(); return _hyperparamInputs; } }
+        internal ImmutableArray<IValue> NonHyperparamInputs { get { EnsureConvertedSnapshot(); return _nonHyperparamInputs; } }
+        internal ImmutableArray<IValue> Outputs { get { EnsureConvertedSnapshot(); return _outputs; } }
         internal ImmutableArray<int?> OutputRankOverrides { get { EnsureConvertedSnapshot(); return _outputRankOverrides; } }
 
         /// <summary>
@@ -128,18 +128,18 @@ namespace Shorokoo.Core
         /// </summary>
         public FastComputationGraph OriginalFastGraph { get; }
 
-        // Cached IVariable views derived from a one-shot rebuild of OriginalFastGraph.
+        // Cached IValue views derived from a one-shot rebuild of OriginalFastGraph.
         // FastComputationGraphConverter.BuildNodes reconstructs the underlying
-        // Node/IVariable objects without wrapping them in a ComputationGraph; the
+        // Node/IValue objects without wrapping them in a ComputationGraph; the
         // resulting inputs/outputs are stored here and Function never holds a CG handle.
         private bool _convertedSnapshotComputed;
-        private ImmutableArray<IVariable> _inputs;
-        private ImmutableArray<IVariable> _hyperparamInputs;
-        private ImmutableArray<IVariable> _nonHyperparamInputs;
-        private ImmutableArray<IVariable> _outputs;
+        private ImmutableArray<IValue> _inputs;
+        private ImmutableArray<IValue> _hyperparamInputs;
+        private ImmutableArray<IValue> _nonHyperparamInputs;
+        private ImmutableArray<IValue> _outputs;
         private ImmutableArray<int?> _outputRankOverrides;
 
-        // Materializes the IVariable snapshot directly from OriginalFastGraph via
+        // Materializes the IValue snapshot directly from OriginalFastGraph via
         // BuildNodes. Shielded from any active outer LoopAPI context: rebuilding
         // nodes fires Node ctors which would otherwise leak into an enclosing
         // LoopAPI.Iterate body's pass-equality tracking.
@@ -178,7 +178,7 @@ namespace Shorokoo.Core
                 : null;
         }
 
-        public IVariable[] Call(params IVariable?[] tensors)
+        public IValue[] Call(params IValue?[] tensors)
             => InternalOp.FunctionInvoke(tensors,
                     this.Outputs.Select(x => x.Structure()).ToArray(),
                     this.Outputs.Select(x => x.DType).ToArray(),

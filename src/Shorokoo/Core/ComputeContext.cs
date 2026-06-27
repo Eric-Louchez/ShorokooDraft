@@ -168,7 +168,7 @@ namespace Shorokoo.Runtime
         /// Evaluates the given output variables by building and executing a zero-input graph,
         /// returning their concrete tensor data.
         /// </summary>
-        public TensorData[] Eval(IVariable[] outputs)
+        public TensorData[] Eval(IValue[] outputs)
         {
             var graph = new FastComputationGraph([], [.. outputs]);
             var results = this.Execute(graph).Select(x => x.ToTensorData()).ToArray();
@@ -176,15 +176,15 @@ namespace Shorokoo.Runtime
             return results;
         }
 
-        /// <summary>Params convenience over <see cref="Eval(IVariable[])"/> for two or more outputs.</summary>
-        public TensorData[] Eval(IVariable output1, IVariable output2, params IVariable[] outputs)
+        /// <summary>Params convenience over <see cref="Eval(IValue[])"/> for two or more outputs.</summary>
+        public TensorData[] Eval(IValue output1, IValue output2, params IValue[] outputs)
         {
             var allOutputs = new[] { output1, output2 }.Concat(outputs).ToArray();
             return Eval(allOutputs);
         }
 
         /// <summary>Evaluates a single output variable.</summary>
-        public TensorData Eval(IVariable output)
+        public TensorData Eval(IValue output)
         {
             var allOutputs = new[] { output };
             return Eval(allOutputs)[0];
@@ -194,7 +194,7 @@ namespace Shorokoo.Runtime
         public TensorData<T> Eval<T>(Tensor<T> output)
             where T : IVarType
         {
-            return (TensorData<T>)Eval((IVariable)output);
+            return (TensorData<T>)Eval((IValue)output);
         }
 
         /// <summary>Executes a graph that takes no inputs.</summary>
