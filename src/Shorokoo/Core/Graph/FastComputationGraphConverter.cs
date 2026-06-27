@@ -464,14 +464,10 @@ namespace Shorokoo.Graph
             for (int i = 0; i < variables.Length && i < names.Count; i++)
             {
                 if (names[i] is null) continue;
-                if (variables[i] is ImmutableVariable<IVarType> v)
+                // Every graph value is a non-generic Variable node (previously this needed a
+                // generic-type pattern + dynamic fallback because the base was ImmutableVariable<T>).
+                if (variables[i] is Variable v)
                     v.SetUniqueName(names[i]);
-                else
-                {
-                    // ImmutableVariable<T> is generic; cast through dynamic to reach SetUniqueName.
-                    var dyn = (dynamic)variables[i];
-                    dyn.SetUniqueName(names[i]);
-                }
             }
         }
     }

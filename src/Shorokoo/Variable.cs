@@ -116,7 +116,23 @@ namespace Shorokoo
     public interface DTypeStruct : IStruct;
 
     public interface IValue<out T> : IValue where T : IVarType;
-    public abstract class ImmutableVariable<T> : IValue<T> where T : IVarType
+
+    /// <summary>
+    /// Non-generic immutable graph-value node — the object the Node/Variable graph is built from.
+    /// Holds only runtime node state: the owning <see cref="Node"/>, the runtime element
+    /// <see cref="DType"/>, the <see cref="TensorKey"/>, the producing module function, validity,
+    /// and the serialization name. The element type lives in <see cref="Type"/> at runtime, NOT in
+    /// a C# type parameter, and the structural kind (tensor / sequence / optional / struct) lives on
+    /// the producing node — so a node needs neither generics nor a per-kind subclass.
+    /// <para>
+    /// Deliberately does <b>not</b> implement <see cref="IValue"/>: <c>IValue</c> is the user-facing
+    /// handle interface (implemented by the value-struct handles such as <see cref="Tensor{T}"/>),
+    /// and a graph node is not a handle. Generic typed reinterprets live on the
+    /// <see cref="ImmutableVariable{T}"/> subclass during the migration; the end state collapses the
+    /// generic subclasses into this one class.
+    /// </para>
+    /// </summary>
+    public abstract class Variable
     {
         public Node OwningNode { get; private set; }
 
@@ -134,7 +150,7 @@ namespace Shorokoo
 
         private string? uniqueName;
 
-        public ImmutableVariable(DType type, Node owningNode, Function? moduleFn, string? name)
+        protected Variable(DType type, Node owningNode, Function? moduleFn, string? name)
         {
             this.OwningNode = owningNode;
             this.Type = type;
@@ -160,12 +176,6 @@ namespace Shorokoo
             this.uniqueName = name;
         }
 
-        public Tensor<T> Tensor() => (ImmutableTensor<T>)this;
-        public Vector<T> Vec() => this.Tensor().Vec();
-        public Scalar<T> Scalar() => this.Tensor().Scalar();
-        public TensorSequence<T> Sequence() => (ImmutableTensorSequence<T>)this;
-        public OptionalTensor<T> Optional() => (ImmutableOptionalTensor<T>)this;
-
         /// <summary>
         /// The unique name for this tensor. Defaults to Key.ToString() but can be set to human-readable
         /// names like "N1_T0" by processors during construction. Used for ONNX serialization.
@@ -184,18 +194,37 @@ namespace Shorokoo
         [Obsolete("FriendlyName is deprecated. Use UniqueName for ONNX names or Key.ToString() for stable identifiers.")]
         public string? FriendlyName => this.uniqueName;
 
+        public override string ToString()
+        {
+            return (this.uniqueName ?? "") + ": " + this.GetType().Name;
+        }
+    }
+
+    public abstract class ImmutableVariable<T> : Variable, IValue<T> where T : IVarType
+    {
+        public ImmutableVariable(DType type, Node owningNode, Function? moduleFn, string? name)
+            : base(type, owningNode, moduleFn, name)
+        {
+        }
+
+        public Tensor<T> Tensor() => (ImmutableTensor<T>)this;
+        public Vector<T> Vec() => this.Tensor().Vec();
+        public Scalar<T> Scalar() => this.Tensor().Scalar();
+        public TensorSequence<T> Sequence() => (ImmutableTensorSequence<T>)this;
+        public OptionalTensor<T> Optional() => (ImmutableOptionalTensor<T>)this;
+
         ImmutableVariable<V> IValue.As<V>()
         {
             if (typeof(V) == typeof(T))
                 return (ImmutableVariable<V>)(object)this;
 
-            throw new InvalidTensorOperationException(ErrorCodes.CR006, "As<V>", $"from {typeof(T).Name} to {typeof(V).Name}", 
+            throw new InvalidTensorOperationException(ErrorCodes.CR006, "As<V>", $"from {typeof(T).Name} to {typeof(V).Name}",
                 $"Cannot cast ImmutableVariable<{typeof(T).Name}> to ImmutableVariable<{typeof(V).Name}> - types are not compatible");
         }
 
         public override string ToString()
         {
-            return (this.uniqueName ?? "") + ": " + this.GetType().Name + "[" + (this.Tensor().Rank ?? -1) + "]";
+            return base.ToString() + "[" + (this.Tensor().Rank ?? -1) + "]";
         }
     }
 }

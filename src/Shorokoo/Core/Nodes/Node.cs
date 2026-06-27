@@ -345,9 +345,9 @@ namespace Shorokoo.Core.Nodes
                 {
                     if (output != null)
                     {
-                        // Get the base ImmutableVariable<T> and set the key
-                        var variable = output as dynamic;
-                        variable.SetKey(new TensorKey(this.Key, outputIndex));
+                        // Set the key on the non-generic Variable base (previously a dynamic
+                        // dispatch, because the base used to be the generic ImmutableVariable<T>).
+                        ((Variable)output).SetKey(new TensorKey(this.Key, outputIndex));
                     }
                     outputIndex++;
                 }
