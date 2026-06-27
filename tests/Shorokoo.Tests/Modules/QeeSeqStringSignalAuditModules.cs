@@ -36,16 +36,16 @@ namespace Shorokoo.Tests.Modules
             var t2 = x + Scalar(10f);            // 11..16
             var t3 = x * Scalar(2f);             // 2..12
 
-            var seq = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SequenceConstruct(t1, t2);
+            var seq = (TensorSequence<float32>)(ImmutableTensorSequence)OnnxOp.SequenceConstruct(t1, t2);
             var at0 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(seq, p0);
             var atNeg = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(seq, p0 - Scalar(1L)); // −1 → t2
 
-            var ins = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SequenceInsert(seq, t3, p1); // [t1,t3,t2]
+            var ins = (TensorSequence<float32>)(ImmutableTensorSequence)OnnxOp.SequenceInsert(seq, t3, p1); // [t1,t3,t2]
             var insAt = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(ins, p1);
 
-            var er = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SequenceErase(seq, p0);       // [t2]
+            var er = (TensorSequence<float32>)(ImmutableTensorSequence)OnnxOp.SequenceErase(seq, p0);       // [t2]
             var erAt = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(er, p0);
-            var erLast = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SequenceErase(ins);       // [t1,t3]
+            var erLast = (TensorSequence<float32>)(ImmutableTensorSequence)OnnxOp.SequenceErase(ins);       // [t1,t3]
             var erLastAt = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(erLast, p1);
 
             var empty = Shorokoo.Core.TensorSequence<float32>.CreateEmpty();
@@ -95,17 +95,17 @@ namespace Shorokoo.Tests.Modules
         {
             var p1 = p0 + Scalar(1L);
 
-            var stsDef = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SplitToSequence(x);
+            var stsDef = (TensorSequence<float32>)(ImmutableTensorSequence)OnnxOp.SplitToSequence(x);
             var defAt0 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(stsDef, p0);
 
-            var stsNk = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SplitToSequence(x, split: null, axis: 0L, keepdims: 0L);
+            var stsNk = (TensorSequence<float32>)(ImmutableTensorSequence)OnnxOp.SplitToSequence(x, split: null, axis: 0L, keepdims: 0L);
             var nkAt1 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(stsNk, p1);
 
             // Scalar split 2 along axis 1 → [2,2] + [2,1].
-            var stsS = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SplitToSequence(x, split: Scalar(2L), axis: 1L);
+            var stsS = (TensorSequence<float32>)(ImmutableTensorSequence)OnnxOp.SplitToSequence(x, split: Scalar(2L), axis: 1L);
             var sAt1 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(stsS, p1);
 
-            var stsV = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SplitToSequence(x, split: Vector(1L, 2L), axis: 1L);
+            var stsV = (TensorSequence<float32>)(ImmutableTensorSequence)OnnxOp.SplitToSequence(x, split: Vector(1L, 2L), axis: 1L);
             var vAt1 = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(stsV, p1);
 
             var cfsUneven = stsS.Concat(axis: 1);            // [2,2]+[2,1] → [2,3] == x
@@ -156,7 +156,7 @@ namespace Shorokoo.Tests.Modules
     {
         public static Scalar<bit> Inline(Tensor<float32> x, Scalar<int64> p0)
         {
-            var sts = (TensorSequence<float32>)(ImmutableTensorSequence<float32>)OnnxOp.SplitToSequence(x, split: Scalar(2L), axis: 1L, keepdims: 0L);
+            var sts = (TensorSequence<float32>)(ImmutableTensorSequence)OnnxOp.SplitToSequence(x, split: Scalar(2L), axis: 1L, keepdims: 0L);
             var last = (Tensor<float32>)(ImmutableTensor<float32>)OnnxOp.SequenceAt(sts, p0 + Scalar(1L));
             var mismatch =
                 ShapeMismatch(last, Vector(2L, 1L)) +

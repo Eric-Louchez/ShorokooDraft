@@ -93,14 +93,9 @@ namespace Shorokoo.Core
         private static Scalar<T> CreateScalarValForObj<T>(object val) where T : IVarType
             => Shorokoo.Globals.Scalar<T>(val);
 
-        internal static ImmutableTensorSequence<T> TensorSequence<T>(Node owningNode, DType dtype, Function? moduleFn, string? name) where T : IVarType
-            => new ImmutableTensorSequence<T>(dtype, owningNode, moduleFn, name);
-
-        internal static ITensorSequence TensorSequence(DType dtype, Node owningNode, Function? moduleFn, string? name = null)
-            => (ITensorSequence)OnnxUtils.CallGeneric(dtype.ToIVarType(), typeof(InternalGlobals), nameof(CreateTensorSequence), [owningNode, dtype, moduleFn, name]);
-
-        private static ImmutableTensorSequence<T> CreateTensorSequence<T>(Node owningNode, DType dtype, Function? moduleFn, string? name) where T : IVarType
-            => TensorSequence<T>(owningNode, dtype, moduleFn, name);
+        // Non-generic sequence node built directly from the runtime DType (no CallGeneric).
+        internal static ImmutableTensorSequence TensorSequence(DType dtype, Node owningNode, Function? moduleFn, string? name = null)
+            => new ImmutableTensorSequence(dtype, owningNode, moduleFn, name);
 
         // The optional node is now non-generic, so it is built directly from the runtime DType —
         // no per-output CallGeneric/MakeGenericType reflection round-trip.
@@ -121,15 +116,16 @@ namespace Shorokoo.Core
             if (structDef == null)
                 throw new InvalidOperationException($"TensorStruct DType {type} has no associated TensorStructDef");
 
-            // Use DTypeStruct for dynamically typed TensorStruct
-            return new ImmutableTensorStruct<DTypeStruct>(type, owningNode, moduleFn, name, structDef);
+            // The struct node is non-generic; the field layout lives in the runtime TensorStructDef.
+            return new ImmutableTensorStruct(type, owningNode, moduleFn, name, structDef);
         }
 
         /// <summary>
-        /// Creates a TensorStruct with a specific IStruct type.
+        /// Creates a TensorStruct with a specific IStruct type. The element type parameter is kept for
+        /// caller convenience but the node itself is non-generic (its layout is the runtime definition).
         /// </summary>
-        internal static ImmutableTensorStruct<T> TensorStruct<T>(DType type, Node owningNode, Function? moduleFn, string? name, TensorStructDef definition) where T : IStruct
-            => new ImmutableTensorStruct<T>(type, owningNode, moduleFn, name, definition);
+        internal static ImmutableTensorStruct TensorStruct<T>(DType type, Node owningNode, Function? moduleFn, string? name, TensorStructDef definition) where T : IStruct
+            => new ImmutableTensorStruct(type, owningNode, moduleFn, name, definition);
 
         internal static OnnxTensorData<bit> OnnxTensorData(Shape shape, params bool[] data) => new OnnxTensorData<bit>(shape, OnnxUtils.CreateTensorValue<bool>(shape, data));
         internal static OnnxTensorData<int8> OnnxTensorData(Shape shape, params sbyte[] data) => new OnnxTensorData<int8>(shape, OnnxUtils.CreateTensorValue<sbyte>(shape, data));

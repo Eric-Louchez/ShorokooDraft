@@ -22,8 +22,7 @@ namespace Shorokoo
     /// data and definition and satisfies the <see cref="ITensorStruct"/> contract. The user-facing
     /// API lives on the value-type handle <see cref="TensorStruct{T}"/>.
     /// </summary>
-    /// <typeparam name="T">The IStruct type that defines the struct fields. Use DTypeStruct for dynamic struct definitions.</typeparam>
-    public class ImmutableTensorStruct<T> : ImmutableVariable<T>, ITensorStruct where T : IStruct
+    public class ImmutableTensorStruct : Variable, ITensorStruct
     {
         private readonly ImmutableDictionary<string, IValue> _fields;
         private readonly TensorStructDef _definition;
@@ -52,8 +51,8 @@ namespace Shorokoo
             throw new KeyNotFoundException($"Field '{name}' not found in TensorStruct. Available fields: {string.Join(", ", _fields.Keys)}");
         }
 
-        internal ImmutableTensorStruct<T> WithFields(ImmutableDictionary<string, IValue> newFields)
-            => new ImmutableTensorStruct<T>(this.Type, this.OwningNode, this.ModuleFn, this.UniqueName, _definition, newFields);
+        internal ImmutableTensorStruct WithFields(ImmutableDictionary<string, IValue> newFields)
+            => new ImmutableTensorStruct(this.Type, this.OwningNode, this.ModuleFn, this.UniqueName, _definition, newFields);
 
         public override string ToString()
         {
@@ -64,7 +63,7 @@ namespace Shorokoo
 
     /// <summary>
     /// Value-type handle for a TensorStruct. The original <c>TensorStruct&lt;T&gt;</c> name now denotes
-    /// this <see langword="struct"/>; the reference type was renamed <see cref="ImmutableTensorStruct{T}"/>.
+    /// this <see langword="struct"/>; the reference type was renamed <see cref="ImmutableTensorStruct"/>.
     /// This struct carries the full user-facing surface. It holds the immutable directly in a field
     /// (value-copy semantics for the Module DSL). This pass only makes mutation possible — behaviour
     /// is unchanged (de-facto immutable).
@@ -75,18 +74,18 @@ namespace Shorokoo
     /// </summary>
     public struct TensorStruct<T> : ITensorStruct, Shorokoo.Core.IValueHandle where T : IStruct
     {
-        private ImmutableTensorStruct<T>? inner;
+        private ImmutableTensorStruct? inner;
 
         IValue Shorokoo.Core.IValueHandle.Immutable => Imm;
 
         /// <summary>The wrapped immutable. A defaulted handle has no recoverable field layout, so this throws.</summary>
-        internal readonly ImmutableTensorStruct<T> Imm
+        internal readonly ImmutableTensorStruct Imm
             => inner ?? throw new InvalidOperationException(
                 "default(TensorStruct<T>) has no field layout; create one via a graph op (e.g. Globals.TensorStruct<T>(...)).");
 
-        public static implicit operator TensorStruct<T>(ImmutableTensorStruct<T> imm)
+        public static implicit operator TensorStruct<T>(ImmutableTensorStruct imm)
             => new TensorStruct<T> { inner = imm };
-        public static implicit operator ImmutableTensorStruct<T>(TensorStruct<T> handle)
+        public static implicit operator ImmutableTensorStruct(TensorStruct<T> handle)
             => handle.Imm;
 
         // ── User-facing API (the struct surface lives here, not on the immutable) ──

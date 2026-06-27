@@ -400,8 +400,8 @@ namespace Shorokoo
         public static TensorSequence<T> TensorSequence<T>(params Tensor<T>[] tensors)
             where T : IVarType
             => tensors.Length == 0 ?
-                    (ImmutableTensorSequence<T>)OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>()) :
-                    (ImmutableTensorSequence<T>)OnnxOp.SequenceConstruct([.. tensors.Cast<IValue>()]);
+                    (ImmutableTensorSequence)OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>()) :
+                    (ImmutableTensorSequence)OnnxOp.SequenceConstruct([.. tensors.Cast<IValue>()]);
 
         /// <summary>Creates a tensor sequence from the given tensors; an empty sequence when none are supplied.</summary>
         public static ITensorSequence TensorSequence(DType dtype, params ITensor[] tensors)

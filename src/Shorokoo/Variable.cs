@@ -225,7 +225,6 @@ namespace Shorokoo
         public Tensor<T> Tensor() => (ImmutableTensor<T>)this;
         public Vector<T> Vec() => this.Tensor().Vec();
         public Scalar<T> Scalar() => this.Tensor().Scalar();
-        public TensorSequence<T> Sequence() => (ImmutableTensorSequence<T>)this;
 
         public override string ToString()
         {
