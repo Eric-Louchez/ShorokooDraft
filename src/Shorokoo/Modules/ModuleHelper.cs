@@ -480,10 +480,13 @@ namespace Shorokoo.Core
                 }
                 else
                 {
-                    invokeArgs[i] = ConvertForValueStructParam(inputs[i], paramType);
+                    // inputs[i] already arrives as the value the body expects — an IValue handle, or an
+                    // IModel/IModule — because ModuleParamInputBasedOn converts the graph node before this
+                    // point. Nothing further to do; reflective Invoke boxes it.
+                    invokeArgs[i] = inputs[i];
                 }
             }
-            
+
             // DoNotWrapExceptions: a module body that throws (e.g. StateUpdate rejecting a
             // non-state variable with instructions) must surface its own exception to the
             // author, not a TargetInvocationException wrapper.
@@ -493,32 +496,6 @@ namespace Shorokoo.Core
                 binder: null,
                 parameters: invokeArgs,
                 culture: null));
-        }
-
-        /// <summary>
-        /// Converts a <see cref="Variable"/> to the value-struct <see cref="IValue"/> parameter when
-        /// needed. The user-facing value types (e.g. <see cref="OptionalTensor{T}"/>) are
-        /// <see langword="struct"/>s that wrap a <see cref="Variable"/> via an implicit conversion.
-        /// Reflective invocation (<c>MethodInfo.Invoke</c>) does not apply user-defined conversions, so a
-        /// <see cref="Variable"/> flowing into a value-struct parameter must be converted explicitly here
-        /// by invoking the <see cref="IValue"/>'s <c>op_Implicit</c>. Non-value-struct parameters and
-        /// already-matching values pass through unchanged.
-        /// </summary>
-        private static object? ConvertForValueStructParam(IModuleParam input, Type paramType)
-        {
-            if (input is null
-                || !paramType.IsValueType
-                || !typeof(IValue).IsAssignableFrom(paramType)
-                || paramType.IsInstanceOfType(input))
-                return input;
-
-            var conv = paramType.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .FirstOrDefault(m => m.Name == "op_Implicit"
-                    && m.ReturnType == paramType
-                    && m.GetParameters() is [var p]
-                    && p.ParameterType.IsInstanceOfType(input));
-
-            return conv is not null ? conv.Invoke(null, [input]) : input;
         }
 
         /// <summary>
