@@ -263,24 +263,40 @@ namespace Shorokoo
         /// <c>rank: null</c>). Ignored for optional / sequence / struct values, whose handle is fixed by
         /// their structural kind.
         /// </summary>
-        public IValue ToValue(int? rank) => WrapAs(NaturalHandleType(rank));
+        public IValue ToValue(int? rank) => ToValue(NaturalHandleType(rank));
 
         /// <summary>
         /// Wrap this graph value as a general <see cref="Tensor{T}"/> handle (rank-agnostic) over its own
         /// element dtype — unlike <see cref="ToValue()"/>, which narrows a rank-0 / rank-1 tensor to
         /// <see cref="Scalar{T}"/> / <see cref="Vector{T}"/>. Only valid for tensor-structured values.
         /// </summary>
-        public ITensor ToTensor() => (ITensor)WrapAs(typeof(Tensor<>).MakeGenericType(this.Type.ToIVarType()));
+        public ITensor ToTensor() => (ITensor)ToValue(typeof(Tensor<>).MakeGenericType(this.Type.ToIVarType()));
 
-        // Wrap this node in the given (runtime-built) handle type by finding and invoking its implicit
-        // operator(Variable) — the compiler can't apply it when the target type is only known at runtime.
-        // Validation (structure / dtype / rank) happens inside that operator, as for a direct cast.
-        private IValue WrapAs(Type handleType)
+        /// <summary>
+        /// Wrap this graph value in the value-struct handle of the given <paramref name="type"/> — e.g.
+        /// <c>Tensor&lt;float32&gt;</c>, <c>Scalar&lt;int64&gt;</c>, or a nullable handle such as
+        /// <c>Tensor&lt;float32&gt;?</c>. The handle's implicit <c>operator(Variable)</c> is found and
+        /// invoked by reflection — the compiler can't apply it when the target is only a runtime
+        /// <see cref="System.Type"/> — and it validates structure / dtype / rank exactly as a direct cast.
+        /// </summary>
+        public IValue ToValue(Type type)
         {
-            var conv = MatchingConverter(handleType, this.GetType())
-                ?? throw new InvalidTensorOperationException(ErrorCodes.CR001, "ToValue", handleType.Name,
-                    $"no implicit Variable conversion to handle '{handleType.Name}'");
-            return (IValue)conv.Invoke(null, [this])!;
+            // A handle may be declared nullable (Tensor<T>?); the wrapping value-struct is the underlying type.
+            var handleType = Nullable.GetUnderlyingType(type) ?? type;
+            // Find the handle's `implicit operator handleType(Variable)`: a static op_Implicit returning the
+            // handle, taking a single non-value-type (reference) parameter this Variable satisfies. (Its
+            // handle->handle / handle->Variable operators take a struct or return a different type, so are skipped.)
+            foreach (var op in handleType.GetMethods(BindingFlags.Public | BindingFlags.Static))
+            {
+                if (op.Name != "op_Implicit" || op.ReturnType != handleType)
+                    continue;
+                var ps = op.GetParameters();
+                if (ps.Length == 1 && !ps[0].ParameterType.IsValueType
+                    && ps[0].ParameterType.IsAssignableFrom(this.GetType()))
+                    return (IValue)op.Invoke(null, [this])!;
+            }
+            throw new InvalidTensorOperationException(ErrorCodes.CR001, "ToValue", handleType.Name,
+                $"no implicit Variable conversion to handle '{handleType.Name}'");
         }
 
         // The handle type that mirrors this value's structure / dtype, with the tensor handle chosen by
