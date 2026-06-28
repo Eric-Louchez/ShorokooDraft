@@ -18,7 +18,6 @@ using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using static Shorokoo.Core.Nodes.Ops;
 using static Shorokoo.Core.Nodes.AutoDiff.Ops;
-using static RandN.Distributions.Uniform;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Shorokoo
@@ -202,8 +201,7 @@ namespace Shorokoo
         public static Tensor<float64> float64(this IValue var) => Tensor<float64>.Reinterpret(var.ToVariable());
 
         public static DataStructure Structure(this IValue var)
-            => var is Variable nodeVar ? nodeVar.Kind :
-               var is ITensorStruct ? DataStructure.TensorStruct :
+            => var is ITensorStruct ? DataStructure.TensorStruct :
                var is ITensor ? DataStructure.Tensor :
                var is IOptionalTensor ? DataStructure.Optional :
                DataStructure.Sequence;

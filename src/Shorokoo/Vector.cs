@@ -59,7 +59,8 @@ namespace Shorokoo
         IVector ITensor.Vec() => (Vector<T>)Imm.Vec();
         Vector<V> ITensor.Vec<V>() => Imm.Cast<V>().Vec();
         IScalar ITensor.Scalar() => (Scalar<T>)Imm.Scalar();
-        Scalar<V> ITensor.Scalar<V>() => Imm.Cast<V>().Scalar();        Tensor<V> ITensor.Cast<V>(bool saturate) => Imm.Cast<V>(saturate);
+        Scalar<V> ITensor.Scalar<V>() => Imm.Cast<V>().Scalar();
+        Tensor<V> ITensor.Cast<V>(bool saturate) => Imm.Cast<V>(saturate);
 
         public Node OwningNode => Imm.OwningNode;
         public DType Type => Imm.Type;
@@ -71,8 +72,8 @@ namespace Shorokoo
 #pragma warning disable CS0618
         string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;
 #pragma warning restore CS0618
-        public override bool Equals(object? obj) => obj is Vector<T> t && Equals(Imm, t.Imm);
-        public override int GetHashCode() => Imm.GetHashCode();
+        public override bool Equals(object? obj) => obj is Vector<T> t && Equals(inner, t.inner);
+        public override int GetHashCode() => inner?.GetHashCode() ?? 0;
 
         #region Unit and Empty vectors
 
@@ -484,7 +485,7 @@ namespace Shorokoo
             => ((Tensor<T>)this).AveragePool(kernelShape, roundMode, countIncludePad, dilations, pads, strides).Vec();
 
         /// <summary>Batch normalization using the given scale, bias, mean, and variance (ONNX BatchNormalization).</summary>
-        public Variable BatchNormalization<T1, T2>(Vector<T1> scale, Vector<T1> bias, Vector<T2> mean, Vector<T2> variance, float epsilon = 1e-05f, float momentum = 0.9f, bool trainingMode = false)
+        public Vector<T> BatchNormalization<T1, T2>(Vector<T1> scale, Vector<T1> bias, Vector<T2> mean, Vector<T2> variance, float epsilon = 1e-05f, float momentum = 0.9f, bool trainingMode = false)
                 where T1 : FloatLike where T2 : FloatLike
             => ((Tensor<T>)this).BatchNormalization(scale, bias, mean, variance, epsilon, momentum, trainingMode).Vec();
 
@@ -493,7 +494,7 @@ namespace Shorokoo
             => ((Tensor<T>)this).Bernoulli(seed).Vec();
 
         /// <summary>Element-wise Bernoulli sampling, treating each element as a probability, with result element type <typeparamref name="V"/>.</summary>
-        public Variable Bernoulli<V>(float? seed = null) where V : CommonLike
+        public Vector<V> Bernoulli<V>(float? seed = null) where V : CommonLike
             => ((Tensor<T>)this).Bernoulli<V>(seed).Vec();
 
         /// <summary>Element-wise CELU activation.</summary>
@@ -529,7 +530,7 @@ namespace Shorokoo
             => ((Tensor<T>)this).Tanh().Vec();
 
         /// <summary>Element-wise power.</summary>
-        public Variable Pow<T1>(Tensor<T1> power) where T1 : IVarType
+        public Vector<T> Pow<T1>(Tensor<T1> power) where T1 : IVarType
             => ((Tensor<T>)this).Pow(power).Vec();
 
         /// <summary>Element-wise natural logarithm.</summary>

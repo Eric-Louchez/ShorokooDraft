@@ -107,8 +107,8 @@ namespace Shorokoo
         public Scalar<T> Scalar() => (Variable)Imm.Scalar();
 
         // == builds an Equal graph node (see operators); Equals/GetHashCode use the wrapped node.
-        public override bool Equals(object? obj) => obj is Tensor<T> t && Equals(Imm, t.Imm);
-        public override int GetHashCode() => Imm.GetHashCode();
+        public override bool Equals(object? obj) => obj is Tensor<T> t && Equals(inner, t.inner);
+        public override int GetHashCode() => inner?.GetHashCode() ?? 0;
 
         #region Compute
 
@@ -440,7 +440,7 @@ namespace Shorokoo
         /// <summary>Casts the element type to <typeparamref name="V"/>; returns this tensor unchanged when the types already match.</summary>
         public Tensor<V> Cast<V>(bool saturate = true) where V : IVarType
             => typeof(V) == typeof(T) ?
-                (Tensor<V>)(object)this :
+                Tensor<V>.Reinterpret(this.inner!) :
                 OnnxOp.Cast(this, saturate ? null : saturate, OnnxUtils.GetDType<V>());
 
         /// <summary>Creates a tensor of the given shape filled with the scalar value <paramref name="val"/> (ONNX ConstantOfShape).</summary>

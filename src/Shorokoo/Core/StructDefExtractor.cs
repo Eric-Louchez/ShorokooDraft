@@ -94,19 +94,19 @@ namespace Shorokoo.Core
                 var genericDef = propertyType.GetGenericTypeDefinition();
                 var genericArgs = propertyType.GetGenericArguments();
 
-                if (genericDef == typeof(Variable) || propertyType.Name.StartsWith("Tensor`"))
+                if (genericDef == typeof(Tensor<>) || propertyType.Name.StartsWith("Tensor`"))
                 {
                     structure = DataStructure.Tensor;
                     rank = null; // Unknown rank
                     elementType = GetDTypeFromIVarType(genericArgs[0]);
                 }
-                else if (genericDef == typeof(Variable) || propertyType.Name.StartsWith("Vector`"))
+                else if (genericDef == typeof(Vector<>) || propertyType.Name.StartsWith("Vector`"))
                 {
                     structure = DataStructure.Tensor;
                     rank = 1;
                     elementType = GetDTypeFromIVarType(genericArgs[0]);
                 }
-                else if (genericDef == typeof(Variable) || propertyType.Name.StartsWith("Scalar`"))
+                else if (genericDef == typeof(Scalar<>) || propertyType.Name.StartsWith("Scalar`"))
                 {
                     structure = DataStructure.Tensor;
                     rank = 0;

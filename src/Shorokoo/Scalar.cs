@@ -54,7 +54,8 @@ namespace Shorokoo
         IVector ITensor.Vec() => (Vector<T>)Imm.Vec();
         Vector<V> ITensor.Vec<V>() => Imm.Cast<V>().Vec();
         IScalar ITensor.Scalar() => (Scalar<T>)Imm.Scalar();
-        Scalar<V> ITensor.Scalar<V>() => Imm.Cast<V>().Scalar();        Tensor<V> ITensor.Cast<V>(bool saturate) => Imm.Cast<V>(saturate);
+        Scalar<V> ITensor.Scalar<V>() => Imm.Cast<V>().Scalar();
+        Tensor<V> ITensor.Cast<V>(bool saturate) => Imm.Cast<V>(saturate);
 
         public Node OwningNode => Imm.OwningNode;
         public DType Type => Imm.Type;
@@ -66,8 +67,8 @@ namespace Shorokoo
 #pragma warning disable CS0618
         string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;
 #pragma warning restore CS0618
-        public override bool Equals(object? obj) => obj is Scalar<T> t && Equals(Imm, t.Imm);
-        public override int GetHashCode() => Imm.GetHashCode();
+        public override bool Equals(object? obj) => obj is Scalar<T> t && Equals(inner, t.inner);
+        public override int GetHashCode() => inner?.GetHashCode() ?? 0;
 
         private static Scalar<T>? unit; 
         /// <summary>A cached constant scalar of value 1 (true for bit).</summary>
@@ -268,7 +269,7 @@ namespace Shorokoo
             => ((Tensor<T>)this).Bernoulli(seed).Scalar();
 
         /// <summary>Bernoulli sample, treating this scalar as a probability, with result element type <typeparamref name="V"/>.</summary>
-        public Variable Bernoulli<V>(float? seed = null) where V : CommonLike
+        public Scalar<V> Bernoulli<V>(float? seed = null) where V : CommonLike
             => ((Tensor<T>)this).Bernoulli<V>(seed).Scalar();
 
         /// <summary>Scalar CELU activation.</summary>

@@ -410,12 +410,12 @@ public class CSharpModelBuilderCoverageTests
     {
         // value_floats attribute → AttributeType.Floats with :params}
         var floats = NodeBuilder.CallCustomOperator<Vector<float32>>(
-            OpCodes.CONSTANT, new Variable[] { },
+            OpCodes.CONSTANT, [],
             new object?[] { OnnxOpAttributeNames.AttrValueFloats, new float[] { 1.0f, 2.0f, 3.0f } });
 
         // value_ints attribute → AttributeType.Longs with :params}
         var ints = NodeBuilder.CallCustomOperator<Vector<int64>>(
-            OpCodes.CONSTANT, new Variable[] { },
+            OpCodes.CONSTANT, [],
             new object?[] { OnnxOpAttributeNames.AttrValueInts, new long[] { 10L, 20L, 30L } });
 
         var graph = new FastComputationGraph(

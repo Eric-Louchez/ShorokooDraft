@@ -101,10 +101,10 @@ public class ModuleHelperCoverageTests
         // ──────────────────────────────────────────────────────────────────
         var v = InputScalar<float32>("v");
         Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.Format(null));
-        Assert.Single(ModuleHelper.Format(new IValue[] { v }));
+        Assert.Single(ModuleHelper.Format((IValue[])[v]));
         Assert.Single(ModuleHelper.Format(v));
         // IModuleParam[] arm (line 408-409).
-        Assert.Single(ModuleHelper.Format(new IModuleParam[] { v }));
+        Assert.Single(ModuleHelper.Format((IModuleParam[])[v]));
         Assert.Equal(2, ModuleHelper.Format((v, v)).Length);
 
         // IStruct record arm (lines 423-440).
@@ -253,7 +253,6 @@ public class ModuleHelperCoverageTests
 
     private class NonVariableModuleParam : IModuleParam
     {
-        public IValue ToVariable() => throw new NotImplementedException();
     }
 
     private static Tensor<float32> DoubleTensor(Tensor<float32> x) => x + x;

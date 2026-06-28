@@ -4519,7 +4519,7 @@ namespace Shorokoo.Tests.Modules
             var seqInserted = OnnxOp.SequenceInsert(seq, cVec, Scalar(1L));
             var elem = (Tensor<float32>)OnnxOp.SequenceAt(seqInserted, Scalar(1L));
             var loss = elem.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
-            var grads = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(new IValue[] { a, b, c }, loss);
+            var grads = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad((IValue[])[a, b, c], loss);
             var ga = (Scalar<float32>)grads[0]!;
             var gb = (Scalar<float32>)grads[1]!;
             var gc = (Scalar<float32>)grads[2]!;
@@ -4542,7 +4542,7 @@ namespace Shorokoo.Tests.Modules
             var seqAppended = OnnxOp.SequenceInsert(seq, cVec, null);
             var elem = (Tensor<float32>)OnnxOp.SequenceAt(seqAppended, Scalar(2L));
             var loss = elem.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
-            var grads = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(new IValue[] { a, b, c }, loss);
+            var grads = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad((IValue[])[a, b, c], loss);
             var ga = (Scalar<float32>)grads[0]!;
             var gb = (Scalar<float32>)grads[1]!;
             var gc = (Scalar<float32>)grads[2]!;
@@ -4565,7 +4565,7 @@ namespace Shorokoo.Tests.Modules
             var seqErased = OnnxOp.SequenceErase(seq, Scalar(0L));
             var elem = (Tensor<float32>)OnnxOp.SequenceAt(seqErased, Scalar(0L));
             var loss = elem.Reduce(ReduceKind.Sum, keepDims: false).Scalar();
-            var grads = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad(new IValue[] { a, b, c }, loss);
+            var grads = Shorokoo.Core.Nodes.AutoDiff.Ops.AutoGrad((IValue[])[a, b, c], loss);
             var ga = (Scalar<float32>)grads[0]!;
             var gb = (Scalar<float32>)grads[1]!;
             var gc = (Scalar<float32>)grads[2]!;

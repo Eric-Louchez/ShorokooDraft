@@ -73,7 +73,6 @@ namespace Shorokoo
         // ── User-facing API (the optional surface lives here, not on the immutable) ──
         public Variable Value() => OnnxOp.OptionalGetElement(Imm);
         public Tensor<T> TensorValue() => (Variable)Value();
-        public Tensor<T> SequenceValue() => (Variable)Value();
         public Scalar<bit> HasValue() => OnnxOp.OptionalHasElement(Imm);
 
         // IValue surface — forward to the backing Variable.

@@ -234,8 +234,8 @@ public class NullableParamTests
     }
 
     // ───────────────────────── value-struct handle (OptionalTensor) ─────────────────────────
-    // OptionalTensor<T> is now a value-type handle wrapping an Variable; these
-    // pin the conversion web, graph-identity preservation under boxing, and default materialisation.
+    // OptionalTensor<T> is now a value-type handle wrapping a Variable; these
+    // pin the conversion web, graph-identity preservation across conversion, and default materialisation.
 
     [Fact]
     public void OptionalTensorHandle_IsValueType()

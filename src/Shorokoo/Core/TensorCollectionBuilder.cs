@@ -39,9 +39,9 @@ namespace Shorokoo.Core
 
         internal VectorExpressionHelper(Vector<T> vector)
         {
-            if (vector.Imm.Rank == 0) { this.scalar = vector.Imm; }
-            else
-                this.vector = vector;
+            // A Vector<T> is always rank-1 (the Variable→Vector conversion enforces it), so it is
+            // stored as the vector arm directly.
+            this.vector = vector;
         }
 
         public static implicit operator VectorExpressionHelper<T>(Scalar<T> scalar) 

@@ -196,7 +196,7 @@ namespace Shorokoo.Core
                 // Create default tensor variables for each field (empty tensors)
                 var fieldVars = structDef.Fields.Select(f => {
                     // Create empty tensor based on field's element type and rank
-                    var shape = f.Rank.HasValue && f.Rank.Value == 0 ? Array.Empty<long>() : new long[] { 0 };
+                    long[] shape = f.Rank.HasValue && f.Rank.Value == 0 ? [] : [0];
                     return DefaultTensor(f.ElementType, shape);
                 }).ToArray();
                 
@@ -224,7 +224,7 @@ namespace Shorokoo.Core
                 return TensorSequence(dtype.AssertNotNull()); // Empty sequence
             }
 
-            throw new UnsupportedDTypeException(ErrorCodes.FW002, type.Name, "CreateDefaultValue", $"Unsupported type for default value creation. Supported types: Variable, Variable, Variable, Variable. Received: {type.Name}");
+            throw new UnsupportedDTypeException(ErrorCodes.FW002, type.Name, "CreateDefaultValue", $"Unsupported type for default value creation. Supported types: Tensor<T>, OptionalTensor<T>, TensorSequence<T>, TensorStruct<T>. Received: {type.Name}");
         }
 
         internal static Function CreateFunctionSignature(Type[] hyperparams, Type[] inputs, Type[] outputs)
@@ -499,7 +499,7 @@ namespace Shorokoo.Core
         }
 
         /// <summary>
-        /// Constructs a record/class instance implementing IStruct from an Variable,
+        /// Constructs a record/class instance implementing IStruct from a Variable,
         /// using TensorStructGetField operations to extract field values for the constructor.
         /// </summary>
         private static object ConstructStructFromTensorStruct(Type structType, Variable tensorStruct)
@@ -534,7 +534,7 @@ namespace Shorokoo.Core
                 // declared Tensor<U> (generic standin) or a general Tensor<T> over a low-rank value would
                 // not match the value's own rank-specific handle.
                 args[i] = InternalOp.TensorStructGetField(
-                        (Variable)tensorStruct,
+                        tensorStruct,
                         fieldDef.Name,
                         fieldDef.ElementType,
                         fieldDef.Rank,
@@ -569,7 +569,7 @@ namespace Shorokoo.Core
             if (retval is IModuleParam moduleParam)
                 return [moduleParam.ToVariable()];
 
-            // Handle TensorStructProxy (DispatchProxy wrapping an Variable).
+            // Handle TensorStructProxy (DispatchProxy wrapping a Variable).
             // When a module passes an IStruct interface object (created by DispatchProxy) to
             // another module's Call method, extract the backing TensorStruct Variable.
             if (retval is ITensorStructProxy proxy)
@@ -776,7 +776,7 @@ namespace Shorokoo.Core
                 else
                 {
                     throw new UnsupportedDTypeException(ErrorCodes.FW002, type.Name, "InfosFromTouts", 
-                        $"Unsupported type for InfosFromTouts. Supported types: Variable, Variable, Variable, Variable. Received: {type.Name}");
+                        $"Unsupported type for InfosFromTouts. Supported types: Tensor<T>, OptionalTensor<T>, TensorSequence<T>, TensorStruct<T>. Received: {type.Name}");
                 }
             }
 

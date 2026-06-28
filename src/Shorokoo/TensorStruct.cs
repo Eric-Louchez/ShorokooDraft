@@ -57,11 +57,15 @@ namespace Shorokoo
         public TField GetField<TField>(string name) where TField : IValue
             => Imm.Field(name).Cast<TField>();
 
-        public bool TryGetField(string name, out Variable? field) => Imm.Fields.TryGetValue(name, out field);
+        public bool TryGetField(string name, out Variable? field)
+        {
+            if (inner is null) { field = null; return false; }
+            return inner.Fields.TryGetValue(name, out field);
+        }
 
-        public IEnumerable<string> FieldNames => Imm.Fields.Keys;
+        public IEnumerable<string> FieldNames => inner?.Fields.Keys ?? [];
 
-        public IEnumerable<KeyValuePair<string, Variable>> AllFields => Imm.Fields;
+        public IEnumerable<KeyValuePair<string, Variable>> AllFields => inner?.Fields ?? [];
 
         internal TensorStruct<T> WithFields(ImmutableDictionary<string, Variable> newFields) => Imm.WithFields(newFields);
 

@@ -146,7 +146,7 @@ namespace Shorokoo.Core.Nodes
             where T : IVarType
         {
             var ifOpen = OnnxOp.IfOpen(condition);
-            var results = OnnxOp.IfClose([.. whenTrue.Select(t => (Variable)t)], [.. whenFalse.Select(t => (Variable)t)], ifOpen);
+            var results = OnnxOp.IfClose([.. whenTrue.Select(t => t.ToVariable())], [.. whenFalse.Select(t => t.ToVariable())], ifOpen);
 
             return (Variable)results[0];
         }
@@ -157,7 +157,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen(condition);
             var results = OnnxOp.IfClose([.. whenTrue.Select(t => t.ToVariable())], [.. whenFalse.Select(t => t.ToVariable())], ifOpen);
 
-            return (IValue<T>)results[0];
+            return (IValue<T>)results[0].ToValue();
         }
 
     }

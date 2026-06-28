@@ -19,7 +19,6 @@ using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using static Shorokoo.Core.Nodes.Ops;
 using static Shorokoo.Core.Nodes.AutoDiff.Ops;
-using static RandN.Distributions.Uniform;
 using Shorokoo.Core.Nodes.NodeDefinitions;
 using System.Collections.Immutable;
 using System.Linq;

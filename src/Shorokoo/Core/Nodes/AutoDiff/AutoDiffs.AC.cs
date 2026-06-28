@@ -240,8 +240,8 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             }
 
             // Step 4: Convert the result to Variable?[]. Gradient methods return either
-            //   - Variable?[] (most cases) — pass straight through, including when boxed
-            //     to a non-null array containing nulls
+            //   - Variable?[] (most cases) — pass straight through, including a non-null
+            //     array containing nulls
             //   - Variable? — handle both a non-null Variable and the all-inputs-non-
             //     differentiable case (e.g. ConstantOfShape returns null).
             if (result is null)

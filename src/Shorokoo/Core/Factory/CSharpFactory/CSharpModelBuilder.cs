@@ -1361,15 +1361,15 @@ public static class " + modelName + @"
 
                     if (keyword == "torank")
                     {
-                        if (output is not Variable tensor)
+                        if (output is not { Kind: DataStructure.Tensor } tensor)
                         {
                             result = result.Replace(fullPlaceholder, "");
                         }
                         else
                         {
-                            // Use Variable.Rank (output.Rank) which has more context than Variable.Rank (tensor.Rank)
-                            // Also check the node's InternalAttrRank attribute as a fallback for Identity nodes
-                            var rank = output.Rank ?? tensor.Rank;
+                            // tensor.Rank is the statically known rank; fall back to the node's
+                            // InternalAttrRank attribute for Identity nodes that don't carry one.
+                            var rank = tensor.Rank;
                             if (rank is null && attributes.IsAttributeDefined(InternalAttrRank) && !attributes.IsDefaultValue(InternalAttrRank))
                             {
                                 rank = (int?)attributes.GetLongVal(InternalAttrRank);
@@ -1391,7 +1391,7 @@ public static class " + modelName + @"
                     }
                     else if (keyword == "fromvar")
                     {
-                        if (output is not Variable tensor)
+                        if (output is not { Kind: DataStructure.Tensor } tensor)
                             result = result.Replace(fullPlaceholder, "");
                         else
                         {
