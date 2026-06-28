@@ -243,6 +243,48 @@ namespace Shorokoo
             return conv is not null ? (A)conv.Invoke(null, [this])! : (A)(object)this;
         }
 
+        /// <summary>
+        /// Wrap this graph value in its <em>natural</em> user-facing handle — the inverse of
+        /// <see cref="IValueExtensions.ToVariable"/> — chosen from the value's own structure, dtype and
+        /// rank: a tensor becomes <see cref="Scalar{T}"/> (rank 0), <see cref="Vector{T}"/> (rank 1) or
+        /// <see cref="Tensor{T}"/>; an optional / sequence / struct becomes <see cref="OptionalTensor{T}"/>
+        /// / <see cref="TensorSequence{T}"/> / <see cref="TensorStruct{T}"/>. Use <see cref="Cast{A}"/>
+        /// instead when the target handle type is known and may differ from the natural one (e.g. a rank-0
+        /// value that the caller wants as a general <c>Tensor&lt;T&gt;</c>).
+        /// </summary>
+        public IValue ToValue()
+        {
+            var handleType = NaturalHandleType();
+            // The target handle type is built at runtime, so the implicit operator(Variable) can't be
+            // applied directly; find and invoke it (validating structure/dtype/rank as a direct cast would).
+            var conv = VariableHandle.MatchingConverter(handleType, this.GetType())
+                ?? throw new InvalidTensorOperationException(ErrorCodes.CR001, "ToValue", handleType.Name,
+                    $"no implicit Variable conversion to handle '{handleType.Name}'");
+            return (IValue)conv.Invoke(null, [this])!;
+        }
+
+        // The handle type that mirrors this value's structure / dtype / rank.
+        private Type NaturalHandleType()
+        {
+            if (this.Kind == DataStructure.TensorStruct)
+                // A struct's element type is its field layout, not an IVarType; the handle's T is phantom
+                // (the implicit operator only checks the structural kind), so a generic carrier suffices.
+                return typeof(TensorStruct<>).MakeGenericType(typeof(IStruct));
+
+            var elem = this.Type.ToIVarType();
+            return this.Kind switch
+            {
+                DataStructure.Optional => typeof(OptionalTensor<>).MakeGenericType(elem),
+                DataStructure.Sequence => typeof(TensorSequence<>).MakeGenericType(elem),
+                _ => this.Rank switch                          // DataStructure.Tensor
+                {
+                    0 => typeof(Scalar<>).MakeGenericType(elem),
+                    1 => typeof(Vector<>).MakeGenericType(elem),
+                    _ => typeof(Tensor<>).MakeGenericType(elem),
+                },
+            };
+        }
+
         /// <summary>The structural kind of this graph value (graph-side mirror of <c>IValue.Structure()</c>).</summary>
         public DataStructure Structure() => this.Kind;
 

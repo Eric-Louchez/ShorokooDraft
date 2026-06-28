@@ -68,10 +68,10 @@ namespace Shorokoo.Core
             if (targetMethod.Name.StartsWith("get_") && (args == null || args.Length == 0))
             {
                 var fieldName = targetMethod.Name.Substring(4);
-                // The property return type is a value-struct handle; wrap the immutable graph value
-                // so the DispatchProxy can assign it (it cannot unbox an interface to a struct).
-                return Shorokoo.Core.VariableHandle.WrapForParam(
-                    GetOrCreateFieldVariable(fieldName, targetMethod.ReturnType), targetMethod.ReturnType);
+                // The property return type is a value-struct handle; wrap the field's graph value in its
+                // natural handle (its structure/rank is exactly the declared return shape) so the
+                // DispatchProxy can assign it (it cannot unbox an interface to a struct).
+                return GetOrCreateFieldVariable(fieldName, targetMethod.ReturnType).ToValue();
             }
 
             // IModuleParam.ToVariable support — convert to the backing Variable
