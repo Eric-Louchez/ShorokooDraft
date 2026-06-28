@@ -395,7 +395,7 @@ namespace Shorokoo.Core
             if (type.IsAssignableTo(typeof(ITensorStruct)))
             {
                 var (_, structDType) = StructDefExtractor.ExtractFromTensorStructType(type, "module input creation");
-                return WrapVariableAsModuleParam(InternalOp.TensorStructInput(structDType, inputType, targetFunction: null, defaultName: paramName), type);
+                return WrapVariableAsModuleParam(InternalOp.TensorStructInput(structDType, inputType, targetFunction: null, defaultName: paramName));
             }
 
             // Check for IStruct types (interfaces like RealGenericPairStruct<U, V> or records like GenericPairRecord<U, V>).
@@ -407,7 +407,7 @@ namespace Shorokoo.Core
             {
                 var structDef = StructDefExtractor.ExtractFromType(type);
                 var structDType = DType.GetOrCreateForTensorStruct(structDef);
-                return WrapVariableAsModuleParam(InternalOp.TensorStructInput(structDType, inputType, targetFunction: null, defaultName: paramName), type);
+                return WrapVariableAsModuleParam(InternalOp.TensorStructInput(structDType, inputType, targetFunction: null, defaultName: paramName));
             }
 
             var dtype = OnnxUtils.GetDType(type.GetGenericArguments()[0]);
@@ -420,15 +420,15 @@ namespace Shorokoo.Core
                     "Model and Module types are not supported as compute graph inputs");
 
             if (type.IsAssignableTo(typeof(ITensorSequence)))
-                return WrapVariableAsModuleParam(InternalOp.ModuleSequenceInput(dtype, inputType, null, paramName), type);
+                return WrapVariableAsModuleParam(InternalOp.ModuleSequenceInput(dtype, inputType, null, paramName));
             else if (type.IsAssignableTo(typeof(IOptionalTensor)))
-                return WrapVariableAsModuleParam(InternalOp.ModuleOptionalInput(dtype, inputType, null, paramName), type);
+                return WrapVariableAsModuleParam(InternalOp.ModuleOptionalInput(dtype, inputType, null, paramName));
             else if (type.IsAssignableTo(typeof(IScalar)))
-                return WrapVariableAsModuleParam(InternalOp.ModuleTensorInput(dtype, rank: 0, inputType, null, paramName, hyperDefaultValue), type);
+                return WrapVariableAsModuleParam(InternalOp.ModuleTensorInput(dtype, rank: 0, inputType, null, paramName, hyperDefaultValue));
             else if (type.IsAssignableTo(typeof(IVector)))
-                return WrapVariableAsModuleParam(InternalOp.ModuleTensorInput(dtype, rank: 1, inputType, null, paramName), type);
+                return WrapVariableAsModuleParam(InternalOp.ModuleTensorInput(dtype, rank: 1, inputType, null, paramName));
             else if (type.IsAssignableTo(typeof(ITensor)))
-                return WrapVariableAsModuleParam(InternalOp.ModuleTensorInput(dtype, rank: null, inputType, null, paramName), type);
+                return WrapVariableAsModuleParam(InternalOp.ModuleTensorInput(dtype, rank: null, inputType, null, paramName));
 
             throw new UnsupportedDTypeException(ErrorCodes.GC006, type.Name, "CreateComputeGraphInput",
                 $"Type '{type.FullName}' is not supported for compute graph input creation");
@@ -437,21 +437,12 @@ namespace Shorokoo.Core
         /// <summary>
         /// Wrap a freshly-built internal graph <paramref name="variable"/> into the user-facing
         /// <see cref="IModuleParam"/> handle a module body expects, so the internal <see cref="Variable"/>
-        /// never escapes across the module boundary. Tensor-family and <c>TensorStruct&lt;T&gt;</c> parameters
-        /// are themselves <see cref="IValue"/> handles; a bare <see cref="IStruct"/> interface/record parameter
-        /// has no handle of its own, so the variable rides inside a <c>TensorStruct&lt;T&gt;</c> carrier that
-        /// <c>InvokeAndFormat</c> unwraps.
+        /// never escapes across the module boundary. The node was built to match the declared parameter,
+        /// so its natural handle (<see cref="Variable.ToValue"/>) is the one the body expects; a bare
+        /// <see cref="IStruct"/> interface/record parameter has no handle of its own and rides inside the
+        /// resulting <c>TensorStruct&lt;T&gt;</c> handle, which <c>InvokeAndFormat</c> unwraps.
         /// </summary>
-        private static IModuleParam WrapVariableAsModuleParam(Variable variable, Type userType)
-        {
-            var carrier = typeof(IValue).IsAssignableFrom(userType)
-                ? userType
-                : typeof(TensorStruct<>).MakeGenericType(userType);
-            var conv = Shorokoo.Core.VariableHandle.MatchingConverter(carrier, variable.GetType())
-                ?? throw new InvalidTensorOperationException(ErrorCodes.GC006, "module input creation", userType.Name,
-                    $"no implicit Variable conversion to handle '{carrier.Name}'");
-            return (IModuleParam)conv.Invoke(null, [variable])!;
-        }
+        private static IModuleParam WrapVariableAsModuleParam(Variable variable) => variable.ToValue();
 
         /// <summary>
         /// Creates input module parameters from method parameter information.
@@ -567,15 +558,19 @@ namespace Shorokoo.Core
                         $"Cannot construct {structType.Name}: constructor parameter '{paramName}' does not match any field in TensorStructDef. " +
                         $"Available fields: {string.Join(", ", def.Fields.Select(f => f.Name))}");
 
-                // The record ctor parameters are value-struct handles; wrap the field's graph value in
-                // its natural handle so reflective Invoke can bind it (it does not apply the implicit
-                // conversion). The field's structure/rank is exactly the declared ctor-parameter shape.
-                args[i] = InternalOp.TensorStructGetField(
-                    (Variable)tensorStruct,
-                    fieldDef.Name,
-                    fieldDef.ElementType,
-                    fieldDef.Rank,
-                    fieldDef.Structure).ToValue();
+                // The record ctor parameters are value-struct handles; wrap the immutable field value
+                // so reflective Invoke can bind it (it does not apply the implicit conversion). This must
+                // be driven by the declared ctor-parameter type, not the value's natural handle: a field
+                // declared Tensor<U> (generic standin) or a general Tensor<T> over a low-rank value would
+                // not match the value's own rank-specific handle.
+                args[i] = Shorokoo.Core.VariableHandle.WrapForParam(
+                    InternalOp.TensorStructGetField(
+                        (Variable)tensorStruct,
+                        fieldDef.Name,
+                        fieldDef.ElementType,
+                        fieldDef.Rank,
+                        fieldDef.Structure),
+                    ctorParams[i].ParameterType)!;
             }
 
             return ctor.Invoke(args);

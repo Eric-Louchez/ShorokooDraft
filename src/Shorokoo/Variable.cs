@@ -248,15 +248,24 @@ namespace Shorokoo
         /// <see cref="IValueExtensions.ToVariable"/> — chosen from the value's own structure, dtype and
         /// rank: a tensor becomes <see cref="Scalar{T}"/> (rank 0), <see cref="Vector{T}"/> (rank 1) or
         /// <see cref="Tensor{T}"/>; an optional / sequence / struct becomes <see cref="OptionalTensor{T}"/>
-        /// / <see cref="TensorSequence{T}"/> / <see cref="TensorStruct{T}"/>. Use <see cref="Cast{A}"/>
+        /// / <see cref="TensorSequence{T}"/> / <see cref="TensorStruct{T}"/>. Use <see cref="Cast{A}()"/>
         /// instead when the target handle type is known and may differ from the natural one (e.g. a rank-0
         /// value that the caller wants as a general <c>Tensor&lt;T&gt;</c>).
         /// </summary>
-        public IValue ToValue()
+        public IValue ToValue() => WrapAs(NaturalHandleType());
+
+        /// <summary>
+        /// Wrap this graph value as a general <see cref="Tensor{T}"/> handle (rank-agnostic) over its own
+        /// element dtype — unlike <see cref="ToValue"/>, which narrows a rank-0 / rank-1 tensor to
+        /// <see cref="Scalar{T}"/> / <see cref="Vector{T}"/>. Only valid for tensor-structured values.
+        /// </summary>
+        public ITensor ToTensor() => (ITensor)WrapAs(typeof(Tensor<>).MakeGenericType(this.Type.ToIVarType()));
+
+        // Wrap this node in the given (runtime-built) handle type by finding and invoking its implicit
+        // operator(Variable) — the compiler can't apply it when the target type is only known at runtime.
+        // Validation (structure / dtype / rank) happens inside that operator, as for a direct cast.
+        private IValue WrapAs(Type handleType)
         {
-            var handleType = NaturalHandleType();
-            // The target handle type is built at runtime, so the implicit operator(Variable) can't be
-            // applied directly; find and invoke it (validating structure/dtype/rank as a direct cast would).
             var conv = VariableHandle.MatchingConverter(handleType, this.GetType())
                 ?? throw new InvalidTensorOperationException(ErrorCodes.CR001, "ToValue", handleType.Name,
                     $"no implicit Variable conversion to handle '{handleType.Name}'");
