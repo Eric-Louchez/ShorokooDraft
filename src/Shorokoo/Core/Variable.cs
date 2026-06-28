@@ -36,9 +36,10 @@ namespace Shorokoo.Core
     /// <see cref="Variable"/> is the graph's internal currency and deliberately does NOT implement
     /// <see cref="IValue"/>: a <c>Variable</c> is unambiguously a graph-side node, whereas an
     /// <see cref="IValue"/> is a user-side value-struct handle (such as <see cref="Tensor{T}"/>).
-    /// Handles convert to/from the backing node through their implicit operators (with reflective
-    /// fallbacks — <see cref="Cast{A}()"/>, <see cref="ToValue()"/>, <see cref="WrapForParam"/> — for the
-    /// boxed / runtime-type / interface cases).
+    /// An <see cref="IValue"/> and a <see cref="Variable"/> convert to each other through the handle's
+    /// implicit operators, with reflective fallbacks — <see cref="Cast{A}()"/>, <see cref="ToValue()"/>,
+    /// <see cref="ConvertForParam"/> — for converting between the two when the target type is known only at
+    /// runtime rather than statically.
     /// </para>
     /// </summary>
     public class Variable
@@ -135,24 +136,24 @@ namespace Shorokoo.Core
         public Tensor<V> As<V>() where V : IVarType => Tensor<V>.Reinterpret(this);
 
         /// <summary>
-        /// Wraps this graph node in the value-handle type <typeparamref name="A"/> — the generic form of
-        /// the implicit <c>Variable</c>→handle conversion, for call sites where the target handle type is
-        /// only known as a type parameter (so the compiler cannot apply the operator and a plain
-        /// <c>(A)this</c> would be an illegal struct unbox). Routes through the handle's validating
-        /// <c>op_Implicit</c>, so structure / dtype / rank are checked exactly as a direct cast would be.
+        /// Converts this <c>Variable</c> to the <see cref="IValue"/> type <typeparamref name="A"/> — the
+        /// generic form of the <c>Variable</c>→<c>IValue</c> conversion, for call sites where the target
+        /// <see cref="IValue"/> type is only known as a type parameter (so the compiler cannot apply the
+        /// operator). Routes through the validating <c>op_Implicit</c>, so structure / dtype / rank are
+        /// checked exactly as a direct cast would be.
         /// </summary>
         public A Cast<A>() where A : IValue
         {
-            // A is a type parameter, so the compiler can't apply the handle's implicit operator(Variable)
-            // here; find and invoke it. A plain (A)(object)this would unbox a Variable to a struct handle
-            // and throw, so that path remains only as a clear-error fallback when no converter exists.
+            // A is a type parameter, so the compiler can't apply the Variable→IValue operator here; find
+            // and invoke it. A plain (A)(object)this is a raw cast, not that conversion, so it would throw;
+            // it remains only as a clear-error fallback when no converter exists.
             var conv = MatchingConverter(typeof(A), this.GetType());
             return conv is not null ? (A)conv.Invoke(null, [this])! : (A)(object)this;
         }
 
         /// <summary>
-        /// Wrap this graph value in its <em>natural</em> user-facing handle — the inverse of
-        /// <see cref="IValueExtensions.ToVariable"/> — chosen from the value's own structure, dtype and
+        /// Convert this <c>Variable</c> to its <em>natural</em> user-facing <see cref="IValue"/> — the
+        /// inverse of <see cref="IValueExtensions.ToVariable"/> — chosen from the value's own structure, dtype and
         /// rank: a tensor becomes <see cref="Scalar{T}"/> (rank 0), <see cref="Vector{T}"/> (rank 1) or
         /// <see cref="Tensor{T}"/>; an optional / sequence / struct becomes <see cref="OptionalTensor{T}"/>
         /// / <see cref="TensorSequence{T}"/> / <see cref="TensorStruct{T}"/>.
@@ -170,14 +171,14 @@ namespace Shorokoo.Core
         public IValue ToValue(int? rank) => ToValue(NaturalHandleType(rank));
 
         /// <summary>
-        /// Wrap this graph value as a general <see cref="Tensor{T}"/> handle (rank-agnostic) over its own
+        /// Convert this <c>Variable</c> to a general <see cref="Tensor{T}"/> (rank-agnostic) over its own
         /// element dtype — unlike <see cref="ToValue()"/>, which narrows a rank-0 / rank-1 tensor to
         /// <see cref="Scalar{T}"/> / <see cref="Vector{T}"/>. Only valid for tensor-structured values.
         /// </summary>
         public ITensor ToTensor() => (ITensor)ToValue(typeof(Tensor<>).MakeGenericType(this.Type.ToIVarType()));
 
         /// <summary>
-        /// Wrap this graph value in the value-struct handle of the given <paramref name="type"/> — e.g.
+        /// Convert this <c>Variable</c> to the value-struct <see cref="IValue"/> of the given <paramref name="type"/> — e.g.
         /// <c>Tensor&lt;float32&gt;</c>, <c>Scalar&lt;int64&gt;</c>, or a nullable handle such as
         /// <c>Tensor&lt;float32&gt;?</c>. The handle's implicit <c>operator(Variable)</c> is found and
         /// invoked by reflection — the compiler can't apply it when the target is only a runtime
@@ -185,7 +186,7 @@ namespace Shorokoo.Core
         /// </summary>
         public IValue ToValue(Type type)
         {
-            // A handle may be declared nullable (Tensor<T>?); the wrapping value-struct is the underlying type.
+            // The IValue may be declared nullable (Tensor<T>?); the value-struct is the underlying type.
             var handleType = Nullable.GetUnderlyingType(type) ?? type;
             // Find the handle's `implicit operator handleType(Variable)`: a static op_Implicit returning the
             // handle, taking a single non-value-type (reference) parameter this Variable satisfies. (Its
@@ -226,43 +227,44 @@ namespace Shorokoo.Core
             };
         }
 
-        // ── Reflective Variable→handle wrapping (relocated from the former VariableHandle) ──
-        // Each handle's implicit operator(Variable) is found and invoked by reflection for the cases the
-        // compiler can't resolve statically: a generic Cast<A>, a runtime-built handle Type (ToValue /
-        // ToTensor), or MethodInfo.Invoke binding a graph value to a value-struct parameter (WrapForParam).
-        private static readonly ConcurrentDictionary<Type, MethodInfo[]> wrappers = new();
+        // ── Reflective Variable→IValue conversion (relocated from the former VariableHandle) ──
+        // Each handle's implicit operator(Variable) is found and invoked by reflection to convert a
+        // Variable to an IValue for the cases the compiler can't resolve statically: a generic Cast<A>, a
+        // runtime-built IValue Type (ToValue / ToTensor), or MethodInfo.Invoke binding a Variable to a
+        // value-struct parameter (ConvertForParam).
+        private static readonly ConcurrentDictionary<Type, MethodInfo[]> converters = new();
 
-        // The backing graph value: a struct handle unwrapped, a Variable as-is, or null for a
-        // defaulted/absent struct handle.
+        // Convert an IValue to its backing Variable (or pass a Variable through), or null for a
+        // defaulted/absent IValue.
         private static Variable? Normalize(object? value) => value is IValue h ? h.Immutable : value as Variable;
 
         /// <summary>
-        /// Wrap a graph value into a value-struct parameter type for reflective invocation
-        /// (<c>MethodInfo.Invoke</c> does not apply user-defined conversions). Non-struct or
-        /// already-matching parameters pass through unchanged.
+        /// Convert a <c>Variable</c> to the <see cref="IValue"/> the given parameter type expects, for
+        /// reflective invocation (<c>MethodInfo.Invoke</c> does not apply user-defined conversions).
+        /// Non-value-struct or already-matching parameters pass through unchanged.
         /// </summary>
-        internal static object? WrapForParam(object? value, Type paramType)
+        internal static object? ConvertForParam(object? value, Type paramType)
         {
             if (value is null)
                 return value;
 
             var imm = Normalize(value);
             if (imm is null)
-                // A defaulted/absent struct handle: hand back the value as-is (it already matches a
-                // struct-typed parameter; reflection boxes it).
+                // A defaulted/absent IValue: hand back the value as-is (it already matches the value-struct
+                // parameter).
                 return value;
 
-            // Parameter wants a Variable / interface — hand it the unwrapped graph value.
+            // Parameter wants a Variable / interface — hand it the Variable.
             if (paramType.IsInstanceOfType(imm))
                 return imm;
 
-            // Already the requested struct handle.
+            // Already the requested IValue.
             if (paramType.IsInstanceOfType(value))
                 return value;
 
-            // A struct handle parameter may be declared nullable (`Tensor<T>?`), which on a value
-            // type is Nullable<Tensor<T>>; convert to the underlying handle (reflection accepts a
-            // boxed T for a Nullable<T> parameter).
+            // The parameter may be declared nullable (`Tensor<T>?`), which on a value type is
+            // Nullable<Tensor<T>>; convert to the underlying IValue (reflection accepts the underlying T
+            // for a Nullable<T> parameter).
             var target = Nullable.GetUnderlyingType(paramType) ?? paramType;
             if (target.IsValueType && typeof(IValue).IsAssignableFrom(target))
             {
@@ -277,7 +279,7 @@ namespace Shorokoo.Core
         // The handle type's implicit operator(Variable), if one exists, for a value of valueType.
         internal static MethodInfo? MatchingConverter(Type handleType, Type valueType)
         {
-            var candidates = wrappers.GetOrAdd(handleType, FindImplicitWrappers);
+            var candidates = converters.GetOrAdd(handleType, FindImplicitConverters);
             foreach (var m in candidates)
             {
                 if (m.GetParameters()[0].ParameterType.IsAssignableFrom(valueType))
@@ -287,7 +289,7 @@ namespace Shorokoo.Core
         }
 
         // Implicit conversion operators that PRODUCE the handle type from a Variable value.
-        private static MethodInfo[] FindImplicitWrappers(Type handleType)
+        private static MethodInfo[] FindImplicitConverters(Type handleType)
         {
             var result = new List<MethodInfo>();
             foreach (var m in handleType.GetMethods(BindingFlags.Public | BindingFlags.Static))

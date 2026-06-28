@@ -39,8 +39,8 @@ namespace Shorokoo
 
         /// <summary>
         /// The backing graph-side <see cref="Variable"/> node this handle wraps, or <c>null</c> for a
-        /// defaulted/absent handle. Lets framework machinery recover the node from a boxed handle whose
-        /// concrete type has been erased (e.g. inside <see cref="Variable.WrapForParam"/>).
+        /// defaulted/absent handle. Lets framework machinery convert an <see cref="IValue"/> to its
+        /// <see cref="Variable"/> (e.g. inside <see cref="Variable.ConvertForParam"/>).
         /// </summary>
         Variable? Immutable { get; }
         
@@ -123,17 +123,17 @@ namespace Shorokoo
         // structure / dtype / rank it enforces — is visible at the site.
 
         /// <summary>Structure must always match: a <paramref name="variable"/>'s <see cref="Variable.Kind"/>
-        /// has to equal the <paramref name="kind"/> the handle represents.</summary>
+        /// has to equal the <paramref name="kind"/> the <see cref="IValue"/> represents.</summary>
         internal static void RequireKind(Variable variable, DataStructure kind)
         {
             if (variable.Kind != kind)
-                throw new InvalidTensorOperationException(ErrorCodes.CR011, "Variable→handle conversion",
+                throw new InvalidTensorOperationException(ErrorCodes.CR011, "Variable→IValue conversion",
                     variable.Kind.ToString(),
-                    $"cannot wrap a {variable.Kind} graph value in a {kind} handle — structure must match");
+                    $"cannot convert a {variable.Kind} Variable to a {kind} IValue — structure must match");
         }
 
         /// <summary>Reject an implicit element-type change: if both the <paramref name="variable"/>'s runtime
-        /// dtype and the handle's <paramref name="expected"/> dtype are concretely known and differ, wrapping
+        /// dtype and the <paramref name="expected"/> dtype are concretely known and differ, the conversion
         /// would silently reinterpret the value. Skipped when either side is a generic-placeholder, unmapped,
         /// or invalid dtype (e.g. inside a generic module before specialization).</summary>
         internal static void RequireDType(Variable variable, DType? expected)
@@ -142,22 +142,22 @@ namespace Shorokoo
                 && !expected.IsGenericType && !variable.Type.IsGenericType
                 && !expected.IsGenericTypeReference && !variable.Type.IsGenericTypeReference
                 && !variable.Type.Equals(expected))
-                throw new InvalidTensorOperationException(ErrorCodes.CR012, "Variable→handle conversion",
+                throw new InvalidTensorOperationException(ErrorCodes.CR012, "Variable→IValue conversion",
                     $"{variable.Type} as {expected}",
-                    $"element-type mismatch — wrapping a {variable.Type} graph value as a {expected} handle would silently " +
+                    $"element-type mismatch — converting a {variable.Type} Variable to a {expected} IValue would silently " +
                     $"reinterpret it; use Cast<{expected}>() to convert the dtype or As<{expected}>() to reinterpret");
         }
 
-        /// <summary>Adapt a <paramref name="variable"/> to a fixed-rank handle (<see cref="Scalar{T}"/> = 0,
+        /// <summary>Adapt a <paramref name="variable"/> to a fixed-rank <see cref="IValue"/> (<see cref="Scalar{T}"/> = 0,
         /// <see cref="Vector{T}"/> = 1): a matching rank passes through unchanged, an <b>unknown</b> rank is
         /// materialised with an <c>Identity</c> rank-conversion, and a known mismatch is an error.</summary>
         internal static Variable RequireRank(Variable variable, int rank)
         {
             if (variable.Rank == rank) return variable;
             if (variable.Rank is null) return OnnxOp.Identity(variable, rank);
-            throw new InvalidTensorOperationException(ErrorCodes.CR013, "Variable→handle conversion",
+            throw new InvalidTensorOperationException(ErrorCodes.CR013, "Variable→IValue conversion",
                 $"rank {variable.Rank} as rank {rank}",
-                $"cannot wrap a rank-{variable.Rank} tensor as a rank-{rank} handle");
+                $"cannot convert a rank-{variable.Rank} Variable to a rank-{rank} IValue");
         }
     }
 
@@ -213,7 +213,7 @@ namespace Shorokoo
 
         public static bool IsModelInput(this IValue var) => var.OwningNode.IsModelInput;
 
-        // Unwrap a module parameter to its graph-side Variable node. Handles (IValue) carry their
+        // Convert a module parameter to its graph-side Variable. Handles (IValue) carry their
         // backing node via IValue.Immutable; models/modules expose it through their *Variable handle.
         // A defaulted handle has no backing node (Immutable is null) — it stands for an absent value, so
         // materialise the established default for its kind/dtype/rank rather than failing.

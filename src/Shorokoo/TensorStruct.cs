@@ -35,7 +35,7 @@ namespace Shorokoo
         // The backing graph node, or null for a defaulted/absent handle (ToVariable materialises the default).
         Variable? IValue.Immutable => inner;
 
-        /// <summary>The wrapped immutable. A defaulted handle has no recoverable field layout, so this throws.</summary>
+        /// <summary>The backing Variable. A defaulted handle has no recoverable field layout, so this throws.</summary>
         internal readonly Variable Imm
             => inner ?? throw new InvalidOperationException(
                 "default(TensorStruct<T>) has no field layout; create one via a graph op (e.g. Globals.TensorStruct<T>(...)).");
@@ -71,7 +71,7 @@ namespace Shorokoo
         TensorStructDef ITensorStruct.Definition => Imm.Def;
         Variable ITensorStruct.GetField(string name) => Imm.Field(name);
 
-        // IValue surface — forward to the wrapped immutable.
+        // IValue surface — forward to the backing Variable.
         public Node OwningNode => Imm.OwningNode;
         public DType Type => Imm.Type;
         public Function? ModuleFn => Imm.ModuleFn;

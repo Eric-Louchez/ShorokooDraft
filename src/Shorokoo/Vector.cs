@@ -48,7 +48,7 @@ namespace Shorokoo
         // The backing graph node, or null for a defaulted/absent handle.
         Variable? IValue.Immutable => inner;
 
-        // ITensor contract — forward to the wrapped immutable.
+        // ITensor contract — forward to the backing Variable.
         public int? Rank => Imm.Rank;
         public Variable? InfShape => Imm.InfShape;
         public Vector<int64> DShape => Imm.DShape;

@@ -46,11 +46,11 @@ namespace Shorokoo
 
         Variable? IValue.Immutable => Imm;
 
-        /// <summary>The wrapped immutable, materialising an absent optional for a defaulted handle.</summary>
+        /// <summary>The backing Variable, materialising an absent optional for a defaulted handle.</summary>
         internal Variable Imm
             => inner ??= OnnxOp.Optional(null, DataStructure.Tensor, OnnxUtils.GetDType<T>());
 
-        // Wrap / unwrap between the handle and its immutable.
+        // Convert between the handle and its backing Variable.
         private static readonly DType? expectedDType = OnnxUtils.GetDType(typeof(T));
         public static implicit operator OptionalTensor<T>(Variable imm)
         {
@@ -75,7 +75,7 @@ namespace Shorokoo
         public Tensor<T> SequenceValue() => (Variable)Value();
         public Scalar<bit> HasValue() => OnnxOp.OptionalHasElement(Imm);
 
-        // IValue surface — forward to the wrapped immutable.
+        // IValue surface — forward to the backing Variable.
         public Node OwningNode => Imm.OwningNode;
         public DType Type => Imm.Type;
         public Function? ModuleFn => Imm.ModuleFn;

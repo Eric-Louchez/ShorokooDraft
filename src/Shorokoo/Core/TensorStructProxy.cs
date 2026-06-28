@@ -68,11 +68,11 @@ namespace Shorokoo.Core
             if (targetMethod.Name.StartsWith("get_") && (args == null || args.Length == 0))
             {
                 var fieldName = targetMethod.Name.Substring(4);
-                // The property return type is a value-struct handle; wrap the immutable graph value
-                // so the DispatchProxy can assign it (it cannot unbox an interface to a struct). This
-                // must be driven by the declared return type, not the value's natural handle (which may
-                // differ for a generic-standin or more general declared type).
-                return Variable.WrapForParam(
+                // The property return type is a value-struct IValue; convert the field's Variable to it
+                // so the DispatchProxy can assign it. This must be driven by the declared return type, not
+                // the value's natural handle (which may differ for a generic-standin or more general
+                // declared type).
+                return Variable.ConvertForParam(
                     GetOrCreateFieldVariable(fieldName, targetMethod.ReturnType), targetMethod.ReturnType);
             }
 

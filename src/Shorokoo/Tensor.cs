@@ -52,7 +52,7 @@ namespace Shorokoo
     }
 
     /// <summary>
-    /// Value-type handle for a tensor — the user-facing <c>Tensor&lt;T&gt;</c>. Wraps an
+    /// Value-type handle for a tensor — the user-facing <c>Tensor&lt;T&gt;</c>. Holds a
     /// <see cref="Variable"/> directly (value-copy semantics for the Module DSL) and
     /// carries the full op/operator surface. This pass only makes mutation possible — behaviour is
     /// unchanged (de-facto immutable). A defaulted handle materialises an empty rank-1 vector.
@@ -79,7 +79,7 @@ namespace Shorokoo
         /// and friends) that intentionally relabel the static element type without converting the value.</summary>
         internal static Tensor<T> Reinterpret(Variable node) => new Tensor<T> { inner = node };
 
-        // ITensor contract — forward to the wrapped immutable.
+        // ITensor contract — forward to the backing Variable.
         public int? Rank => Imm.Rank;
         public Variable? InfShape => Imm.InfShape;
         public Vector<int64> DShape => Imm.DShape;
@@ -90,7 +90,7 @@ namespace Shorokoo
         IScalar ITensor.Scalar() => (Scalar<T>)Imm.Scalar();
         Scalar<V> ITensor.Scalar<V>() => Imm.Cast<V>().Scalar();
 
-        // IValue surface — forward to the wrapped immutable.
+        // IValue surface — forward to the backing Variable.
         public Node OwningNode => Imm.OwningNode;
         public DType Type => Imm.Type;
         public Function? ModuleFn => Imm.ModuleFn;

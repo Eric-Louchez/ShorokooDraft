@@ -45,7 +45,7 @@ namespace Shorokoo
 
         Variable? IValue.Immutable => Imm;
 
-        /// <summary>The wrapped immutable, materialising an empty sequence for a defaulted handle.</summary>
+        /// <summary>The backing Variable, materialising an empty sequence for a defaulted handle.</summary>
         internal Variable Imm => inner ??= OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>());
 
         private static readonly DType? expectedDType = OnnxUtils.GetDType(typeof(T));
@@ -100,7 +100,7 @@ namespace Shorokoo
         ITensorSequence ITensorSequence.RemoveAt(Scalar<int64> index) => this.RemoveAt(index);
         ITensorSequence ITensorSequence.InsertAt(ITensor tensor, Scalar<int64> index) => this.InsertAt((Tensor<T>)tensor, index);
 
-        // IValue surface — forward to the wrapped immutable.
+        // IValue surface — forward to the backing Variable.
         public Node OwningNode => Imm.OwningNode;
         public DType Type => Imm.Type;
         public Function? ModuleFn => Imm.ModuleFn;

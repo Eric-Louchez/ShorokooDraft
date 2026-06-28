@@ -197,22 +197,22 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
             int paramIndex = 0;
 
-            // Add inputs (wrapping graph values into value-struct parameter types — reflective
-            // Invoke does not apply the immutable→struct implicit conversion), padding absent
+            // Add inputs (converting each Variable to the value-struct IValue the parameter expects —
+            // reflective Invoke does not apply the Variable→IValue implicit conversion), padding absent
             // trailing optional inputs with null.
             for (int j = 0; j < expectedInputCount; j++)
             {
                 var inputVal = j < inputs.Length ? inputs[j] : null;
                 paramValues[paramIndex] = inputVal is null
                     ? null
-                    : Variable.WrapForParam(inputVal, methodParams[paramIndex].ParameterType);
+                    : Variable.ConvertForParam(inputVal, methodParams[paramIndex].ParameterType);
                 paramIndex++;
             }
 
-            // Add output gradients (same wrapping).
+            // Add output gradients (same conversion).
             foreach (var output in outputs)
             {
-                paramValues[paramIndex] = Variable.WrapForParam(output, methodParams[paramIndex].ParameterType);
+                paramValues[paramIndex] = Variable.ConvertForParam(output, methodParams[paramIndex].ParameterType);
                 paramIndex++;
             }
             
