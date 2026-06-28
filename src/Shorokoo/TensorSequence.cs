@@ -20,7 +20,7 @@ using System.Runtime.CompilerServices;
 using static Shorokoo.Core.Nodes.Ops;
 using static Shorokoo.Core.Nodes.AutoDiff.Ops;
 
-namespace Shorokoo.Core
+namespace Shorokoo
 {
     public interface ITensorSequence : IValue
     {

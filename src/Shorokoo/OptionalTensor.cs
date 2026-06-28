@@ -19,7 +19,7 @@ using static Shorokoo.Core.Nodes.Ops;
 using static Shorokoo.Core.Nodes.AutoDiff.Ops;
 using Shorokoo;
 
-namespace Shorokoo.Core
+namespace Shorokoo
 {
     public interface IOptionalTensor : IValue
     {

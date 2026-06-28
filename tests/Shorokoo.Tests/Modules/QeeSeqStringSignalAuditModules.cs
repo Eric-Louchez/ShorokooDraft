@@ -48,7 +48,7 @@ namespace Shorokoo.Tests.Modules
             var erLast = (TensorSequence<float32>)OnnxOp.SequenceErase(ins);       // [t1,t3]
             var erLastAt = (Tensor<float32>)OnnxOp.SequenceAt(erLast, p1);
 
-            var empty = Shorokoo.Core.TensorSequence<float32>.CreateEmpty();
+            var empty = Shorokoo.TensorSequence<float32>.CreateEmpty();
             var emptyIns = empty.InsertAt(t1, null);                               // append → [t1]
 
             var mismatch =

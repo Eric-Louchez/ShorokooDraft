@@ -164,7 +164,7 @@ namespace Shorokoo.Tests.Modules
         {
             // Create an empty sequence with generic type T
             // This will create a SEQUENCE_EMPTY node with 'dtype' attribute set to T
-            var emptySeq = Shorokoo.Core.TensorSequence<T>.CreateEmpty();
+            var emptySeq = Shorokoo.TensorSequence<T>.CreateEmpty();
             
             // Append the element to the sequence
             var seq = emptySeq.Append(element);

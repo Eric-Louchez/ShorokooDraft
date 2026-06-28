@@ -186,7 +186,7 @@ namespace Shorokoo.Core.Factory.CSharpFactory
             {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(Shorokoo.Variable).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(Shorokoo.Core.Variable).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Float16).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(System.Collections.Immutable.ImmutableArray).Assembly.Location),
                 MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "System.Runtime.dll")), // Add System.Runtime
@@ -1007,7 +1007,7 @@ public static class " + modelName + @"
             // takes an ordered Variable[] (no field-name labels) and the inputs to the graph node
             // are already in that order.
             var fieldRefs = node.Inputs.Select(input => currentNames[input!]).ToList();
-            var fieldsArrayLiteral = $"new Shorokoo.Variable[] {{ {string.Join(", ", fieldRefs)} }}";
+            var fieldsArrayLiteral = $"new Shorokoo.Core.Variable[] {{ {string.Join(", ", fieldRefs)} }}";
 
             // Build the dtype expression. Prefer the static struct-type path
             // (StructDefExtractor.ExtractFromType<T>) when we have a simple, unqualified IStruct
