@@ -32,8 +32,8 @@ namespace Shorokoo
     {
         private Variable? inner;
 
-        // The backing graph node, or null for a defaulted/absent handle (ToVariable materialises the default).
-        Variable? IValue.Immutable => inner;
+        // Convert to the backing graph node, materialising the established default for a defaulted handle.
+        Variable IValue.ToVariable() => inner ?? Shorokoo.Core.ModuleHelper.DefaultVariable(typeof(TensorStruct<T>));
 
         /// <summary>The backing Variable. A defaulted handle has no recoverable field layout, so this throws.</summary>
         internal readonly Variable Imm

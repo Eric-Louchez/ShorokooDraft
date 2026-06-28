@@ -75,9 +75,9 @@ namespace Shorokoo.Core
                 return GetOrCreateFieldVariable(fieldName, targetMethod.ReturnType).ToValue(targetMethod.ReturnType);
             }
 
-            // IModuleParam.ToVariable support — convert to the backing Variable
+            // IValue.ToVariable support — convert to the backing Variable
             // This shouldn't normally be called on the proxy, but handle it for safety
-            if (targetMethod.Name == "ToVariable" && targetMethod.DeclaringType == typeof(IModuleParam))
+            if (targetMethod.Name == "ToVariable" && targetMethod.DeclaringType == typeof(IValue))
             {
                 return _backingTensorStruct;
             }

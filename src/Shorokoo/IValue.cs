@@ -38,11 +38,11 @@ namespace Shorokoo
         public Function? ModuleFn { get; }
 
         /// <summary>
-        /// The backing graph-side <see cref="Variable"/> node this handle wraps, or <c>null</c> for a
-        /// defaulted/absent handle. Lets framework machinery convert an <see cref="IValue"/> to its
-        /// <see cref="Variable"/> (e.g. inside <see cref="IValueExtensions.ToVariable"/>).
+        /// Convert this handle to its graph-side <see cref="Variable"/> — the IValue→Variable direction
+        /// (inverse of <see cref="Variable.ToValue()"/>). A defaulted/absent handle has no backing node, so
+        /// it materialises the established default for its kind/dtype/rank rather than failing.
         /// </summary>
-        Variable? Immutable { get; }
+        Variable ToVariable();
         
         /// <summary>
         /// The unique name for this tensor. Defaults to Key.ToString() but can be set to human-readable
@@ -213,16 +213,15 @@ namespace Shorokoo
 
         public static bool IsModelInput(this IValue var) => var.OwningNode.IsModelInput;
 
-        // Convert a module parameter to its graph-side Variable. Handles (IValue) carry their
-        // backing node via IValue.Immutable; models/modules expose it through their *Variable handle.
-        // A defaulted handle has no backing node (Immutable is null) — it stands for an absent value, so
-        // materialise the established default for its kind/dtype/rank rather than failing.
+        // Convert a module parameter to its graph-side Variable. Value handles convert themselves via
+        // IValue.ToVariable() (which materialises the established default for a defaulted/absent handle);
+        // models/modules expose their node through their *Variable handle.
         internal static Variable ToVariable(this IModuleParam param) =>
                         param switch
                         {
                             IModel model => (Variable)model.ModelVariable,
                             IModule module => (Variable)module.ModuleVariable,
-                            IValue handle => handle.Immutable ?? Shorokoo.Core.ModuleHelper.DefaultVariable(handle.GetType()),
+                            IValue handle => handle.ToVariable(),
                             _ => throw new InvalidTensorOperationException(ErrorCodes.CR001, "ToVariable", param?.GetType()?.Name ?? "null",
                                         "Invalid IModuleParam type for variable conversion"),
                         };

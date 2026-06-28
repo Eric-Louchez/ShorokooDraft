@@ -44,7 +44,8 @@ namespace Shorokoo
     {
         private Variable? inner;
 
-        Variable? IValue.Immutable => Imm;
+        // Imm materialises an absent optional for a defaulted handle, which is its established default.
+        Variable IValue.ToVariable() => Imm;
 
         /// <summary>The backing Variable, materialising an absent optional for a defaulted handle.</summary>
         internal Variable Imm

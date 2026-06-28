@@ -45,8 +45,8 @@ namespace Shorokoo
         public static implicit operator Variable(Vector<T> h) => h.Imm;
         public static implicit operator Tensor<T>(Vector<T> h) => h.Imm;
 
-        // The backing graph node, or null for a defaulted/absent handle.
-        Variable? IValue.Immutable => inner;
+        // Convert to the backing graph node, materialising the established default for a defaulted handle.
+        Variable IValue.ToVariable() => inner ?? Shorokoo.Core.ModuleHelper.DefaultVariable(typeof(Vector<T>));
 
         // ITensor contract — forward to the backing Variable.
         public int? Rank => Imm.Rank;

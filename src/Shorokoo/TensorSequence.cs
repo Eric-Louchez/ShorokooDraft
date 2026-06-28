@@ -43,7 +43,8 @@ namespace Shorokoo
     {
         private Variable? inner;
 
-        Variable? IValue.Immutable => Imm;
+        // Imm materialises an empty sequence for a defaulted handle, which is its established default.
+        Variable IValue.ToVariable() => Imm;
 
         /// <summary>The backing Variable, materialising an empty sequence for a defaulted handle.</summary>
         internal Variable Imm => inner ??= OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>());
