@@ -142,14 +142,9 @@ namespace Shorokoo.Core
         /// operator). Routes through the validating <c>op_Implicit</c>, so structure / dtype / rank are
         /// checked exactly as a direct cast would be.
         /// </summary>
-        public A Cast<A>() where A : IValue
-        {
-            // A is a type parameter, so the compiler can't apply the Variable→IValue operator here; find
-            // and invoke it. A plain (A)(object)this is a raw cast, not that conversion, so it would throw;
-            // it remains only as a clear-error fallback when no converter exists.
-            var conv = MatchingConverter(typeof(A), this.GetType());
-            return conv is not null ? (A)conv.Invoke(null, [this])! : (A)(object)this;
-        }
+        // A is a type parameter, so the compiler can't apply the Variable→IValue operator; ToValue(Type)
+        // finds and invokes it at runtime. The result's runtime type is A, so the (A) cast just unboxes it.
+        public A Cast<A>() where A : IValue => (A)ToValue(typeof(A));
 
         /// <summary>
         /// Convert this <c>Variable</c> to its <em>natural</em> user-facing <see cref="IValue"/> — the
@@ -188,20 +183,10 @@ namespace Shorokoo.Core
         {
             // The IValue may be declared nullable (Tensor<T>?); the value-struct is the underlying type.
             var handleType = Nullable.GetUnderlyingType(type) ?? type;
-            // Find the handle's `implicit operator handleType(Variable)`: a static op_Implicit returning the
-            // handle, taking a single non-value-type (reference) parameter this Variable satisfies. (Its
-            // handle->handle / handle->Variable operators take a struct or return a different type, so are skipped.)
-            foreach (var op in handleType.GetMethods(BindingFlags.Public | BindingFlags.Static))
-            {
-                if (op.Name != "op_Implicit" || op.ReturnType != handleType)
-                    continue;
-                var ps = op.GetParameters();
-                if (ps.Length == 1 && !ps[0].ParameterType.IsValueType
-                    && ps[0].ParameterType.IsAssignableFrom(this.GetType()))
-                    return (IValue)op.Invoke(null, [this])!;
-            }
-            throw new InvalidTensorOperationException(ErrorCodes.CR001, "ToValue", handleType.Name,
-                $"no implicit Variable conversion to handle '{handleType.Name}'");
+            var conv = MatchingConverter(handleType, this.GetType())
+                ?? throw new InvalidTensorOperationException(ErrorCodes.CR001, "ToValue", handleType.Name,
+                    $"no implicit Variable conversion to handle '{handleType.Name}'");
+            return (IValue)conv.Invoke(null, [this])!;
         }
 
         // The handle type that mirrors this value's structure / dtype, with the tensor handle chosen by
