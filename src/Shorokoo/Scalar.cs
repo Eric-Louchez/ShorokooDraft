@@ -41,6 +41,9 @@ namespace Shorokoo
         public static implicit operator Variable(Scalar<T> h) => h.Imm;
         public static implicit operator Tensor<T>(Scalar<T> h) => h.Imm;
 
+        // The backing graph node, or null for a defaulted/absent handle.
+        Variable? IValue.Immutable => inner;
+
         // ITensor contract — forward to the wrapped immutable.
         public int? Rank => Imm.Rank;
         public Variable? InfShape => Imm.InfShape;

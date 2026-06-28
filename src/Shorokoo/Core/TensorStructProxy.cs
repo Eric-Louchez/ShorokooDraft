@@ -72,7 +72,7 @@ namespace Shorokoo.Core
                 // so the DispatchProxy can assign it (it cannot unbox an interface to a struct). This
                 // must be driven by the declared return type, not the value's natural handle (which may
                 // differ for a generic-standin or more general declared type).
-                return Shorokoo.Core.VariableHandle.WrapForParam(
+                return Variable.WrapForParam(
                     GetOrCreateFieldVariable(fieldName, targetMethod.ReturnType), targetMethod.ReturnType);
             }
 

@@ -72,6 +72,9 @@ namespace Shorokoo
         }
         public static implicit operator Variable(Tensor<T> h) => h.Imm;
 
+        // The backing graph node, or null for a defaulted/absent handle.
+        Variable? IValue.Immutable => inner;
+
         /// <summary>Wrap a node as this handle WITHOUT validation — for dtype reinterprets (<c>As&lt;V&gt;</c>
         /// and friends) that intentionally relabel the static element type without converting the value.</summary>
         internal static Tensor<T> Reinterpret(Variable node) => new Tensor<T> { inner = node };

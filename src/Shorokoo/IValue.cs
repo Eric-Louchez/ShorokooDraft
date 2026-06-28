@@ -40,7 +40,7 @@ namespace Shorokoo
         /// <summary>
         /// The backing graph-side <see cref="Variable"/> node this handle wraps, or <c>null</c> for a
         /// defaulted/absent handle. Lets framework machinery recover the node from a boxed handle whose
-        /// concrete type has been erased (see <see cref="Shorokoo.Core.VariableHandle.Normalize"/>).
+        /// concrete type has been erased (e.g. inside <see cref="Variable.WrapForParam"/>).
         /// </summary>
         Variable? Immutable { get; }
         
@@ -215,14 +215,14 @@ namespace Shorokoo
 
         // Unwrap a module parameter to its graph-side Variable node. Handles (IValue) carry their
         // backing node via IValue.Immutable; models/modules expose it through their *Variable handle.
+        // A defaulted handle has no backing node (Immutable is null) — it stands for an absent value, so
+        // materialise the established default for its kind/dtype/rank rather than failing.
         internal static Variable ToVariable(this IModuleParam param) =>
                         param switch
                         {
                             IModel model => (Variable)model.ModelVariable,
                             IModule module => (Variable)module.ModuleVariable,
-                            IValue handle => handle.Immutable
-                                 ?? throw new InvalidTensorOperationException(ErrorCodes.CR001, "ToVariable", param.GetType().Name,
-                                        "Invalid IModuleParam type for variable conversion"),
+                            IValue handle => handle.Immutable ?? Shorokoo.Core.ModuleHelper.DefaultVariable(handle.GetType()),
                             _ => throw new InvalidTensorOperationException(ErrorCodes.CR001, "ToVariable", param?.GetType()?.Name ?? "null",
                                         "Invalid IModuleParam type for variable conversion"),
                         };

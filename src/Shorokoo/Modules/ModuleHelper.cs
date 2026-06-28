@@ -205,8 +205,11 @@ namespace Shorokoo.Core
 
             if (type.IsAssignableTo(typeof(ITensor)))
             {
-                var dtype = OnnxUtils.GetDType(type.GenericTypeArguments[0]);
-                return DefaultTensor(dtype.AssertNotNull(), [0]); // Empty vector.
+                var dtype = OnnxUtils.GetDType(type.GenericTypeArguments[0]).AssertNotNull();
+                // A scalar (rank 0) defaults to a zero scalar; a vector / general tensor (rank >= 1 or
+                // unknown) to a zero-length vector.
+                long[] shape = type.IsAssignableTo(typeof(IScalar)) ? [] : [0];
+                return DefaultTensor(dtype, shape);
             }
 
             if (type.IsAssignableTo(typeof(IOptionalTensor)))
@@ -438,7 +441,7 @@ namespace Shorokoo.Core
         /// Wrap a freshly-built internal graph <paramref name="variable"/> into the user-facing
         /// <see cref="IModuleParam"/> handle a module body expects, so the internal <see cref="Variable"/>
         /// never escapes across the module boundary. The node was built to match the declared parameter,
-        /// so its natural handle (<see cref="Variable.ToValue"/>) is the one the body expects; a bare
+        /// so its natural handle (<see cref="Variable.ToValue()"/>) is the one the body expects; a bare
         /// <see cref="IStruct"/> interface/record parameter has no handle of its own and rides inside the
         /// resulting <c>TensorStruct&lt;T&gt;</c> handle, which <c>InvokeAndFormat</c> unwraps.
         /// </summary>
@@ -472,7 +475,7 @@ namespace Shorokoo.Core
                     && paramType != typeof(IStruct)
                     && paramType != typeof(IVarType)
                     && !typeof(IValue).IsAssignableFrom(paramType)
-                    && inputs[i] is IValue structCarrier && structCarrier.Immutable is Variable tensorStruct)
+                    && inputs[i] is IValue structCarrier && structCarrier.ToVariable() is Variable tensorStruct)
                 {
                     if (paramType.IsInterface)
                     {
@@ -563,7 +566,7 @@ namespace Shorokoo.Core
                 // be driven by the declared ctor-parameter type, not the value's natural handle: a field
                 // declared Tensor<U> (generic standin) or a general Tensor<T> over a low-rank value would
                 // not match the value's own rank-specific handle.
-                args[i] = Shorokoo.Core.VariableHandle.WrapForParam(
+                args[i] = Variable.WrapForParam(
                     InternalOp.TensorStructGetField(
                         (Variable)tensorStruct,
                         fieldDef.Name,
@@ -622,8 +625,8 @@ namespace Shorokoo.Core
                     if (prop == null)
                         throw new InvalidOperationException(
                             $"Property '{def.Fields[i].Name}' not found on type '{structType.Name}'");
-                    // The IStruct field is a value handle (IValue); read its backing node directly.
-                    fieldValues[i] = ((IValue)prop.GetValue(retval)!).Immutable!;
+                    // The IStruct field is a value handle (IValue); unwrap it to its backing node.
+                    fieldValues[i] = ((IValue)prop.GetValue(retval)!).ToVariable();
                 }
 
                 return [InternalOp.TensorStructCreate(dtype, fieldValues)];

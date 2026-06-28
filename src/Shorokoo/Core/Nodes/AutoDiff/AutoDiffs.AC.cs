@@ -205,14 +205,14 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 var inputVal = j < inputs.Length ? inputs[j] : null;
                 paramValues[paramIndex] = inputVal is null
                     ? null
-                    : Shorokoo.Core.VariableHandle.WrapForParam(inputVal, methodParams[paramIndex].ParameterType);
+                    : Variable.WrapForParam(inputVal, methodParams[paramIndex].ParameterType);
                 paramIndex++;
             }
 
             // Add output gradients (same wrapping).
             foreach (var output in outputs)
             {
-                paramValues[paramIndex] = Shorokoo.Core.VariableHandle.WrapForParam(output, methodParams[paramIndex].ParameterType);
+                paramValues[paramIndex] = Variable.WrapForParam(output, methodParams[paramIndex].ParameterType);
                 paramIndex++;
             }
             

@@ -32,7 +32,8 @@ namespace Shorokoo
     {
         private Variable? inner;
 
-        Variable? IValue.Immutable => Imm;
+        // The backing graph node, or null for a defaulted/absent handle (ToVariable materialises the default).
+        Variable? IValue.Immutable => inner;
 
         /// <summary>The wrapped immutable. A defaulted handle has no recoverable field layout, so this throws.</summary>
         internal readonly Variable Imm

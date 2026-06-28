@@ -71,7 +71,7 @@ namespace Shorokoo.Tests.Utils
                                 (csharpResults is IValue[] arrayOut) ? arrayOut :
                                 tupleToArray(csharpResults); // Treat it as a tuple.
 
-                var csRoundtrip = new FastComputationGraph([], [.. csharpOutputs.Select(o => o.Immutable!)]);
+                var csRoundtrip = new FastComputationGraph([], [.. csharpOutputs.Select(o => o.ToVariable())]);
                 var resultC = context.Execute(csRoundtrip);
                 csResults = resultC.Select(x => x.ToTensorData().AccessRawMemory().ToArray()).ToArray();
             }

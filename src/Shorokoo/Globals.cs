@@ -162,16 +162,10 @@ namespace Shorokoo
         /// </exception>
         public static void StateUpdate<T>(T originalState, T updatedState) where T : IValue
         {
-            // Unwrap the user-facing handles to their backing graph-side Variable nodes.
-            var originalVar = originalState.Immutable;
-            var updatedVar = updatedState.Immutable;
-
-            if (originalVar is null || updatedVar is null)
-            {
-                throw new InvalidStateUpdateException(ErrorCodes.SU003,
-                    originalVar is null ? "originalState" : "updatedState",
-                    "both arguments must be non-null graph tensors. " + StateUpdateGuidance);
-            }
+            // Unwrap the user-facing handles to their backing graph-side Variable nodes. A defaulted
+            // handle materialises a default node, which then fails the state-variable check below (SU001).
+            var originalVar = originalState.ToVariable();
+            var updatedVar = updatedState.ToVariable();
 
             // Resolve the node that actually produced the state, tracing through the Identity
             // nodes that rank casts like .Vec() / .Scalar() insert.
