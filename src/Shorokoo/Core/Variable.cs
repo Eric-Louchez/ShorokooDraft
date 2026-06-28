@@ -37,9 +37,9 @@ namespace Shorokoo.Core
     /// <see cref="IValue"/>: a <c>Variable</c> is unambiguously a graph-side node, whereas an
     /// <see cref="IValue"/> is a user-side value-struct handle (such as <see cref="Tensor{T}"/>).
     /// An <see cref="IValue"/> and a <see cref="Variable"/> convert to each other through the handle's
-    /// implicit operators, with reflective fallbacks — <see cref="Cast{A}()"/>, <see cref="ToValue()"/>,
-    /// <see cref="ConvertForParam"/> — for converting between the two when the target type is known only at
-    /// runtime rather than statically.
+    /// implicit operators, with reflective fallbacks — <see cref="Cast{A}()"/> and
+    /// <see cref="ToValue(System.Type)"/> — for converting between the two when the target type is known
+    /// only at runtime rather than statically.
     /// </para>
     /// </summary>
     public class Variable
@@ -229,57 +229,14 @@ namespace Shorokoo.Core
 
         // ── Reflective Variable→IValue conversion (relocated from the former VariableHandle) ──
         // Each handle's implicit operator(Variable) is found and invoked by reflection to convert a
-        // Variable to an IValue for the cases the compiler can't resolve statically: a generic Cast<A>, a
-        // runtime-built IValue Type (ToValue / ToTensor), or MethodInfo.Invoke binding a Variable to a
-        // value-struct parameter (ConvertForParam).
-        private static readonly ConcurrentDictionary<Type, MethodInfo[]> converters = new();
-
-        // Convert an IValue to its backing Variable (or pass a Variable through), or null for a
-        // defaulted/absent IValue.
-        private static Variable? Normalize(object? value) => value is IValue h ? h.Immutable : value as Variable;
-
-        /// <summary>
-        /// Convert a <c>Variable</c> to the <see cref="IValue"/> the given parameter type expects, for
-        /// reflective invocation (<c>MethodInfo.Invoke</c> does not apply user-defined conversions).
-        /// Non-value-struct or already-matching parameters pass through unchanged.
-        /// </summary>
-        internal static object? ConvertForParam(object? value, Type paramType)
-        {
-            if (value is null)
-                return value;
-
-            var imm = Normalize(value);
-            if (imm is null)
-                // A defaulted/absent IValue: hand back the value as-is (it already matches the value-struct
-                // parameter).
-                return value;
-
-            // Parameter wants a Variable / interface — hand it the Variable.
-            if (paramType.IsInstanceOfType(imm))
-                return imm;
-
-            // Already the requested IValue.
-            if (paramType.IsInstanceOfType(value))
-                return value;
-
-            // The parameter may be declared nullable (`Tensor<T>?`), which on a value type is
-            // Nullable<Tensor<T>>; convert to the underlying IValue (reflection accepts the underlying T
-            // for a Nullable<T> parameter).
-            var target = Nullable.GetUnderlyingType(paramType) ?? paramType;
-            if (target.IsValueType && typeof(IValue).IsAssignableFrom(target))
-            {
-                var conv = MatchingConverter(target, imm.GetType());
-                if (conv != null)
-                    return conv.Invoke(null, [imm]);
-            }
-
-            return value;
-        }
+        // Variable to an IValue for the cases the compiler can't resolve statically: a generic Cast<A> or
+        // a runtime-built IValue Type (ToValue).
+        private static readonly ConcurrentDictionary<Type, MethodInfo[]> implicitCasts = new();
 
         // The handle type's implicit operator(Variable), if one exists, for a value of valueType.
         internal static MethodInfo? MatchingConverter(Type handleType, Type valueType)
         {
-            var candidates = converters.GetOrAdd(handleType, FindImplicitConverters);
+            var candidates = implicitCasts.GetOrAdd(handleType, FindImplicitCasts);
             foreach (var m in candidates)
             {
                 if (m.GetParameters()[0].ParameterType.IsAssignableFrom(valueType))
@@ -289,7 +246,7 @@ namespace Shorokoo.Core
         }
 
         // Implicit conversion operators that PRODUCE the handle type from a Variable value.
-        private static MethodInfo[] FindImplicitConverters(Type handleType)
+        private static MethodInfo[] FindImplicitCasts(Type handleType)
         {
             var result = new List<MethodInfo>();
             foreach (var m in handleType.GetMethods(BindingFlags.Public | BindingFlags.Static))

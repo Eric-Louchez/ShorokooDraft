@@ -203,16 +203,14 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             for (int j = 0; j < expectedInputCount; j++)
             {
                 var inputVal = j < inputs.Length ? inputs[j] : null;
-                paramValues[paramIndex] = inputVal is null
-                    ? null
-                    : Variable.ConvertForParam(inputVal, methodParams[paramIndex].ParameterType);
+                paramValues[paramIndex] = inputVal?.ToValue(methodParams[paramIndex].ParameterType);
                 paramIndex++;
             }
 
             // Add output gradients (same conversion).
             foreach (var output in outputs)
             {
-                paramValues[paramIndex] = Variable.ConvertForParam(output, methodParams[paramIndex].ParameterType);
+                paramValues[paramIndex] = output?.ToValue(methodParams[paramIndex].ParameterType);
                 paramIndex++;
             }
             

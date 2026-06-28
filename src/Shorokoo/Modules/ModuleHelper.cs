@@ -402,7 +402,7 @@ namespace Shorokoo.Core
             }
 
             // Check for IStruct types (interfaces like RealGenericPairStruct<U, V> or records like GenericPairRecord<U, V>).
-            // These define tensor struct field shapes — not TensorStruct<T> converters — and have no value handle
+            // These define tensor struct field shapes — not TensorStruct<T> handles — and have no value handle
             // of their own. The created node rides inside a TensorStruct<T> carrier (handed across the module
             // boundary as an IModuleParam); InvokeAndFormat converts it back to the Variable and wraps that in a DispatchProxy
             // (for interfaces) or constructs via the record constructor before passing to method.Invoke.
@@ -556,14 +556,13 @@ namespace Shorokoo.Core
                 // be driven by the declared ctor-parameter type, not the value's natural handle: a field
                 // declared Tensor<U> (generic standin) or a general Tensor<T> over a low-rank value would
                 // not match the value's own rank-specific handle.
-                args[i] = Variable.ConvertForParam(
-                    InternalOp.TensorStructGetField(
+                args[i] = InternalOp.TensorStructGetField(
                         (Variable)tensorStruct,
                         fieldDef.Name,
                         fieldDef.ElementType,
                         fieldDef.Rank,
-                        fieldDef.Structure),
-                    ctorParams[i].ParameterType)!;
+                        fieldDef.Structure)
+                    .ToValue(ctorParams[i].ParameterType);
             }
 
             return ctor.Invoke(args);
@@ -643,7 +642,7 @@ namespace Shorokoo.Core
 
         // Variable → targetType via the handle's op_Implicit(Variable), lifting through Nullable&lt;&gt;
         // for a nullable handle slot (e.g. a Tensor&lt;float32&gt;? tuple element). Building block for the
-        // compiled converters in ReformatImpl&lt;T&gt;.
+        // compiled delegates in ReformatImpl&lt;T&gt;.
         private static E NodeToHandle(E node, Type targetType)
         {
             var underlying = Nullable.GetUnderlyingType(targetType);

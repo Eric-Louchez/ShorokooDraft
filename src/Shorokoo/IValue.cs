@@ -40,7 +40,7 @@ namespace Shorokoo
         /// <summary>
         /// The backing graph-side <see cref="Variable"/> node this handle wraps, or <c>null</c> for a
         /// defaulted/absent handle. Lets framework machinery convert an <see cref="IValue"/> to its
-        /// <see cref="Variable"/> (e.g. inside <see cref="Variable.ConvertForParam"/>).
+        /// <see cref="Variable"/> (e.g. inside <see cref="IValueExtensions.ToVariable"/>).
         /// </summary>
         Variable? Immutable { get; }
         

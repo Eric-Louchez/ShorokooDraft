@@ -72,8 +72,7 @@ namespace Shorokoo.Core
                 // so the DispatchProxy can assign it. This must be driven by the declared return type, not
                 // the value's natural handle (which may differ for a generic-standin or more general
                 // declared type).
-                return Variable.ConvertForParam(
-                    GetOrCreateFieldVariable(fieldName, targetMethod.ReturnType), targetMethod.ReturnType);
+                return GetOrCreateFieldVariable(fieldName, targetMethod.ReturnType).ToValue(targetMethod.ReturnType);
             }
 
             // IModuleParam.ToVariable support — convert to the backing Variable
