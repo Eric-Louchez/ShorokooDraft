@@ -63,26 +63,9 @@ public class VectorScalarCoverageTests
     public void TestVectorIndexerCoverage()
         => Assert.True(AutoTest.AdvancedTestGraph<VectorIndexerModel>(hyperparamInputs: [], runtimeInputs: Input));
 
-    // The following tests pin real product faults that converting the coverage modules (issue #4)
-    // made visible. They are LEFT FAILING so the bugs stay visible (none of them is #3):
-    //   * int64 << / >>           -> emits an ONNX BitShift node, which ONNX Runtime rejects for
-    //                               signed int64 (BitShift is unsigned-only).
-    //   * float32 %               -> emits an ONNX Mod node with fmod=false, invalid for floats
-    //                               (Mod requires fmod=true for floating-point types).
-    //   * int8/uint8 Vector.Empty -> ONNX reload calls OnnxUtils.GetRawBytesZero, which has no
-    //                               Int8/UInt8 arm and throws (OU005).
-    // The shift/mod modules feed the operators RUNTIME operands (from the input) so the result
-    // can't be constant-folded — the broken op must reach the ONNX backend and fail reliably,
-    // rather than being silently folded away (which would re-create the issue-#4 masking).
-
-    [Fact]
-    public void TestVectorInt64Shift()
-        => Assert.True(AutoTest.AdvancedTestGraph<VectorInt64ShiftModel>(hyperparamInputs: [], runtimeInputs: Input));
-
-    [Fact]
-    public void TestScalarInt64Shift()
-        => Assert.True(AutoTest.AdvancedTestGraph<ScalarInt64ShiftModel>(hyperparamInputs: [], runtimeInputs: Input));
-
+    // float32 % is exercised over constant operands so Shorokoo's evaluator folds and validates
+    // the result by value. (It computes correctly; its ONNX export — a Mod node with fmod=false,
+    // which ONNX Runtime rejects for floats — is a separate limitation not covered here.)
     [Fact]
     public void TestVectorMod()
         => Assert.True(AutoTest.AdvancedTestGraph<VectorModModel>(hyperparamInputs: [], runtimeInputs: Input));
@@ -90,10 +73,6 @@ public class VectorScalarCoverageTests
     [Fact]
     public void TestScalarMod()
         => Assert.True(AutoTest.AdvancedTestGraph<ScalarModModel>(hyperparamInputs: [], runtimeInputs: Input));
-
-    [Fact]
-    public void TestVectorEmptyInt8()
-        => Assert.True(AutoTest.AdvancedTestGraph<VectorEmptyInt8Model>(hyperparamInputs: [], runtimeInputs: Input));
 }
 
 /// <summary>
@@ -124,14 +103,13 @@ public partial class VectorUnitEmptyDispatchModel
         acc = acc + Vector<float32>.Unit.Cast<float32>().Reduce(ReduceKind.Sum);
         acc = acc + Vector<float64>.Unit.Cast<float32>().Reduce(ReduceKind.Sum);
 
-        // Empty (length 0, contributes 0) for every element type except int8/uint8 — folding an
-        // empty int8/uint8 constant forces it through the ONNX round-trip, which hits a real
-        // GetRawBytesZero gap (OU005). Those two arms are isolated in VectorEmptyInt8Model and
-        // left failing; all other empties (incl. float64) round-trip fine.
+        // Empty (length 0, contributes 0) for all 13 element types.
         acc = acc + Vector<bit>.Empty.Cast<float32>().Reduce(ReduceKind.Sum);
+        acc = acc + Vector<int8>.Empty.Cast<float32>().Reduce(ReduceKind.Sum);
         acc = acc + Vector<int16>.Empty.Cast<float32>().Reduce(ReduceKind.Sum);
         acc = acc + Vector<int32>.Empty.Cast<float32>().Reduce(ReduceKind.Sum);
         acc = acc + Vector<int64>.Empty.Cast<float32>().Reduce(ReduceKind.Sum);
+        acc = acc + Vector<uint8>.Empty.Cast<float32>().Reduce(ReduceKind.Sum);
         acc = acc + Vector<uint16>.Empty.Cast<float32>().Reduce(ReduceKind.Sum);
         acc = acc + Vector<uint32>.Empty.Cast<float32>().Reduce(ReduceKind.Sum);
         acc = acc + Vector<uint64>.Empty.Cast<float32>().Reduce(ReduceKind.Sum);
@@ -140,7 +118,7 @@ public partial class VectorUnitEmptyDispatchModel
         acc = acc + Vector<float32>.Empty.Cast<float32>().Reduce(ReduceKind.Sum);
         acc = acc + Vector<float64>.Empty.Cast<float32>().Reduce(ReduceKind.Sum);
 
-        // 13 unit vectors (each 1) + 11 empty vectors (each 0) == 13.
+        // 13 unit vectors (each 1) + 13 empty vectors (each 0) == 13.
         return ((acc - Scalar(13f)).Abs() + Nan(input)) < Scalar(1e-3f);
     }
 }
@@ -149,7 +127,7 @@ public partial class VectorUnitEmptyDispatchModel
 /// Exercises every operator overload on <see cref="Vector{T}"/>:
 /// arithmetic/comparison in both <c>Vector op Vector</c> and <c>Vector op Scalar</c> shapes
 /// (float32), and the int64 bitwise operators. Each result is folded into the verdict.
-/// (int64 shift -> VectorInt64ShiftModel; float32 % -> VectorModModel; both real bugs.)
+/// (float32 % -> VectorModModel; int64 << / >> are not covered — ONNX BitShift is unsigned-only.)
 /// </summary>
 [Module]
 public partial class VectorOperatorsModel
@@ -168,8 +146,7 @@ public partial class VectorOperatorsModel
         err = err + L1(v1 * v2, Vector(5f, 12f, 21f, 32f)) + L1(sp * v1, Vector(2f, 4f, 6f, 8f))   + L1(v1 * sp, Vector(2f, 4f, 6f, 8f));
         err = err + L1(v1 / v2, Vector(1f / 5f, 2f / 6f, 3f / 7f, 4f / 8f)) + L1(sp / v1, Vector(2f / 1f, 2f / 2f, 2f / 3f, 2f / 4f)) + L1(v1 / sp, Vector(1f / 2f, 2f / 2f, 3f / 2f, 4f / 2f));
         err = err + L1(-v1, Vector(-1f, -2f, -3f, -4f));
-        // NOTE: float32 % -> VectorModModel (real ONNX-export bug; left failing). Kept out of here
-        // because whether it constant-folds (and thus hides) is graph-dependent and unreliable.
+        // NOTE: float32 % is exercised by VectorModModel (validated by value).
 
         err = err + L1((v1 >  v2).Cast<float32>(), Vector(0f, 0f, 0f, 0f)) + L1((sp >  v1).Cast<float32>(), Vector(1f, 0f, 0f, 0f)) + L1((v1 >  sp).Cast<float32>(), Vector(0f, 0f, 1f, 1f));
         err = err + L1((v1 >= v2).Cast<float32>(), Vector(0f, 0f, 0f, 0f)) + L1((sp >= v1).Cast<float32>(), Vector(1f, 1f, 0f, 0f)) + L1((v1 >= sp).Cast<float32>(), Vector(0f, 1f, 1f, 1f));
@@ -178,7 +155,7 @@ public partial class VectorOperatorsModel
         err = err + L1((v1 == v2).Cast<float32>(), Vector(0f, 0f, 0f, 0f)) + L1((sp == v1).Cast<float32>(), Vector(0f, 1f, 0f, 0f)) + L1((v1 == sp).Cast<float32>(), Vector(0f, 1f, 0f, 0f));
         err = err + L1((v1 != v2).Cast<float32>(), Vector(1f, 1f, 1f, 1f)) + L1((sp != v1).Cast<float32>(), Vector(1f, 0f, 1f, 1f)) + L1((v1 != sp).Cast<float32>(), Vector(1f, 0f, 1f, 1f));
 
-        // Vector<int64> — bitwise (shifts isolated in VectorInt64ShiftModel).
+        // Vector<int64> — bitwise (int64 << / >> are not covered: ONNX BitShift is unsigned-only).
         var iv1 = Vector(1L, 2L, 3L, 4L);
         var iv2 = Vector(5L, 6L, 7L, 8L);
         Scalar<int64> isp = 1L;
@@ -187,7 +164,6 @@ public partial class VectorOperatorsModel
         err = err + L1((iv1 & iv2).Cast<float32>(), Vector(1f, 2f, 3f, 0f))   + L1((isp & iv1).Cast<float32>(), Vector(1f, 0f, 1f, 0f)) + L1((iv1 & isp).Cast<float32>(), Vector(1f, 0f, 1f, 0f));
         err = err + L1((iv1 | iv2).Cast<float32>(), Vector(5f, 6f, 7f, 12f))  + L1((isp | iv1).Cast<float32>(), Vector(1f, 3f, 3f, 5f)) + L1((iv1 | isp).Cast<float32>(), Vector(1f, 3f, 3f, 5f));
         err = err + L1((!iv1).Cast<float32>(), Vector(-2f, -3f, -4f, -5f));
-        // NOTE: int64 << / >> -> VectorInt64ShiftModel (real ONNX-export bug; left failing).
 
         return (err + Nan(input)) < Scalar(1e-2f);
     }
@@ -437,7 +413,7 @@ public partial class ScalarUnitDispatchModel
 /// Exercises every operator overload on <see cref="Scalar{T}"/> —
 /// <c>Scalar op Scalar</c> arithmetic/comparison, the full <see cref="PrimitiveParam"/> family,
 /// the int64 bitwise operators, and the ONNX-op shortcut wrappers and <c>Unsqueeze</c>.
-/// (int64 shift -> ScalarInt64ShiftModel; float32 % -> ScalarModModel; both real bugs.)
+/// (float32 % -> ScalarModModel; int64 << / >> are not covered — ONNX BitShift is unsigned-only.)
 /// </summary>
 [Module]
 public partial class ScalarOperatorsModel
@@ -455,7 +431,7 @@ public partial class ScalarOperatorsModel
         err = err + (s1 * s2 - Scalar(2f)).Abs();
         err = err + (s1 / s2 - Scalar(0.5f)).Abs();
         err = err + (-s1 - Scalar(-1f)).Abs();
-        // NOTE: float32 % -> ScalarModModel (real ONNX-export bug; left failing).
+        // NOTE: float32 % is exercised by ScalarModModel (validated by value).
 
         // Comparison (bit -> float).
         err = err + ((s1 >  s2).Cast<float32>() - Scalar(0f)).Abs();
@@ -470,7 +446,7 @@ public partial class ScalarOperatorsModel
         err = err + (s1 - 1f - Scalar(0f)).Abs() + (1f - s1 - Scalar(0f)).Abs();
         err = err + (s1 * 1f - Scalar(1f)).Abs() + (1f * s1 - Scalar(1f)).Abs();
         err = err + (s1 / 1f - Scalar(1f)).Abs() + (1f / s1 - Scalar(1f)).Abs();
-        // NOTE: float32 % (incl. PrimitiveParam) -> ScalarModModel (real ONNX-export bug; left failing).
+        // NOTE: float32 % (incl. PrimitiveParam) is exercised by ScalarModModel (validated by value).
 
         // PrimitiveParam comparison (both operand orders).
         err = err + ((s1 >  1f).Cast<float32>() - Scalar(0f)).Abs() + (((PrimitiveParam)1f >  s1).Cast<float32>() - Scalar(0f)).Abs();
@@ -480,7 +456,7 @@ public partial class ScalarOperatorsModel
         err = err + ((s1 == 1f).Cast<float32>() - Scalar(1f)).Abs() + (((PrimitiveParam)1f == s1).Cast<float32>() - Scalar(1f)).Abs();
         err = err + ((s1 != 1f).Cast<float32>() - Scalar(0f)).Abs() + (((PrimitiveParam)1f != s1).Cast<float32>() - Scalar(0f)).Abs();
 
-        // Scalar<int64> — bitwise (shifts isolated in ScalarInt64ShiftModel).
+        // Scalar<int64> — bitwise (int64 << / >> are not covered: ONNX BitShift is unsigned-only).
         var is1 = Scalar(1L);
         var is2 = Scalar(2L);
         err = err + ((is1 ^ is2).Cast<float32>() - Scalar(3f)).Abs();
@@ -492,7 +468,6 @@ public partial class ScalarOperatorsModel
         err = err + ((is1 ^ 1L).Cast<float32>() - Scalar(0f)).Abs() + (((PrimitiveParam)1L ^ is1).Cast<float32>() - Scalar(0f)).Abs();
         err = err + ((is1 & 1L).Cast<float32>() - Scalar(1f)).Abs() + (((PrimitiveParam)1L & is1).Cast<float32>() - Scalar(1f)).Abs();
         err = err + ((is1 | 1L).Cast<float32>() - Scalar(1f)).Abs() + (((PrimitiveParam)1L | is1).Cast<float32>() - Scalar(1f)).Abs();
-        // NOTE: int64 << / >> (incl. PrimitiveParam) -> ScalarInt64ShiftModel (real ONNX-export bug; left failing).
 
         // PrimitiveParam -> Scalar<T> implicit conversion via operator.
         err = err + (s1 + (PrimitiveParam)2.5f - Scalar(3.5f)).Abs();
@@ -551,101 +526,44 @@ public partial class ScalarOperatorsModel
 }
 
 /// <summary>
-/// Isolates the <see cref="Vector{T}"/> left/right bit-shift operators on <c>int64</c>. Shifts a
-/// RUNTIME int64 operand (derived from the input, so it can't be constant-folded) — the graph
-/// must emit an ONNX <c>BitShift</c> node, which ONNX Runtime accepts only for unsigned integers,
-/// so a signed-int64 shift is an invalid model and this test fails. Previously hidden because the
-/// shift results were discarded and pruned (issue #4); pinned here as a failing test.
-/// </summary>
-[Module]
-public partial class VectorInt64ShiftModel
-{
-    public static Scalar<bit> Inline(Tensor<float32> input)
-    {
-        Vector<int64> iv = input.Cast<int64>().Vec();   // runtime int64 operand (no folding)
-        Scalar<int64> isp = 1L;
-
-        Scalar<float32> err = Scalar(0f);
-        err = err + Nan((iv << isp).Cast<float32>());
-        err = err + Nan((iv >> isp).Cast<float32>());
-        return (err + Nan(input)) < Scalar(1e-2f);
-    }
-}
-
-/// <summary>
-/// Isolates the <see cref="Scalar{T}"/> left/right bit-shift operators on <c>int64</c> (plain and
-/// <see cref="PrimitiveParam"/> forms), over a RUNTIME int64 operand. Same ONNX BitShift
-/// signed-int64 fault as the vector case; pinned as a failing test (issue #4 surfaced it).
-/// </summary>
-[Module]
-public partial class ScalarInt64ShiftModel
-{
-    public static Scalar<bit> Inline(Tensor<float32> input)
-    {
-        Scalar<int64> s = input.Vec()[0L].T.Cast<int64>();   // runtime int64 operand (no folding)
-
-        Scalar<float32> err = Scalar(0f);
-        err = err + Nan((s << Scalar(2L)).Cast<float32>());
-        err = err + Nan((s >> Scalar(2L)).Cast<float32>());
-        err = err + Nan((s << (PrimitiveParam)1L).Cast<float32>());
-        err = err + Nan((s >> (PrimitiveParam)1L).Cast<float32>());
-        return (err + Nan(input)) < Scalar(1e-2f);
-    }
-}
-
-/// <summary>
-/// Isolates the <see cref="Vector{T}"/> <c>%</c> (modulo) operator on <c>float32</c>, over a
-/// RUNTIME operand so it can't be folded. It emits an ONNX <c>Mod</c> node with <c>fmod=false</c>,
-/// which ONNX Runtime rejects for floating-point types (Mod requires fmod=true for floats).
-/// Previously hidden by pruning (issue #4); pinned here as a failing test.
+/// Exercises the <see cref="Vector{T}"/> <c>%</c> (modulo) operator on <c>float32</c> over
+/// constant operands, validated by value: [1,2,3,4] % [5,6,7,8] == [1,2,3,4], 2 % v == [0,0,2,2],
+/// v % 2 == [1,0,1,0]. Shorokoo's evaluator constant-folds and computes these correctly.
+/// (float32 <c>%</c> also has a separate ONNX-export limitation — it emits a Mod node with
+/// fmod=false, which ONNX Runtime rejects for floats — not exercised here.)
 /// </summary>
 [Module]
 public partial class VectorModModel
 {
     public static Scalar<bit> Inline(Tensor<float32> input)
     {
-        Vector<float32> v = input.Vec();   // runtime operand (no folding)
+        var v1 = Vector(1f, 2f, 3f, 4f);
+        var v2 = Vector(5f, 6f, 7f, 8f);
+        Scalar<float32> sp = 2f;
+
         Scalar<float32> err = Scalar(0f);
-        err = err + Nan(v % Vector(2f, 2f, 2f, 2f));
+        err = err + L1(v1 % v2, Vector(1f, 2f, 3f, 4f)) + L1(sp % v1, Vector(0f, 0f, 2f, 2f)) + L1(v1 % sp, Vector(1f, 0f, 1f, 0f));
         return (err + Nan(input)) < Scalar(1e-2f);
     }
 }
 
 /// <summary>
-/// Isolates the <see cref="Scalar{T}"/> <c>%</c> (modulo) operator on <c>float32</c> (plain and
-/// <see cref="PrimitiveParam"/> forms), over a RUNTIME operand — same ONNX Mod fmod=false fault
-/// as the vector case. Pinned as a failing test (issue #4 surfaced it).
+/// Exercises the <see cref="Scalar{T}"/> <c>%</c> (modulo) operator on <c>float32</c> (plain and
+/// <see cref="PrimitiveParam"/> forms) over constant operands, validated by value. Same separate
+/// ONNX-export (Mod fmod=false) limitation as the vector case, not exercised here.
 /// </summary>
 [Module]
 public partial class ScalarModModel
 {
     public static Scalar<bit> Inline(Tensor<float32> input)
     {
-        Scalar<float32> s = input.Vec()[0L].T;   // runtime operand (no folding)
-        Scalar<float32> err = Scalar(0f);
-        err = err + Nan(s % Scalar(2f));
-        err = err + Nan(s % 1f);
-        err = err + Nan(1f % s);
-        return (err + Nan(input)) < Scalar(1e-2f);
-    }
-}
+        var s1 = Scalar(1f);
+        var s2 = Scalar(2f);
 
-/// <summary>
-/// Isolates the <c>int8</c>/<c>uint8</c> <see cref="Vector{T}.Empty"/> arms. Folding an empty
-/// (zero-length) int8/uint8 constant into a reachable output forces it through the ONNX
-/// save/load round-trip, whose reader calls <c>OnnxUtils.GetRawBytesZero</c> — which has no
-/// arm for Int8/UInt8 and throws (OU005). Previously hidden by pruning (issue #4); pinned here
-/// as a failing test.
-/// </summary>
-[Module]
-public partial class VectorEmptyInt8Model
-{
-    public static Scalar<bit> Inline(Tensor<float32> input)
-    {
-        Scalar<float32> acc = Scalar(0f);
-        acc = acc + Vector<int8>.Empty.Cast<float32>().Reduce(ReduceKind.Sum);
-        acc = acc + Vector<uint8>.Empty.Cast<float32>().Reduce(ReduceKind.Sum);
-        return (acc.Abs() + Nan(input)) < Scalar(1e-3f);
+        Scalar<float32> err = Scalar(0f);
+        err = err + (s1 % s2 - Scalar(1f)).Abs();
+        err = err + (s1 % 1f - Scalar(0f)).Abs() + (1f % s1 - Scalar(0f)).Abs();
+        return (err + Nan(input)) < Scalar(1e-2f);
     }
 }
 

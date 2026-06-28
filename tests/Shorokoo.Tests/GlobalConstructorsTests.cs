@@ -49,12 +49,6 @@ public class GlobalConstructorsCoverageTests
 /// <c>EmptyVector&lt;T&gt;()</c>, and <c>DefaultScalar&lt;T&gt;()</c>. Each constructed value is
 /// folded into the verdict (cast to float32 + finiteness) so the construction is reachable and
 /// cannot be pruned.
-/// <para>
-/// int8/uint8 <c>EmptyVector</c> are deliberately omitted: folding a zero-length int8/uint8
-/// constant forces it through the ONNX round-trip, hitting the GetRawBytesZero gap pinned by
-/// <c>VectorScalarCoverageTests.TestVectorEmptyInt8</c> (real bug, left failing) — no need to
-/// re-pin it here.
-/// </para>
 /// </summary>
 [Module]
 public partial class ScalarAndFillDispatcherModel
@@ -130,11 +124,13 @@ public partial class ScalarAndFillDispatcherModel
         acc = acc + NanAny(DefaultScalar<float32>());
         acc = acc + NanAny(DefaultScalar<float64>());
 
-        // EmptyVector<T>() — int8/uint8 omitted (see class summary / TestVectorEmptyInt8).
+        // EmptyVector<T>().
         acc = acc + NanAny(EmptyVector<bit>());
+        acc = acc + NanAny(EmptyVector<int8>());
         acc = acc + NanAny(EmptyVector<int16>());
         acc = acc + NanAny(EmptyVector<int32>());
         acc = acc + NanAny(EmptyVector<int64>());
+        acc = acc + NanAny(EmptyVector<uint8>());
         acc = acc + NanAny(EmptyVector<uint16>());
         acc = acc + NanAny(EmptyVector<uint32>());
         acc = acc + NanAny(EmptyVector<uint64>());
@@ -297,9 +293,10 @@ public partial class PureDataConstructorModel
 
         // TensorDataWithDefaultVals / TensorDataWithSmallVals / TensorDataForConstantOfShapeFill —
         // materialize via Tensor(data) (cast to the concrete element type) and fold, for the DTypes
-        // whose constants round-trip cleanly. int8/uint8 are omitted (their zero/default data hits
-        // the GetRawBytesZero gap pinned by TestVectorEmptyInt8); bool is folded explicitly.
+        // whose constants round-trip cleanly (bool folded explicitly).
         acc = acc + NanAny((Tensor<bit>)Tensor(TensorDataWithDefaultVals(DType.Bool, dims)));
+        acc = acc + NanAny((Tensor<int8>)Tensor(TensorDataWithDefaultVals(DType.Int8, dims)));
+        acc = acc + NanAny((Tensor<uint8>)Tensor(TensorDataWithDefaultVals(DType.UInt8, dims)));
         acc = acc + NanAny((Tensor<int16>)Tensor(TensorDataWithDefaultVals(DType.Int16, dims)));
         acc = acc + NanAny((Tensor<int32>)Tensor(TensorDataWithDefaultVals(DType.Int32, dims)));
         acc = acc + NanAny((Tensor<int64>)Tensor(TensorDataWithDefaultVals(DType.Int64, dims)));
@@ -312,6 +309,8 @@ public partial class PureDataConstructorModel
         acc = acc + NanAny((Tensor<float64>)Tensor(TensorDataWithDefaultVals(DType.Float64, dims)));
 
         acc = acc + NanAny((Tensor<bit>)Tensor(TensorDataWithSmallVals(DType.Bool, dims)));
+        acc = acc + NanAny((Tensor<int8>)Tensor(TensorDataWithSmallVals(DType.Int8, dims)));
+        acc = acc + NanAny((Tensor<uint8>)Tensor(TensorDataWithSmallVals(DType.UInt8, dims)));
         acc = acc + NanAny((Tensor<int16>)Tensor(TensorDataWithSmallVals(DType.Int16, dims)));
         acc = acc + NanAny((Tensor<int32>)Tensor(TensorDataWithSmallVals(DType.Int32, dims)));
         acc = acc + NanAny((Tensor<int64>)Tensor(TensorDataWithSmallVals(DType.Int64, dims)));
