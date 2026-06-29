@@ -687,8 +687,11 @@ namespace Shorokoo.Core
             foreach (var typeForEach in types)
             {
                 var type = typeForEach;
-                if (type.IsAssignableFrom(typeof(IModel)))
-                    type = typeof(Variable);
+                // A model-typed output (a model returning a model) isn't wired up end-to-end yet —
+                // surface it as not-implemented rather than remapping to a node type that falls through
+                // to the generic "unsupported type" error below.
+                if (type.IsAssignableTo(typeof(IModel)))
+                    throw new System.NotImplementedException("Model-typed outputs (a model returning a model) are not yet supported.");
 
                 if (type.IsAssignableTo(typeof(ITensorStruct)))
                 {
