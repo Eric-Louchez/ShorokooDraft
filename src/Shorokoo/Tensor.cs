@@ -75,9 +75,6 @@ namespace Shorokoo
         // Convert to the backing graph node, materialising the established default for a defaulted handle.
         Variable IValue.ToVariable() => inner ?? Shorokoo.Core.ModuleHelper.DefaultVariable(typeof(Tensor<T>));
 
-        /// <summary>Wrap a node as this handle WITHOUT validation — for dtype reinterprets (<c>As&lt;V&gt;</c>
-        /// and friends) that intentionally relabel the static element type without converting the value.</summary>
-        internal static Tensor<T> Reinterpret(Variable node) => new Tensor<T> { inner = node };
 
         // ITensor contract — forward to the backing Variable.
         public int? Rank => Imm.Rank;
@@ -97,7 +94,7 @@ namespace Shorokoo
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public Tensor<V> As<V>() where V : IVarType => Tensor<V>.Reinterpret(Imm);
+        public Tensor<V> As<V>() where V : IVarType => (Tensor<V>)Imm;
 #pragma warning disable CS0618
         string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;
 #pragma warning restore CS0618
@@ -440,7 +437,7 @@ namespace Shorokoo
         /// <summary>Casts the element type to <typeparamref name="V"/>; returns this tensor unchanged when the types already match.</summary>
         public Tensor<V> Cast<V>(bool saturate = true) where V : IVarType
             => typeof(V) == typeof(T) ?
-                Tensor<V>.Reinterpret(this.inner!) :
+                (Tensor<V>)(object)this :
                 OnnxOp.Cast(this, saturate ? null : saturate, OnnxUtils.GetDType<V>());
 
         /// <summary>Creates a tensor of the given shape filled with the scalar value <paramref name="val"/> (ONNX ConstantOfShape).</summary>

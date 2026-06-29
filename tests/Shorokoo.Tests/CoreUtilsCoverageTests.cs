@@ -301,7 +301,7 @@ public class CoreUtilsCoverageTests
         Assert.Throws<InvalidTensorOperationException>(() => (object)(TensorSequence<float32>)scalarNode);
         Assert.Throws<InvalidTensorOperationException>(() => (object)(OptionalTensor<float32>)scalarNode);
 
-        // No implicit dtype reinterpretation (use Cast to convert, As to reinterpret).
+        // No implicit dtype reinterpretation (use Cast to convert).
         Assert.Throws<InvalidTensorOperationException>(() => (object)(Tensor<float64>)scalarNode);
         Assert.Throws<InvalidTensorOperationException>(() => (object)(Scalar<int64>)scalarNode);
 
@@ -318,9 +318,11 @@ public class CoreUtilsCoverageTests
         var vFromNull = (Variable)(Vector<float32>)unranked2;
         Assert.Equal(1, vFromNull.Rank); Assert.Equal(OpCodes.IDENTITY, vFromNull.OwningNode.OpCode);
 
-        // Cast<V> is the explicit dtype CONVERSION (Cast node); As<V> is the explicit REINTERPRET
-        // (relabels the static type without converting — runtime dtype unchanged, no validation).
+        // Cast<V> is the explicit dtype CONVERSION (inserts a Cast node). As<V> now validates like the
+        // implicit operator: a matching (or generic) dtype passes through; a concrete mismatch throws —
+        // there is no silent dtype reinterpret.
         Assert.Equal(DType.Float64, ((Variable)scalarNode.Cast<float64>()).Type);
-        Assert.Equal(DType.Float32, ((Variable)scalarNode.As<float64>()).Type);
+        Assert.Equal(DType.Float32, ((Variable)scalarNode.As<float32>()).Type);
+        Assert.Throws<InvalidTensorOperationException>(() => (object)scalarNode.As<float64>());
     }
 }
