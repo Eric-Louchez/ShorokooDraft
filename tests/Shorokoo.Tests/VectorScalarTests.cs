@@ -70,6 +70,12 @@ public class VectorScalarCoverageTests
     [Fact]
     public void TestScalarMod()
         => Assert.True(AutoTest.AdvancedTestGraph<ScalarModModel>(hyperparamInputs: [], runtimeInputs: Input));
+
+    // Tensor<T> multi-axis indexer (issue #3): direct slice/gather reads and indexer-set
+    // assignment with value semantics, every path Eval'd and asserted by value.
+    [Fact]
+    public void TestTensorIndexerCoverage()
+        => Assert.True(AutoTest.AdvancedTestGraph<TensorIndexerModel>(hyperparamInputs: [], runtimeInputs: Input));
 }
 
 /// <summary>
@@ -650,5 +656,71 @@ public partial class ScalarImplicitPrimitiveConversionModel
             (ushortTo32 == Scalar(13)) &
             (uintToU32 == Scalar(15u)) &
             (ulongToU64 == Scalar(17UL));
+    }
+}
+
+/// <summary>
+/// Exercises the <see cref="Tensor{T}"/> multi-axis indexer (issue #3): direct slice/gather reads
+/// (<c>Tensor r = t[1..3, 0..2];</c>, no <c>.T</c>) and indexer-set assignment
+/// (<c>t[1..3, 0..2] = r;</c>, no <c>.Set</c>) with struct value semantics. Every read and write
+/// path is folded into the verdict so it is a reachable, executed output and asserted by value.
+/// </summary>
+[Module]
+public partial class TensorIndexerModel
+{
+    public static Scalar<bit> Inline(Tensor<float32> input)
+    {
+        // t[i, j] = i * 5 + j  (shape [4, 5]).
+        var t = Vector(0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f, 11f, 12f, 13f, 14f, 15f, 16f, 17f, 18f, 19f)
+            .Reshape(Vector(4L, 5L));
+
+        Scalar<float32> err = Scalar(0f);
+
+        // --- Reads (direct, no .T) ---
+
+        // Single-axis slice: rows 1..2.
+        err = err + L1(t[1..3], Vector(5f, 6f, 7f, 8f, 9f, 10f, 11f, 12f, 13f, 14f).Reshape(Vector(2L, 5L)));
+
+        // Multi-axis slice: rows 1..2, cols 0..1.
+        err = err + L1(t[1..3, 0..2], Vector(5f, 6f, 10f, 11f).Reshape(Vector(2L, 2L)));
+
+        // Full first axis, index second: column 0 (the index drops that axis) -> [4].
+        err = err + L1(t[.., 0L], Vector(0f, 5f, 10f, 15f));
+
+        // Single element: t[1, 1] == 6.
+        err = err + (t[1L, 1L].Scalar() - Scalar(6f)).Abs();
+
+        // Strided slice: rows 0, 2.
+        err = err + L1(t[(0..4, 2L)], Vector(0f, 1f, 2f, 3f, 4f, 10f, 11f, 12f, 13f, 14f).Reshape(Vector(2L, 5L)));
+
+        // Gather rows 0, 2.
+        err = err + L1(t[Vector(0L, 2L)], Vector(0f, 1f, 2f, 3f, 4f, 10f, 11f, 12f, 13f, 14f).Reshape(Vector(2L, 5L)));
+
+        // --- Writes (indexer set; value semantics: a struct copy is mutated, t is not) ---
+
+        // Multi-axis block write.
+        var wBlock = t;
+        wBlock[1..3, 0..2] = Vector(50f, 60f, 100f, 110f).Reshape(Vector(2L, 2L));
+        err = err + L1(wBlock, Vector(0f, 1f, 2f, 3f, 4f, 50f, 60f, 7f, 8f, 9f, 100f, 110f, 12f, 13f, 14f, 15f, 16f, 17f, 18f, 19f).Reshape(Vector(4L, 5L)));
+
+        // Single-axis row-slice write.
+        var wRows = t;
+        wRows[1..3] = Vector(50f, 51f, 52f, 53f, 54f, 100f, 101f, 102f, 103f, 104f).Reshape(Vector(2L, 5L));
+        err = err + L1(wRows, Vector(0f, 1f, 2f, 3f, 4f, 50f, 51f, 52f, 53f, 54f, 100f, 101f, 102f, 103f, 104f, 15f, 16f, 17f, 18f, 19f).Reshape(Vector(4L, 5L)));
+
+        // Column write (full first axis, index second).
+        var wCol = t;
+        wCol[.., 0L] = Vector(90f, 95f, 100f, 105f);
+        err = err + L1(wCol, Vector(90f, 1f, 2f, 3f, 4f, 95f, 6f, 7f, 8f, 9f, 100f, 11f, 12f, 13f, 14f, 105f, 16f, 17f, 18f, 19f).Reshape(Vector(4L, 5L)));
+
+        // Gather (row) write.
+        var wGather = t;
+        wGather[Vector(0L, 2L)] = Vector(90f, 91f, 92f, 93f, 94f, 80f, 81f, 82f, 83f, 84f).Reshape(Vector(2L, 5L));
+        err = err + L1(wGather, Vector(90f, 91f, 92f, 93f, 94f, 5f, 6f, 7f, 8f, 9f, 80f, 81f, 82f, 83f, 84f, 15f, 16f, 17f, 18f, 19f).Reshape(Vector(4L, 5L)));
+
+        // Value semantics: none of the writes above mutated t.
+        err = err + L1(t, Vector(0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f, 11f, 12f, 13f, 14f, 15f, 16f, 17f, 18f, 19f).Reshape(Vector(4L, 5L)));
+
+        return (err + Nan(input)) < Scalar(1e-2f);
     }
 }
