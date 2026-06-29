@@ -34,7 +34,7 @@ namespace Shorokoo
     {
         private Variable? inner;
         // The backing graph node, materialising the established default (per dtype/rank) for a defaulted handle.
-        internal Variable Immutable => inner ?? Shorokoo.Core.ModuleHelper.DefaultVariable(typeof(Vector<T>));
+        internal Variable Immutable => inner ?? InternalGlobals.DefaultVariable(typeof(Vector<T>));
 
         private static readonly DType? expectedDType = OnnxUtils.GetDType(typeof(T));
         public static implicit operator Vector<T>(Variable imm)

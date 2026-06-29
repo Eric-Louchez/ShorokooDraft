@@ -186,46 +186,6 @@ namespace Shorokoo.Core
                 RejectVariableParam(type.GetElementType().AssertNotNull());
         }
 
-        internal static Variable DefaultVariable(Type type)
-        {
-            RejectVariableParam(type);
-            if (type.IsAssignableTo(typeof(ITensorStruct)))
-            {
-                var (structDef, structDType) = StructDefExtractor.ExtractFromTensorStructType(type, "default value creation");
-                
-                // Create default tensor variables for each field (empty tensors)
-                var fieldVars = structDef.Fields.Select(f => {
-                    // Create empty tensor based on field's element type and rank
-                    long[] shape = f.Rank.HasValue && f.Rank.Value == 0 ? [] : [0];
-                    return DefaultTensor(f.ElementType, shape);
-                }).ToArray();
-                
-                return InternalOp.TensorStructCreate(structDType, fieldVars);
-            }
-
-            if (type.IsAssignableTo(typeof(ITensor)))
-            {
-                var dtype = OnnxUtils.GetDType(type.GenericTypeArguments[0]).AssertNotNull();
-                // A scalar (rank 0) defaults to a zero scalar; a vector / general tensor (rank >= 1 or
-                // unknown) to a zero-length vector.
-                long[] shape = type.IsAssignableTo(typeof(IScalar)) ? [] : [0];
-                return DefaultTensor(dtype, shape);
-            }
-
-            if (type.IsAssignableTo(typeof(IOptionalTensor)))
-            {
-                var dtype = OnnxUtils.GetDType(type.GenericTypeArguments[0]);
-                return OptionalTensor(dtype.AssertNotNull()); // Empty optional tensor.
-            }
-
-            if (type.IsAssignableTo(typeof(ITensorSequence)))
-            {
-                var dtype = OnnxUtils.GetDType(type.GenericTypeArguments[0]);
-                return TensorSequence(dtype.AssertNotNull()); // Empty sequence
-            }
-
-            throw new UnsupportedDTypeException(ErrorCodes.FW002, type.Name, "CreateDefaultValue", $"Unsupported type for default value creation. Supported types: Tensor<T>, OptionalTensor<T>, TensorSequence<T>, TensorStruct<T>. Received: {type.Name}");
-        }
 
         internal static Function CreateFunctionSignature(Type[] hyperparams, Type[] inputs, Type[] outputs)
         {
@@ -238,7 +198,7 @@ namespace Shorokoo.Core
             var inputInputs = FlattenTuples(inputs).Select((x, i) => ModuleParamInputBasedOn(x, InputType.ReadyInput, $"h{i}").ToVariable()).ToArray();
 
             var outputTypes = FlattenTuples(outputs).ToList();
-            var outputVariables = outputTypes.Select((x) => DefaultVariable(x)).ToArray();
+            var outputVariables = outputTypes.Select((x) => InternalGlobals.DefaultVariable(x)).ToArray();
             var rankOverrides = outputTypes.Select((x) =>
                                 x.IsAssignableTo(typeof(IVector)) ? 1 :
                                 x.IsAssignableTo(typeof(IScalar)) ? 0 :

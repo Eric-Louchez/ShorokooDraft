@@ -37,7 +37,7 @@ namespace Shorokoo
 
         /// <summary>The backing graph node, materialising the established default (default-filled fields, or a
         /// zero-filled struct when the layout is unknown) for a defaulted handle.</summary>
-        internal readonly Variable Immutable => inner ?? Shorokoo.Core.ModuleHelper.DefaultVariable(typeof(TensorStruct<T>));
+        internal readonly Variable Immutable => inner ?? InternalGlobals.DefaultVariable(typeof(TensorStruct<T>));
 
         public static implicit operator TensorStruct<T>(Variable imm)
         {

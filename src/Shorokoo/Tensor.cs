@@ -62,7 +62,7 @@ namespace Shorokoo
     {
         private Variable? inner;
         // The backing graph node, materialising the established default (per dtype/rank) for a defaulted handle.
-        internal Variable Immutable => inner ?? Shorokoo.Core.ModuleHelper.DefaultVariable(typeof(Tensor<T>));
+        internal Variable Immutable => inner ?? InternalGlobals.DefaultVariable(typeof(Tensor<T>));
 
         private static readonly DType? expectedDType = OnnxUtils.GetDType(typeof(T));
         public static implicit operator Tensor<T>(Variable imm)

@@ -34,13 +34,13 @@ public class ModuleHelperCoverageTests
         // ──────────────────────────────────────────────────────────────────
         // DefaultVariable returns the graph-side Variable node; its structural kind is the
         // distinguishing feature now that the node is non-generic and not a handle.
-        Assert.Equal(DataStructure.Tensor, ModuleHelper.DefaultVariable(typeof(Tensor<float32>)).Structure());
-        Assert.Equal(DataStructure.Optional, ModuleHelper.DefaultVariable(typeof(OptionalTensor<float32>)).Structure());
-        Assert.Equal(DataStructure.Sequence, ModuleHelper.DefaultVariable(typeof(TensorSequence<float32>)).Structure());
+        Assert.Equal(DataStructure.Tensor, InternalGlobals.DefaultVariable(typeof(Tensor<float32>)).Structure());
+        Assert.Equal(DataStructure.Optional, InternalGlobals.DefaultVariable(typeof(OptionalTensor<float32>)).Structure());
+        Assert.Equal(DataStructure.Sequence, InternalGlobals.DefaultVariable(typeof(TensorSequence<float32>)).Structure());
         // ITensorStruct branch (lines 170-181): pass a concrete TensorStruct type.
         Assert.Equal(DataStructure.TensorStruct,
-            ModuleHelper.DefaultVariable(typeof(TensorStruct<GenericPairStruct>)).Structure());
-        Assert.Throws<UnsupportedDTypeException>(() => ModuleHelper.DefaultVariable(typeof(int)));
+            InternalGlobals.DefaultVariable(typeof(TensorStruct<GenericPairStruct>)).Structure());
+        Assert.Throws<UnsupportedDTypeException>(() => InternalGlobals.DefaultVariable(typeof(int)));
 
         // ──────────────────────────────────────────────────────────────────
         // Variable is the internal graph node type — modules must declare their inputs/outputs with
@@ -52,7 +52,7 @@ public class ModuleHelperCoverageTests
         Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.RejectVariableParam(typeof((Variable, Scalar<float32>))));
         Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.RejectVariableParam(typeof(Variable[])));
         ModuleHelper.RejectVariableParam(typeof((Scalar<float32>, Tensor<float32>)));   // tuple of handles is accepted
-        Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.DefaultVariable(typeof(Variable)));
+        Assert.Throws<InvalidTensorOperationException>(() => InternalGlobals.DefaultVariable(typeof(Variable)));
         Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.ModuleParamInputBasedOn(typeof(Variable), InputType.ReadyInput, "x"));
         Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.CreateFunctionSignature([], [typeof(Variable)], [typeof(Scalar<float32>)]));
         Assert.Throws<InvalidTensorOperationException>(() => ModuleHelper.CreateFunctionSignature([], [typeof(Scalar<float32>)], [typeof(Variable)]));

@@ -117,6 +117,46 @@ namespace Shorokoo.Core
         internal static Variable TensorStruct<T>(DType type, Node owningNode, Function? moduleFn, string? name, TensorStructDef definition) where T : IStruct
             => new Variable(type, owningNode, moduleFn, name, DataStructure.TensorStruct, structDef: definition);
 
+        /// <summary>
+        /// The established default <see cref="Variable"/> for a value-handle type: a zero scalar (rank 0),
+        /// a zero-length vector (rank 1 / unknown), default-filled struct fields, or an absent optional /
+        /// empty sequence. Used to materialise a defaulted/absent handle.
+        /// </summary>
+        internal static Variable DefaultVariable(Type type)
+        {
+            ModuleHelper.RejectVariableParam(type);
+            if (type.IsAssignableTo(typeof(ITensorStruct)))
+            {
+                var (structDef, structDType) = StructDefExtractor.ExtractFromTensorStructType(type, "default value creation");
+
+                // Create default tensor variables for each field (empty tensors).
+                var fieldVars = structDef.Fields.Select(f =>
+                {
+                    long[] shape = f.Rank.HasValue && f.Rank.Value == 0 ? [] : [0];
+                    return Globals.DefaultTensor(f.ElementType, shape);
+                }).ToArray();
+
+                return InternalOp.TensorStructCreate(structDType, fieldVars);
+            }
+
+            if (type.IsAssignableTo(typeof(ITensor)))
+            {
+                var dtype = OnnxUtils.GetDType(type.GenericTypeArguments[0]).AssertNotNull();
+                // A scalar (rank 0) defaults to a zero scalar; a vector / general tensor (rank >= 1 or
+                // unknown) to a zero-length vector.
+                long[] shape = type.IsAssignableTo(typeof(IScalar)) ? [] : [0];
+                return Globals.DefaultTensor(dtype, shape);
+            }
+
+            if (type.IsAssignableTo(typeof(IOptionalTensor)))
+                return Globals.OptionalTensor(OnnxUtils.GetDType(type.GenericTypeArguments[0]).AssertNotNull()); // Empty optional tensor.
+
+            if (type.IsAssignableTo(typeof(ITensorSequence)))
+                return Globals.TensorSequence(OnnxUtils.GetDType(type.GenericTypeArguments[0]).AssertNotNull()); // Empty sequence.
+
+            throw new UnsupportedDTypeException(ErrorCodes.FW002, type.Name, "DefaultVariable", $"Unsupported type for default value creation. Supported types: Tensor<T>, OptionalTensor<T>, TensorSequence<T>, TensorStruct<T>. Received: {type.Name}");
+        }
+
         internal static OnnxTensorData<bit> OnnxTensorData(Shape shape, params bool[] data) => new OnnxTensorData<bit>(shape, OnnxUtils.CreateTensorValue<bool>(shape, data));
         internal static OnnxTensorData<int8> OnnxTensorData(Shape shape, params sbyte[] data) => new OnnxTensorData<int8>(shape, OnnxUtils.CreateTensorValue<sbyte>(shape, data));
         internal static OnnxTensorData<int16> OnnxTensorData(Shape shape, params short[] data) => new OnnxTensorData<int16>(shape, OnnxUtils.CreateTensorValue<short>(shape, data));
