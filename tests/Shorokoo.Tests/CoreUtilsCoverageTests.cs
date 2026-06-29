@@ -318,11 +318,8 @@ public class CoreUtilsCoverageTests
         var vFromNull = (Variable)(Vector<float32>)unranked2;
         Assert.Equal(1, vFromNull.Rank); Assert.Equal(OpCodes.IDENTITY, vFromNull.OwningNode.OpCode);
 
-        // Cast<V> is the explicit dtype CONVERSION (inserts a Cast node). As<V> now validates like the
-        // implicit operator: a matching (or generic) dtype passes through; a concrete mismatch throws —
-        // there is no silent dtype reinterpret.
+        // Cast<V> is the explicit dtype CONVERSION (inserts a Cast node) — to change dtype you must Cast;
+        // there is no reinterpret.
         Assert.Equal(DType.Float64, ((Variable)scalarNode.Cast<float64>()).Type);
-        Assert.Equal(DType.Float32, ((Variable)scalarNode.As<float32>()).Type);
-        Assert.Throws<InvalidTensorOperationException>(() => (object)scalarNode.As<float64>());
     }
 }

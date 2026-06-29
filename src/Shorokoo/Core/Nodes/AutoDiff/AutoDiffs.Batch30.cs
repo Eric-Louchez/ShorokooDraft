@@ -455,7 +455,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var axis = axisAttr ?? 0L;
 
             // Build a tensor sequence of grads-with-axis (insert axis if it was squeezed).
-            var len = OnnxOp.SequenceLength(dSeq).As<int64>().Scalar();
+            var len = ((Tensor<int64>)OnnxOp.SequenceLength(dSeq)).Scalar();
             var pieces = OnnxOp.SequenceEmpty(dSeq.Type);
             foreach (var ctx in LoopAPI.Iterate(len))
             {

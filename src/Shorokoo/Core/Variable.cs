@@ -129,14 +129,6 @@ namespace Shorokoo.Core
         public string? FriendlyName => this.uniqueName;
 
         /// <summary>
-        /// Attaches the typed tensor handle of element type <typeparamref name="V"/> to this non-generic
-        /// node — a <em>view</em>, not a dtype conversion. It validates like the implicit operator: a
-        /// matching (or generic-placeholder) dtype passes through, a concrete mismatch throws. Use
-        /// <c>Cast</c> to actually convert the dtype.
-        /// </summary>
-        public Tensor<V> As<V>() where V : IVarType => (Tensor<V>)this;
-
-        /// <summary>
         /// Converts this <c>Variable</c> to the <see cref="IValue"/> type <typeparamref name="A"/> — the
         /// generic form of the <c>Variable</c>→<c>IValue</c> conversion, for call sites where the target
         /// <see cref="IValue"/> type is only known as a type parameter (so the compiler cannot apply the

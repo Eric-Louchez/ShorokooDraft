@@ -64,7 +64,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             Debug.Assert(dY is not null);
 
             // Build zero-filled sequence matching input element shapes
-            var len = OnnxOp.SequenceLength(inputSeq).As<int64>().Scalar();
+            var len = ((Tensor<int64>)OnnxOp.SequenceLength(inputSeq)).Scalar();
             var dSeq = OnnxOp.SequenceEmpty(inputSeq.Type);
 
             foreach (var ctx in LoopAPI.Iterate(len))
@@ -180,7 +180,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             var axis = (long)attributes.GetAttributeObj(AttrAxis)!;
             var newAxis = attributes.GetAttributeObj(AttrNewAxis) is bool na && na;
 
-            var len = OnnxOp.SequenceLength(inputSeq).As<int64>().Scalar();
+            var len = ((Tensor<int64>)OnnxOp.SequenceLength(inputSeq)).Scalar();
             var dSeq = OnnxOp.SequenceEmpty(inputSeq.Type);
             Variable offset = Scalar(0L);
 

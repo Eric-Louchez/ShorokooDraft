@@ -91,7 +91,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             }
 
             // Sequence length as a runtime Variable (no host-side execution).
-            var seqLen = OnnxOp.Gather(OnnxOp.Shape(x), Scalar(0L), axis: 0).As<int64>().Scalar();
+            var seqLen = ((Tensor<int64>)OnnxOp.Gather(OnnxOp.Shape(x), Scalar(0L), axis: 0)).Scalar();
 
             var H = hiddenSize;
             var one = OnnxOp.Cast(Scalar(1.0f), saturate: null, to: x.Type);

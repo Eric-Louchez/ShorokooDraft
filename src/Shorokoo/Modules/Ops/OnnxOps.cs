@@ -34,13 +34,13 @@ namespace Shorokoo
         /// <summary>Returns a Blackman window of the given size (ONNX BlackmanWindow).</summary>
         public static Vector<T> BlackmanWindow<T>(Scalar<int64> size, bool periodic = true) where T : NumLike
         {
-            return OnnxOp.BlackmanWindow(size, OnnxUtils.GetDType<T>(), periodic).As<T>().Vec();
+            return ((Tensor<T>)OnnxOp.BlackmanWindow(size, OnnxUtils.GetDType<T>(), periodic)).Vec();
         }
 
         /// <summary>Returns a Blackman window of the given size (ONNX BlackmanWindow); int32-size overload.</summary>
         public static Vector<T> BlackmanWindow<T>(Scalar<int32> size, bool periodic = true) where T : NumLike
         {
-            return OnnxOp.BlackmanWindow(size, OnnxUtils.GetDType<T>(), periodic).As<T>().Vec();
+            return ((Tensor<T>)OnnxOp.BlackmanWindow(size, OnnxUtils.GetDType<T>(), periodic)).Vec();
         }
 
         /// <summary>Rearranges sliding-block columns back into a batched image tensor (ONNX Col2Im).</summary>
@@ -350,19 +350,19 @@ namespace Shorokoo
 
         /// <summary>Returns a Hamming window of the given size (ONNX HammingWindow).</summary>
         public static Vector<T> HammingWindow<T>(Scalar<int64> size, bool periodic = true) where T : NumLike
-            => OnnxOp.HammingWindow(size, OnnxUtils.GetDType<T>(), periodic).As<T>().Vec();
+            => ((Tensor<T>)OnnxOp.HammingWindow(size, OnnxUtils.GetDType<T>(), periodic)).Vec();
 
         /// <summary>Returns a Hamming window of the given size (ONNX HammingWindow); int32-size overload.</summary>
         public static Vector<T> HammingWindow<T>(Scalar<int32> size, bool periodic = true) where T : NumLike
-            => OnnxOp.HammingWindow(size, OnnxUtils.GetDType<T>(), periodic).As<T>().Vec();
+            => ((Tensor<T>)OnnxOp.HammingWindow(size, OnnxUtils.GetDType<T>(), periodic)).Vec();
 
         /// <summary>Returns a Hann window of the given size (ONNX HannWindow).</summary>
         public static Vector<T> HannWindow<T>(Scalar<int64> size, bool periodic = true) where T : NumLike
-            => OnnxOp.HannWindow(size, OnnxUtils.GetDType<T>(), periodic).As<T>().Vec();
+            => ((Tensor<T>)OnnxOp.HannWindow(size, OnnxUtils.GetDType<T>(), periodic)).Vec();
 
         /// <summary>Returns a Hann window of the given size (ONNX HannWindow); int32-size overload.</summary>
         public static Vector<T> HannWindow<T>(Scalar<int32> size, bool periodic = true) where T : NumLike
-            => OnnxOp.HannWindow(size, OnnxUtils.GetDType<T>(), periodic).As<T>().Vec();
+            => ((Tensor<T>)OnnxOp.HannWindow(size, OnnxUtils.GetDType<T>(), periodic)).Vec();
 
         /// <summary>Decodes an encoded image byte stream (e.g. JPEG/PNG) into a uint8 pixel tensor (ONNX ImageDecoder).</summary>
         public static Tensor<uint8> ImageDecoder(Vector<uint8> encodedStream, string? pixelFormat = null)

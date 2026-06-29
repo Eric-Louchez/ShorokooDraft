@@ -318,7 +318,7 @@ namespace Shorokoo
 
         /// <summary>Creates a vector of values from start (inclusive) to limit (exclusive), stepping by delta.</summary>
         public static Vector<T> VectorRange<T>(Scalar<T> start, Scalar<T> limit, Scalar<T> delta) where T : SimpleNumLike =>
-            OnnxOp.Range(start, limit, delta).As<T>().Vec();
+            ((Tensor<T>)OnnxOp.Range(start, limit, delta)).Vec();
 
         /// <summary>Creates a vector of values from start (inclusive) to limit (exclusive), stepping by delta.</summary>
         public static Vector<int8> VectorRange(sbyte start, sbyte limit, sbyte delta) => OnnxOp.Range(Scalar(start), Scalar(limit), Scalar(delta)).int8().Vec();

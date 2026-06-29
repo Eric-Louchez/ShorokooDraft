@@ -55,7 +55,7 @@ namespace Shorokoo
                 where T1 : FloatLike where T2 : FloatLike
         {
             var retval = OnnxOp.BatchNormalizationFullOutputs(this, scale, bias, mean, variance, epsilon == 1e-05f ? null : epsilon, momentum == 0.9f ? null : momentum, trainingMode == false ? null : trainingMode);
-            return ((Variable)retval.y, retval.runningMean.As<T2>().Vec(), retval.runningVariance.As<T2>().Vec());
+            return ((Variable)retval.y, ((Tensor<T2>)retval.runningMean).Vec(), ((Tensor<T2>)retval.runningVariance).Vec());
         }
 
         /// <summary>Center-crops or pads to the given dimensions (ONNX CenterCropPad).</summary>

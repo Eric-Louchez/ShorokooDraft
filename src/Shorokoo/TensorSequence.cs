@@ -108,7 +108,6 @@ namespace Shorokoo
         public TensorKey Key => Imm.Key;
         public string UniqueName => Imm.UniqueName;
         public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
-        public Tensor<V> As<V>() where V : IVarType => (Tensor<V>)Imm;
 
 #pragma warning disable CS0618 // forwarding the obsolete member is intentional
         string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;

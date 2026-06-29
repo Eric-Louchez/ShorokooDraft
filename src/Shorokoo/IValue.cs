@@ -33,7 +33,6 @@ namespace Shorokoo
         public Node ParentNode => this.OwningNode;
         public DType Type { get; }
         public DType DType => this.Type;
-        public Tensor<V> As<V>() where V : IVarType;
         public Function? ModuleFn { get; }
 
         /// <summary>
@@ -182,9 +181,8 @@ namespace Shorokoo
 
     public static class IValueExtensions
     {
-        // Element-type reinterprets — produce the typed tensor handle of element type T over the same
-        // graph node (the node itself is non-generic; the runtime dtype is unchanged).
-        public static Tensor<T> As<T>(this IValue var) where T : IVarType => (Tensor<T>)var.ToVariable();
+        // Element-type views — produce the typed tensor handle of element type T over the same graph
+        // node (the node itself is non-generic; validated by the operator, so the runtime dtype must match).
         public static Tensor<uint4> uint4(this IValue var) => (Tensor<uint4>)var.ToVariable();
         public static Tensor<uint8> uint8(this IValue var) => (Tensor<uint8>)var.ToVariable();
         public static Tensor<uint16> uint16(this IValue var) => (Tensor<uint16>)var.ToVariable();

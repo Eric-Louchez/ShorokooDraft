@@ -25,7 +25,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             else if (a.Structure() == DataStructure.Sequence)
             {
                 var sequenceResult = OnnxOp.SequenceEmpty(a.Type);
-                foreach (var ctx in LoopAPI.Iterate(OnnxOp.SequenceLength(a).As<int64>().Scalar()))
+                foreach (var ctx in LoopAPI.Iterate(((Tensor<int64>)OnnxOp.SequenceLength(a)).Scalar()))
                 {
                     var elementA = OnnxOp.SequenceAt(a, ctx.IterationIndex);
                     var elementB = OnnxOp.SequenceAt(b, ctx.IterationIndex);
@@ -37,7 +37,7 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             }
             else if (a.Structure() == DataStructure.Optional)
             {
-                var isNotNull = OnnxOp.OptionalHasElement(a).As<bit>().Scalar();
+                var isNotNull = ((Tensor<bit>)OnnxOp.OptionalHasElement(a)).Scalar();
                 var sum = OnnxOp.Add(OnnxOp.OptionalGetElement(a), OnnxOp.OptionalGetElement(b));
                 return Shorokoo.Core.Nodes.Ops.IfElse(isNotNull, sum, OnnxOp.Optional(null, DataStructure.Tensor, a.Type));
             }
