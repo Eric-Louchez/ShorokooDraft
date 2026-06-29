@@ -318,6 +318,20 @@ public class CoreUtilsCoverageTests
         var vFromNull = (Variable)(Vector<float32>)unranked2;
         Assert.Equal(1, vFromNull.Rank); Assert.Equal(OpCodes.IDENTITY, vFromNull.OwningNode.OpCode);
 
+        // Vec()/Scalar() reinterpret a tensor handle to a fixed-rank Vector/Scalar, validating rank
+        // exactly like the Variable->handle operators: a known mismatch is an error (you cannot coerce
+        // a rank-0 scalar into a vector, or a rank-1 vector into a scalar), a matching rank passes
+        // through, and an unknown rank is materialised with an Identity rank-conversion.
+        Assert.Throws<InvalidTensorOperationException>(() => (object)((Tensor<float32>)rank2Node).Vec());
+        Assert.Throws<InvalidTensorOperationException>(() => (object)((Tensor<float32>)rank2Node).Scalar());
+        Assert.Throws<InvalidTensorOperationException>(() => (object)((Scalar<float32>)scalarNode).Vec());
+        Assert.Throws<InvalidTensorOperationException>(() => (object)((Vector<float32>)vectorNode).Scalar());
+        Assert.Equal(1, ((Variable)((Tensor<float32>)vectorNode).Vec()).Rank);
+        Assert.Equal(0, ((Variable)((Tensor<float32>)scalarNode).Scalar()).Rank);
+        Variable unrankedVec = InputTensor<float32>("uv");
+        var vecAdapted = (Variable)((Tensor<float32>)unrankedVec).Vec();
+        Assert.Equal(1, vecAdapted.Rank); Assert.Equal(OpCodes.IDENTITY, vecAdapted.OwningNode.OpCode);
+
         // Cast<V> is the explicit dtype CONVERSION (inserts a Cast node) — to change dtype you must Cast;
         // there is no reinterpret.
         Assert.Equal(DType.Float64, ((Variable)scalarNode.Cast<float64>()).Type);

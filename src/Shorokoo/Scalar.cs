@@ -51,17 +51,9 @@ namespace Shorokoo
         public Vector<int64> DShape => Immutable.DShape;
         public Vector<int64> TShape => Immutable.TShape;
         public Scalar<int64> TRank => Immutable.TRank;
-        public Vector<T> Vec()
-        {
-            var v = Immutable;
-            return v.Rank == 1 ? v : OnnxOp.Identity(v, rank: 1);   // adapt to rank-1
-        }
+        public Vector<T> Vec() => (Vector<T>)Immutable;     // throws: a rank-0 scalar is not a vector
         IVector ITensor.Vec() => Vec();
-        IScalar ITensor.Scalar()                                   // a Scalar<T> has no public Scalar(); adapt to rank-0 here
-        {
-            var v = Immutable;
-            return (Scalar<T>)(v.Rank == 0 ? v : OnnxOp.Identity(v, rank: 0));
-        }
+        IScalar ITensor.Scalar() => (Scalar<T>)Immutable;   // a Scalar<T> has no public Scalar(); already rank-0
         Tensor<V> ITensor.Cast<V>(bool saturate) => Immutable.Cast<V>(saturate);
 
         public Node OwningNode => Immutable.OwningNode;

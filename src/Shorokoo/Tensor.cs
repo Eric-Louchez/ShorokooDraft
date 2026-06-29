@@ -93,17 +93,11 @@ namespace Shorokoo
         string? IValue.FriendlyName => ((IValue)Immutable).FriendlyName;
 #pragma warning restore CS0618
 
-        // user-facing reinterpret casts (forward to the immutable, which handles already-typed nodes)
-        public Vector<T> Vec()
-        {
-            var v = Immutable;
-            return v.Rank == 1 ? v : OnnxOp.Identity(v, rank: 1);   // adapt to rank-1
-        }
-        public Scalar<T> Scalar()
-        {
-            var v = Immutable;
-            return v.Rank == 0 ? v : OnnxOp.Identity(v, rank: 0);   // adapt to rank-0
-        }
+        // user-facing reinterpret casts: the Variable→handle operators validate rank
+        // (pass-through on a match, refine an unknown rank, throw on a known mismatch —
+        // e.g. a rank-0 tensor cannot be reinterpreted as a Vector).
+        public Vector<T> Vec() => (Vector<T>)Immutable;
+        public Scalar<T> Scalar() => (Scalar<T>)Immutable;
 
         // == builds an Equal graph node (see operators); Equals/GetHashCode use the wrapped node.
         public override bool Equals(object? obj) => obj is Tensor<T> t && Equals(inner, t.inner);
@@ -416,12 +410,10 @@ namespace Shorokoo
 
         /// <summary>The shape - optionally the dims[start:end] slice of it - as an in-graph vector.</summary>
         public Vector<int64> ShapeTensor(long? start = null, long? end = null)
-        {
             // OnnxOp.Shape declares (data, end, start) — name the args; passing positionally
             // swapped start/end (e.g. ShapeTensor(1) sliced dims[:1] instead of dims[1:]).
-            var v = OnnxOp.Shape(this, end: end, start: start);
-            return v.Rank == 1 ? v : OnnxOp.Identity(v, rank: 1);   // adapt to rank-1
-        }
+            // The Variable→Vector<int64> operator validates the rank-1 result.
+            => OnnxOp.Shape(this, end: end, start: start);
 
         /// <summary>The element count: the product of the dimensions, optionally restricted to dims[start:end].</summary>
         public Scalar<int64> SizeTensor(long? start = null, long? end = null)
@@ -779,17 +771,13 @@ namespace Shorokoo
         /// <summary>Element-wise selection: takes <paramref name="whenTrue"/> where <paramref name="cond"/> is true, otherwise <paramref name="whenFalse"/>.</summary>
         public static Vector<V> Where<V>(this Vector<bit> cond, Vector<V> whenTrue, Vector<V> whenFalse)
             where V : IVarType
-        {
-            var v = OnnxOp.Where(cond, whenTrue, whenFalse);
-            return v.Rank == 1 ? v : OnnxOp.Identity(v, rank: 1);   // adapt to rank-1
-        }
+            // The Variable→Vector<V> operator validates the rank-1 result.
+            => OnnxOp.Where(cond, whenTrue, whenFalse);
 
         /// <summary>Element-wise selection: takes <paramref name="whenTrue"/> where <paramref name="cond"/> is true, otherwise <paramref name="whenFalse"/>.</summary>
         public static Scalar<V> Where<V>(this Scalar<bit> cond, Scalar<V> whenTrue, Scalar<V> whenFalse)
             where V : IVarType
-        {
-            var v = OnnxOp.Where(cond, whenTrue, whenFalse);
-            return v.Rank == 0 ? v : OnnxOp.Identity(v, rank: 0);   // adapt to rank-0
-        }
+            // The Variable→Scalar<V> operator validates the rank-0 result.
+            => OnnxOp.Where(cond, whenTrue, whenFalse);
     }
 }

@@ -77,12 +77,10 @@ namespace Shorokoo
 
         /// <summary>The shape - optionally the dims[start:end] slice of it - as an in-graph vector.</summary>
         public Vector<int64> ShapeTensor(long? start = null, long? end = null)
-        {
             // OnnxOp.Shape declares (data, end, start) — name the args; passing positionally
             // swapped start/end (e.g. ShapeTensor(1) sliced dims[:1] instead of dims[1:]).
-            var v = OnnxOp.Shape(this, end: end, start: start);
-            return v.Rank == 1 ? v : OnnxOp.Identity(v, rank: 1);   // adapt to rank-1
-        }
+            // The Variable→Vector<int64> operator validates the rank-1 result.
+            => OnnxOp.Shape(this, end: end, start: start);
 
         /// <summary>The element count: the product of the dimensions, optionally restricted to dims[start:end].</summary>
         public Scalar<int64> SizeTensor(long? start = null, long? end = null)
