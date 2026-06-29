@@ -76,141 +76,97 @@ namespace Shorokoo
             => new VectorIndexerParam { Indices = Vector(indices) };
     }
 
-    /// <summary>
-    /// Deferred result of a <see cref="Vector{T}"/> slice indexer: implicitly converts to the
-    /// sliced/gathered <see cref="Vector{T}"/> for reads, or writes via <see cref="Set"/>.
-    /// </summary>
-    public class VectorIndexerResult<TT> where TT : IVarType
+    public partial struct Vector<T>
     {
-        private Vector<TT> gatherFrom;
-        private VectorIndexerParam slice;
-
-        /// <summary>The sliced/gathered vector (shorthand for the implicit conversion).</summary>
-        public Vector<TT> T => (Vector<TT>)this;
-
-        internal VectorIndexerResult(Vector<TT> gatherFrom, VectorIndexerParam slice)
+        /// <summary>
+        /// Slices or gathers the vector for reads (<c>Vector w = v[1..3];</c>), and replaces the
+        /// indexed positions for writes (<c>v[1..3] = w;</c>). Because <see cref="Vector{T}"/> is a
+        /// value type, an indexer-set rebinds this local handle and never mutates a caller's instance.
+        /// </summary>
+        public Vector<T> this[VectorIndexerParam index]
         {
-            this.gatherFrom = gatherFrom;
-            this.slice = slice;
+            get => VectorIndexer.ReadSlice(this, index);
+            set => this = VectorIndexer.WriteSlice(this, index, value);
         }
 
-        /// <summary>Materializes the slice/gather as a <see cref="Vector{T}"/>.</summary>
-        public static implicit operator Vector<TT>(VectorIndexerResult<TT> result)
+        /// <summary>Reads or writes a single element at a runtime index.</summary>
+        public Scalar<T> this[Scalar<int64> index]
         {
-            var tensor = result.gatherFrom;
-            var slice = result.slice;
+            get => this.Gather(index.Unsqueeze(), 0).Squeeze().Scalar();
+            set => this = this.ScatterND(index.Unsqueeze().Unsqueeze(), value.Unsqueeze());
+        }
 
-            // This is a no op.
+        /// <summary>Reads or writes a single element at a constant index.</summary>
+        public Scalar<T> this[long index]
+        {
+            get => this[Globals.Scalar(index)];
+            set => this[Globals.Scalar(index)] = value;
+        }
+
+        /// <summary>Reads or writes a single element at a constant index.</summary>
+        public Scalar<T> this[int index]
+        {
+            get => this[(long)index];
+            set => this[(long)index] = value;
+        }
+
+        /// <summary>Reads or writes a single element at an <see cref="Index"/> (supports from-end <c>^i</c>).</summary>
+        public Scalar<T> this[Index index]
+        {
+            get => this[OnnxUtils.FromIndex(index)];
+            set => this[OnnxUtils.FromIndex(index)] = value;
+        }
+    }
+
+    /// <summary>
+    /// Read/write implementations behind the <see cref="Vector{T}"/> slicing indexer. Reads
+    /// materialise the sliced/gathered vector; writes return a copy of the source with the
+    /// indexed positions replaced (the indexer setter rebinds the handle to it).
+    /// </summary>
+    internal static class VectorIndexer
+    {
+        public static Vector<TT> ReadSlice<TT>(Vector<TT> source, VectorIndexerParam slice) where TT : IVarType
+        {
+            // Full range is the identity.
             if (slice.IsFullRange)
-                return result.gatherFrom;
+                return source;
 
-
+            // Gather a list of positions (ONNX Gather along axis 0 keeps rank 1).
             if (slice.Indices is not null)
-                return tensor.GatherND(slice.Indices.Value, batchDims: 0);
+                return source.Gather(slice.Indices.Value, 0).Vec();
 
             Debug.Assert(slice.ScalarStart is not null);
             Debug.Assert(slice.ScalarEnd is not null);
-            if (slice.ScalarStep is not null)
-                throw new InvalidTensorOperationException(ErrorCodes.CR006, "Vector Index", "step operation", 
-                    "Step operations in vector indexing are not yet supported");
 
-            return tensor.Slice(slice.ScalarStart!.Value, slice.ScalarEnd!.Value, slice.ScalarStep);
+            // Contiguous or strided slice (ORT clamps an open-ended bound; steps drive the stride).
+            return source.Slice(slice.ScalarStart!.Value, slice.ScalarEnd!.Value, slice.ScalarStep);
         }
 
-        /// <summary>Returns a copy of the source vector with the indexed positions replaced by <paramref name="values"/>.</summary>
-        public Vector<TT> Set(Vector<TT> values)
+        public static Vector<TT> WriteSlice<TT>(Vector<TT> source, VectorIndexerParam slice, Vector<TT> values) where TT : IVarType
         {
-            // This is a no op.
+            // Full range replaces the whole vector.
             if (slice.IsFullRange)
                 return values;
 
+            // Scatter the values onto the targeted positions. Both the gather-by-index and the
+            // (possibly strided) slice cases reduce to "scatter `values` at these row indices":
+            // ScatterND wants the index list shaped [n, 1].
+            Vector<int64> positions = slice.Indices ?? SlicePositions(source, slice);
+            Tensor<int64> indices = ((Tensor<int64>)positions).Unsqueeze();
+            return source.ScatterND(indices, values);
+        }
 
-            if (slice.Indices is not null)
-                return gatherFrom.ScatterND(slice.Indices.Value, values);
-
+        /// <summary>The concrete row indices a (possibly strided, possibly open-ended) slice selects.</summary>
+        private static Vector<int64> SlicePositions<TT>(Vector<TT> source, VectorIndexerParam slice) where TT : IVarType
+        {
             Debug.Assert(slice.ScalarStart is not null);
             Debug.Assert(slice.ScalarEnd is not null);
 
-            if (slice.ScalarStep is null)
-            {
-                var toUpdateTensor = values.Pad(PadMode.Constant, slice.ScalarStart!.Value, slice.ScalarEnd!.Value, Scalar<TT>(values.Type.DefaultVal));
-                var updateMask = VectorFill(values.TShape, true).Pad(PadMode.Constant, slice.ScalarStart!.Value.Unsqueeze(), slice.ScalarEnd!.Value.Unsqueeze());
-                return updateMask.Where(toUpdateTensor, gatherFrom);
-            }
-
-            var targetShape = gatherFrom.TShape;
-
-            var stepPattern = VectorFill(slice.ScalarStep!.Value, false);
-            stepPattern = stepPattern[0].Set(true);
-
-            var stepMask = stepPattern.Tile(values.TShape);
-            stepMask = stepMask.Slice(0L, targetShape[0]);
-
-            var blownValues = values.Resize(targetShape, transformMode: CoordinateTransformationMode.Asymmetric, mode: ResizeMode.Nearest);
-
-            var result = stepMask.Where(blownValues, gatherFrom);
-            return result;
+            var length = source.TShape[0];
+            var start = slice.ScalarStart!.Value;
+            var end = slice.ScalarEnd!.Value.Min(length);   // clamp an open-ended (long.MaxValue) bound
+            var step = slice.ScalarStep ?? Scalar(1L);
+            return OnnxOp.Range(start, end, step);
         }
-    }
-
-    /// <summary>
-    /// Deferred result of a single-element <see cref="Vector{T}"/> indexer: implicitly converts
-    /// to the element <see cref="Scalar{T}"/> for reads, or writes via <see cref="Set"/>.
-    /// </summary>
-    public class ScalarIndexerResult<TT> where TT : IVarType
-    {
-        private Vector<TT> gatherFrom;
-        private Scalar<int64> index;
-
-        /// <summary>The indexed element (shorthand for the implicit conversion).</summary>
-        public Scalar<TT> T => (Scalar<TT>)this;
-
-        internal ScalarIndexerResult(Vector<TT> gatherFrom, long index)
-        {
-            this.gatherFrom = gatherFrom;
-            this.index = Scalar(index);
-        }
-
-        internal ScalarIndexerResult(Vector<TT> gatherFrom, Scalar<int64> index)
-        {
-            this.gatherFrom = gatherFrom;
-            this.index = index;
-        }
-
-        /// <summary>Materializes the indexed element as a <see cref="Scalar{T}"/>.</summary>
-        public static implicit operator Scalar<TT>(ScalarIndexerResult<TT> result)
-        {
-            var tensor = result.gatherFrom;
-            var index = result.index;
-            return tensor.Gather(result.index.Unsqueeze(), 0).Squeeze().Scalar();
-            // return tensor.Slice(index, index + 1).Squeeze();
-        }
-
-        /// <summary>Returns a copy of the source vector with the indexed element replaced by <paramref name="value"/>.</summary>
-        public Vector<TT> Set(Scalar<TT> value)
-            => this.gatherFrom.ScatterND(index.Unsqueeze().Unsqueeze(), value.Unsqueeze());
-    }
-
-    public partial struct Vector<T>
-    {
-        /// <summary>Slices or gathers the vector (range, stepped range, or index list).</summary>
-        public VectorIndexerResult<T> this[VectorIndexerParam index]
-            => new VectorIndexerResult<T>(this, index);
-
-        /// <summary>Reads/writes a single element at a runtime index.</summary>
-        public ScalarIndexerResult<T> this[Scalar<int64> index]
-            => new ScalarIndexerResult<T>(this, index);
-
-        /// <summary>Reads/writes a single element at a constant index.</summary>
-        public ScalarIndexerResult<T> this[long index]
-            => new ScalarIndexerResult<T>(this, index);
-
-        /// <summary>Reads/writes a single element at a constant index.</summary>
-        public ScalarIndexerResult<T> this[int index]
-            => this[(long)index];
-
-        /// <summary>Reads/writes a single element at a <see cref="Index"/> (supports from-end <c>^i</c>).</summary>
-        public ScalarIndexerResult<T> this[Index index]
-            => this[OnnxUtils.FromIndex(index)];
     }
 }

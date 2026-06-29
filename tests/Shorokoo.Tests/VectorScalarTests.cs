@@ -53,15 +53,10 @@ public class VectorScalarCoverageTests
     public void TestScalarImplicitPrimitiveConversion()
         => Assert.True(AutoTest.AdvancedTestGraph<ScalarImplicitPrimitiveConversionModel>(hyperparamInputs: [], runtimeInputs: []));
 
-    // VectorIndexerModel is self-checking like the others, but converting it makes the indexer
-    // read/Set paths reachable outputs — which surfaces the faults tracked in #3. The first to
-    // execute (at module-build time, in the (Vector<float32>)v[(0..4, 1L)] materialisation) is the
-    // stepped-slice read: it throws CR006 "Step operations in vector indexing are not yet
-    // supported". The gather (GatherND/ScatterND) and contiguous slice-write (Where) paths fault
-    // too. Marked inconclusive (skipped) until #3 is fixed; the module is kept self-checking so
-    // this test becomes meaningful — and turns green — the moment the underlying indexer bug is
-    // resolved.
-    [Fact(Skip = "Inconclusive: blocked by #3 (Vector indexer step-slice/gather/slice-write faults). See #4.")]
+    // VectorIndexerModel exercises every Vector indexer read/write path with the issue-#3 direct
+    // API (read returns the value with no .T; an indexer-set assigns with struct value semantics),
+    // and asserts the Eval'd values. The step-slice/gather/slice-write faults #3 tracked are fixed.
+    [Fact]
     public void TestVectorIndexerCoverage()
         => Assert.True(AutoTest.AdvancedTestGraph<VectorIndexerModel>(hyperparamInputs: [], runtimeInputs: Input));
 
@@ -338,44 +333,62 @@ public partial class VectorIndexerModel
 
         // VectorIndexerParam implicit operators — each builds a param struct, used below.
         VectorIndexerParam p1 = 1..3;
-        VectorIndexerParam p2 = (0..4, 1L);
-        VectorIndexerParam p3 = (0L, 4L, 1L);
-        VectorIndexerParam p4 = Vector(0L, 1L);
+        VectorIndexerParam p4 = Vector(0L, 2L, 4L);
         VectorIndexerParam p5 = new long[] { 0L, 1L };
         VectorIndexerParam p6 = Range.All;
 
         Scalar<float32> err = Scalar(0f);
 
+        // --- Reads: direct, no .T (issue #3) ---
+
         // Slice read: v[1..3] == [2, 3].
-        err = err + L1(v[1..3].T, Vector(2f, 3f));
-        err = err + L1(v[p1].T, Vector(2f, 3f));
+        err = err + L1(v[1..3], Vector(2f, 3f));
+        err = err + L1(v[p1], Vector(2f, 3f));
 
         // Full-range read is the identity.
-        err = err + L1(v[p6].T, v);
-        err = err + L1(v[Range.All].T, v);
+        err = err + L1(v[p6], v);
+        err = err + L1(v[Range.All], v);
 
         // Element reads: v[0] == 1, v[^1] == 5.
-        err = err + (v[0L].T - Scalar(1f)).Abs();
-        err = err + (v[0].T - Scalar(1f)).Abs();
-        err = err + (v[Scalar(0L)].T - Scalar(1f)).Abs();
-        err = err + (v[Index.End].T - Scalar(5f)).Abs();
+        err = err + (v[0L] - Scalar(1f)).Abs();
+        err = err + (v[0] - Scalar(1f)).Abs();
+        err = err + (v[Scalar(0L)] - Scalar(1f)).Abs();
+        err = err + (v[^1] - Scalar(5f)).Abs();
 
-        // Element write: v[0] = 99 -> [99, 2, 3, 4, 5].
-        err = err + L1(v[0L].Set(Scalar(99f)), Vector(99f, 2f, 3f, 4f, 5f));
+        // Gather reads (by index vector and by long[]).
+        err = err + L1(v[p4], Vector(1f, 3f, 5f));
+        err = err + L1(v[Vector(0L, 1L)], Vector(1f, 2f));
+        err = err + L1(v[p5], Vector(1f, 2f));
+        err = err + L1(v[new long[] { 0L, 4L }], Vector(1f, 5f));
 
-        // Gather reads / param-conversion paths and the Set write paths broken by #3 — folded so
-        // the nodes are reachable (these throw a shape-inference error today; #3).
-        err = err + Nan(((Vector<float32>)v[p2]).Cast<float32>());
-        err = err + Nan(((Vector<float32>)v[p3]).Cast<float32>());
-        err = err + Nan(((Vector<float32>)v[p4]).Cast<float32>());
-        err = err + Nan(((Vector<float32>)v[p5]).Cast<float32>());
-        err = err + Nan(v[Vector(0L, 1L)].T);
-        err = err + Nan(v[new long[] { 0L }].T);
+        // Strided slice read: v[(0..5, 2L)] == [1, 3, 5].
+        err = err + L1(v[(0..5, 2L)], Vector(1f, 3f, 5f));
 
-        err = err + Nan(v[p6].Set(Vector(10f, 20f, 30f, 40f, 50f)));
-        err = err + Nan(v[Vector(0L)].Set(Vector(99f)));
-        err = err + Nan(v[1..3].Set(Vector(8f, 9f)));
-        err = err + Nan(v[(0..4, 2L)].Set(Vector(8f, 9f)));
+        // --- Writes: indexer set, no .Set (issue #3). Value semantics: each write mutates a
+        // struct copy, never v itself. ---
+
+        // Element write: [0] = 99 -> [99, 2, 3, 4, 5].
+        var wElem = v; wElem[0L] = Scalar(99f);
+        err = err + L1(wElem, Vector(99f, 2f, 3f, 4f, 5f));
+
+        // Contiguous slice write: [1..3] = [8, 9] -> [1, 8, 9, 4, 5].
+        var wSlice = v; wSlice[1..3] = Vector(8f, 9f);
+        err = err + L1(wSlice, Vector(1f, 8f, 9f, 4f, 5f));
+
+        // Gather write: [[0,2,4]] = [70,30,50] -> [70, 2, 30, 4, 50].
+        var wGather = v; wGather[Vector(0L, 2L, 4L)] = Vector(70f, 30f, 50f);
+        err = err + L1(wGather, Vector(70f, 2f, 30f, 4f, 50f));
+
+        // Strided slice write: [(0..5, 2L)] = [8,9,10] -> [8, 2, 9, 4, 10].
+        var wStep = v; wStep[(0..5, 2L)] = Vector(8f, 9f, 10f);
+        err = err + L1(wStep, Vector(8f, 2f, 9f, 4f, 10f));
+
+        // Full-range write replaces the whole vector.
+        var wFull = v; wFull[Range.All] = Vector(10f, 20f, 30f, 40f, 50f);
+        err = err + L1(wFull, Vector(10f, 20f, 30f, 40f, 50f));
+
+        // Value semantics: none of the writes above mutated v.
+        err = err + L1(v, Vector(1f, 2f, 3f, 4f, 5f));
 
         return (err + Nan(input)) < Scalar(1e-2f);
     }
