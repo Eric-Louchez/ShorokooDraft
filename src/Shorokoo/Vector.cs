@@ -55,12 +55,18 @@ namespace Shorokoo
         public Vector<int64> DShape => Immutable.DShape;
         public Vector<int64> TShape => Immutable.TShape;
         public Scalar<int64> TRank => Immutable.TRank;
-        public Vector<T> Vec() => (Variable)Immutable.Vec();
-        public Scalar<T> Scalar() => (Variable)Immutable.Scalar();
-        IVector ITensor.Vec() => (Vector<T>)Immutable.Vec();
-        Vector<V> ITensor.Vec<V>() => Immutable.Cast<V>().Vec();
-        IScalar ITensor.Scalar() => (Scalar<T>)Immutable.Scalar();
-        Scalar<V> ITensor.Scalar<V>() => Immutable.Cast<V>().Scalar();
+        public Vector<T> Vec()
+        {
+            var v = Immutable;
+            return v.Rank == 1 ? v : OnnxOp.Identity(v, rank: 1);   // adapt to rank-1
+        }
+        public Scalar<T> Scalar()
+        {
+            var v = Immutable;
+            return v.Rank == 0 ? v : OnnxOp.Identity(v, rank: 0);   // adapt to rank-0
+        }
+        IVector ITensor.Vec() => Vec();
+        IScalar ITensor.Scalar() => Scalar();
         Tensor<V> ITensor.Cast<V>(bool saturate) => Immutable.Cast<V>(saturate);
 
         public Node OwningNode => Immutable.OwningNode;
@@ -547,7 +553,10 @@ namespace Shorokoo
 
         /// <summary>Concatenates this vector with <paramref name="others"/>.</summary>
         public Vector<T> Concat(params Vector<T>[] others)
-            =>  (Variable)(OnnxOp.Concat([this, .. others], 0)).Vec();
+        {
+            var v = OnnxOp.Concat([this, .. others], 0);
+            return v.Rank == 1 ? v : OnnxOp.Identity(v, rank: 1);   // adapt to rank-1
+        }
 
         /// <summary>Pads with <paramref name="padLeft"/> elements before and <paramref name="padRight"/> elements after the vector.</summary>
         public Vector<T> Pad(PadMode mode, Scalar<int64> padLeft, Scalar<int64> padRight, Scalar<T> val)

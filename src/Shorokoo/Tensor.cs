@@ -36,8 +36,6 @@ namespace Shorokoo
         /// <summary>Statically known rank (number of dimensions), or null when not known at graph-construction time.</summary>
         public int? Rank { get; }
 
-        /// <summary>Casts the element type to <typeparamref name="T"/> and reinterprets the result as a rank-1 <see cref="Vector{T}"/>.</summary>
-        public Vector<T> Vec<T>() where T : IVarType;
         /// <summary>Casts the element type to <typeparamref name="T"/>.</summary>
         public Tensor<T> Cast<T>(bool saturate = true) where T : IVarType;
 
@@ -47,8 +45,6 @@ namespace Shorokoo
         /// <summary>Reinterprets this tensor as a rank-0 scalar.</summary>
         public IScalar Scalar();
 
-        /// <summary>Casts the element type to <typeparamref name="T"/> and reinterprets the result as a rank-0 <see cref="Scalar{T}"/>.</summary>
-        public Scalar<T> Scalar<T>() where T : IVarType;
     }
 
     /// <summary>
@@ -83,10 +79,8 @@ namespace Shorokoo
         public Vector<int64> DShape => Immutable.DShape;
         public Vector<int64> TShape => Immutable.TShape;
         public Scalar<int64> TRank => Immutable.TRank;
-        IVector ITensor.Vec() => (Vector<T>)Immutable.Vec();
-        Vector<V> ITensor.Vec<V>() => Immutable.Cast<V>().Vec();
-        IScalar ITensor.Scalar() => (Scalar<T>)Immutable.Scalar();
-        Scalar<V> ITensor.Scalar<V>() => Immutable.Cast<V>().Scalar();
+        IVector ITensor.Vec() => Vec();
+        IScalar ITensor.Scalar() => Scalar();
 
         // IValue surface — forward to the backing Variable.
         public Node OwningNode => Immutable.OwningNode;
@@ -100,8 +94,16 @@ namespace Shorokoo
 #pragma warning restore CS0618
 
         // user-facing reinterpret casts (forward to the immutable, which handles already-typed nodes)
-        public Vector<T> Vec() => (Variable)Immutable.Vec();
-        public Scalar<T> Scalar() => (Variable)Immutable.Scalar();
+        public Vector<T> Vec()
+        {
+            var v = Immutable;
+            return v.Rank == 1 ? v : OnnxOp.Identity(v, rank: 1);   // adapt to rank-1
+        }
+        public Scalar<T> Scalar()
+        {
+            var v = Immutable;
+            return v.Rank == 0 ? v : OnnxOp.Identity(v, rank: 0);   // adapt to rank-0
+        }
 
         // == builds an Equal graph node (see operators); Equals/GetHashCode use the wrapped node.
         public override bool Equals(object? obj) => obj is Tensor<T> t && Equals(inner, t.inner);
@@ -414,9 +416,12 @@ namespace Shorokoo
 
         /// <summary>The shape - optionally the dims[start:end] slice of it - as an in-graph vector.</summary>
         public Vector<int64> ShapeTensor(long? start = null, long? end = null)
+        {
             // OnnxOp.Shape declares (data, end, start) — name the args; passing positionally
             // swapped start/end (e.g. ShapeTensor(1) sliced dims[:1] instead of dims[1:]).
-            => (Variable)(OnnxOp.Shape(this, end: end, start: start)).Vec();
+            var v = OnnxOp.Shape(this, end: end, start: start);
+            return v.Rank == 1 ? v : OnnxOp.Identity(v, rank: 1);   // adapt to rank-1
+        }
 
         /// <summary>The element count: the product of the dimensions, optionally restricted to dims[start:end].</summary>
         public Scalar<int64> SizeTensor(long? start = null, long? end = null)
@@ -774,11 +779,17 @@ namespace Shorokoo
         /// <summary>Element-wise selection: takes <paramref name="whenTrue"/> where <paramref name="cond"/> is true, otherwise <paramref name="whenFalse"/>.</summary>
         public static Vector<V> Where<V>(this Vector<bit> cond, Vector<V> whenTrue, Vector<V> whenFalse)
             where V : IVarType
-            => (Variable)(OnnxOp.Where(cond, whenTrue, whenFalse)).Vec();
+        {
+            var v = OnnxOp.Where(cond, whenTrue, whenFalse);
+            return v.Rank == 1 ? v : OnnxOp.Identity(v, rank: 1);   // adapt to rank-1
+        }
 
         /// <summary>Element-wise selection: takes <paramref name="whenTrue"/> where <paramref name="cond"/> is true, otherwise <paramref name="whenFalse"/>.</summary>
         public static Scalar<V> Where<V>(this Scalar<bit> cond, Scalar<V> whenTrue, Scalar<V> whenFalse)
             where V : IVarType
-            => (Variable)(OnnxOp.Where(cond, whenTrue, whenFalse)).Scalar();
+        {
+            var v = OnnxOp.Where(cond, whenTrue, whenFalse);
+            return v.Rank == 0 ? v : OnnxOp.Identity(v, rank: 0);   // adapt to rank-0
+        }
     }
 }

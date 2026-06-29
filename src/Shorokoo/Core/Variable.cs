@@ -304,15 +304,6 @@ namespace Shorokoo.Core
         public Vector<int64> TShape => this.DShape;
         public Scalar<int64> TRank => TShape.TShape[0].T;
 
-        public Vector<V> Vec<V>() where V : IVarType => this.Cast<V>().Vec();
-        public Scalar<V> Scalar<V>() where V : IVarType => this.Cast<V>().Scalar();
-
-        /// <summary>Reinterprets this tensor as a rank-1 vector, inserting an Identity node when needed.</summary>
-        public Variable Vec() => this.Rank == 1 ? this : OnnxOp.Identity(this, rank: 1);
-
-        /// <summary>Reinterprets this tensor as a rank-0 scalar, inserting an Identity node when needed.</summary>
-        public Variable Scalar() => this.Rank == 0 ? this : OnnxOp.Identity(this, rank: 0);
-
         /// <summary>Casts the element type to <typeparamref name="V"/>; returns this tensor unchanged when the types already match.</summary>
         public Tensor<V> Cast<V>(bool saturate = true) where V : IVarType
             => OnnxUtils.GetDType<V>() == this.Type ?
