@@ -434,10 +434,10 @@ namespace Shorokoo.Core.Nodes.AutoDiff
                 Tensor<T1> zeros3D = OnnxOp.Reshape(zeros, data3DShape, allowZero: false);   // (L, K, R)
                 Tensor<T1> grad3D = OnnxOp.Reshape(grad, grad3DShape, allowZero: false);     // (L, M_total, R)
 
-                Tensor<T1> zeros3DKFront = (Variable)zeros3D.Transpose(1L, 0L, 2L); // (K, L, R)
-                Tensor<T1> grad3DKFront = (Variable)grad3D.Transpose(1L, 0L, 2L);   // (M_total, L, R)
+                Tensor<T1> zeros3DKFront = zeros3D.Transpose(1L, 0L, 2L); // (K, L, R)
+                Tensor<T1> grad3DKFront = grad3D.Transpose(1L, 0L, 2L);   // (M_total, L, R)
                 Tensor<T1> scattered3D = OnnxOp.ScatterND(zeros3DKFront, scatterIndices, grad3DKFront, ScatterNDReduction.Add); // (K, L, R)
-                Tensor<T1> scattered3DRestored = (Variable)scattered3D.Transpose(1L, 0L, 2L); // (L, K, R)
+                Tensor<T1> scattered3DRestored = scattered3D.Transpose(1L, 0L, 2L); // (L, K, R)
                 return [OnnxOp.Reshape(scattered3DRestored, dataShapeVec, allowZero: false), null];
             }
 

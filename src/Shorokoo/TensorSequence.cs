@@ -99,7 +99,10 @@ namespace Shorokoo
         ITensor ITensorSequence.Concat(long axis, bool newAxis) => this.Concat(axis, newAxis);
         ITensor ITensorSequence.this[Scalar<int64> index] => this[index];
         ITensorSequence ITensorSequence.RemoveAt(Scalar<int64> index) => this.RemoveAt(index);
-        ITensorSequence ITensorSequence.InsertAt(ITensor tensor, Scalar<int64> index) => this.InsertAt((Tensor<T>)tensor, index);
+        // Route through the backing Variable so any rank-compatible ITensor (Vector/Scalar included)
+        // converts via the validating Variable→Tensor<T> operator — a direct (Tensor<T>)tensor unboxes
+        // and would throw InvalidCastException for a Vector<T>/Scalar<T> element.
+        ITensorSequence ITensorSequence.InsertAt(ITensor tensor, Scalar<int64> index) => this.InsertAt((Tensor<T>)tensor.ToVariable(), index);
 
         // IValue surface — forward to the backing Variable.
         public Node OwningNode => Immutable.OwningNode;

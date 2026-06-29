@@ -26,7 +26,7 @@ namespace Shorokoo
     /// <para>
     /// A defaulted handle (<c>default</c>, <c>inner == null</c>) materialises the established default on
     /// first use: default-filled fields when <typeparamref name="T"/>'s layout is recoverable, otherwise a
-    /// zero-filled struct (via <c>ModuleHelper.DefaultVariable</c>).
+    /// zero-filled struct (via <c>InternalGlobals.DefaultVariable</c>).
     /// </para>
     /// </summary>
     public struct TensorStruct<T> : ITensorStruct where T : IStruct

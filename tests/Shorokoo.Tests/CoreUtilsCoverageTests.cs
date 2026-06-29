@@ -336,4 +336,22 @@ public class CoreUtilsCoverageTests
         // there is no reinterpret.
         Assert.Equal(DType.Float64, ((Variable)scalarNode.Cast<float64>()).Type);
     }
+
+    [Fact]
+    public void TestTensorSequenceInsertAtInterfaceCoverage()
+    {
+        // ITensorSequence.InsertAt accepts any ITensor element. A Vector<T>/Scalar<T> is an ITensor
+        // but not a Tensor<T>, so the element must convert through its backing Variable (the validating
+        // Variable→Tensor<T> operator) — a direct (Tensor<T>)element unbox would throw
+        // InvalidCastException for these non-Tensor handle structs.
+        ITensorSequence seq = TensorSequence<float32>(InputTensor<float32>("e0", rank: 1));
+
+        ITensor vectorElem = InputVector<float32>("v");   // a Vector<float32> boxed as ITensor
+        ITensor scalarElem = InputScalar<float32>("s");   // a Scalar<float32> boxed as ITensor
+
+        var afterVec = seq.InsertAt(vectorElem, Scalar(0L));
+        var afterBoth = afterVec.InsertAt(scalarElem, Scalar(0L));
+
+        Assert.Equal(DataStructure.Sequence, afterBoth.Structure());
+    }
 }

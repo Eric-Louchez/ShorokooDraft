@@ -141,7 +141,7 @@ namespace Shorokoo.Core
 
         /// <summary>
         /// Convert this <c>Variable</c> to its <em>natural</em> user-facing <see cref="IValue"/> — the
-        /// inverse of <see cref="IValueExtensions.ToVariable"/> — chosen from the value's own structure, dtype and
+        /// inverse of <see cref="IValue.ToVariable"/> — chosen from the value's own structure, dtype and
         /// rank: a tensor becomes <see cref="Scalar{T}"/> (rank 0), <see cref="Vector{T}"/> (rank 1) or
         /// <see cref="Tensor{T}"/>; an optional / sequence / struct becomes <see cref="OptionalTensor{T}"/>
         /// / <see cref="TensorSequence{T}"/> / <see cref="TensorStruct{T}"/>.

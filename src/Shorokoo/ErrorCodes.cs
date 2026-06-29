@@ -481,7 +481,7 @@ namespace Shorokoo
         
         #endregion
 
-        #region Core Error Codes (CR001-CR010)
+        #region Core Error Codes (CR001-CR013)
         
         /// <summary>Invalid IModuleParam type</summary>
         public const string CR001 = "CR001";
@@ -507,7 +507,7 @@ namespace Shorokoo
         /// <summary>Variable→handle conversion: structural kind (tensor/optional/sequence/struct) mismatch</summary>
         public const string CR011 = "CR011";
 
-        /// <summary>Variable→handle conversion: element dtype mismatch (use Cast&lt;T&gt;() to convert or As&lt;T&gt;() to reinterpret)</summary>
+        /// <summary>Variable→handle conversion: element dtype mismatch (use Cast&lt;T&gt;() to convert the dtype)</summary>
         public const string CR012 = "CR012";
 
         /// <summary>Variable→handle conversion: tensor rank mismatch (scalar/vector handle over a wrongly-ranked node)</summary>

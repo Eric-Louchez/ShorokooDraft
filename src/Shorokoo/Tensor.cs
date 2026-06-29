@@ -75,7 +75,6 @@ namespace Shorokoo
 
         // ITensor contract — forward to the backing Variable.
         public int? Rank => Immutable.Rank;
-        public Variable? InfShape => Immutable.InfShape;
         public Vector<int64> DShape => Immutable.DShape;
         public Vector<int64> TShape => Immutable.TShape;
         public Scalar<int64> TRank => Immutable.TRank;

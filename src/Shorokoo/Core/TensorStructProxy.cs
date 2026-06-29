@@ -72,7 +72,7 @@ namespace Shorokoo.Core
                 // so the DispatchProxy can assign it. This must be driven by the declared return type, not
                 // the value's natural handle (which may differ for a generic-standin or more general
                 // declared type).
-                return GetOrCreateFieldVariable(fieldName, targetMethod.ReturnType).ToValue(targetMethod.ReturnType);
+                return GetOrCreateFieldVariable(fieldName).ToValue(targetMethod.ReturnType);
             }
 
             // IValue.ToVariable support — convert to the backing Variable
@@ -91,7 +91,7 @@ namespace Shorokoo.Core
         /// Gets or creates the Variable for a field, using TensorStructGetField to create
         /// graph operations for field access.
         /// </summary>
-        private Variable GetOrCreateFieldVariable(string fieldName, Type returnType)
+        private Variable GetOrCreateFieldVariable(string fieldName)
         {
             if (_fieldCache!.TryGetValue(fieldName, out var cached))
                 return cached;

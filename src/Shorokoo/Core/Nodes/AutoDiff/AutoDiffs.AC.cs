@@ -117,37 +117,54 @@ namespace Shorokoo.Core.Nodes.AutoDiff
             // A single method may have multiple generic parameters.
             // We need to construct the generic method with the correct types before invoking it.
 
+            // The leading graph-input parameters are everything before the output-grad params and the
+            // trailing attribute (non-Variable) params. The forward op may have omitted trailing optional
+            // inputs (e.g. Trilu's diagonal), so derive the expected input-parameter count from the method
+            // signature; the provided inputs are padded with nulls below to keep the input/output-grad/
+            // attribute slots aligned. Computed up front (off the generic definition's parameters —
+            // IsAssignableFrom recognises an open-generic Tensor<T> as an IValue) so the type-inference
+            // loop below classifies params against the same boundary as the value-filling loop.
+            var sigParams = gradientOp.GetParameters();
+            int attrParamCount = 0;
+            for (int p = sigParams.Length - 1; p >= 0; p--)
+            {
+                var pt = Nullable.GetUnderlyingType(sigParams[p].ParameterType) ?? sigParams[p].ParameterType;
+                if (typeof(Variable).IsAssignableFrom(pt) || typeof(IValue).IsAssignableFrom(pt))
+                    break;
+                attrParamCount++;
+            }
+            int expectedInputCount = Math.Max(inputs.Length, sigParams.Length - outputs.Length - attrParamCount);
+
             // Step 1: Determine the generic type arguments from the inputs or outputs
             Type[] genericTypeArgs = Array.Empty<Type>();
             if (gradientOp.IsGenericMethodDefinition)
             {
                 var genericParams = gradientOp.GetGenericArguments();
                 genericTypeArgs = new Type[genericParams.Length];
-                
-                // Get method parameters to understand which input/output corresponds to which generic type
-                var methodParameters = gradientOp.GetParameters();
-                
+
                 // Try to infer each generic parameter type from method parameters
                 for (int i = 0; i < genericParams.Length; i++)
                 {
                     var genericParam = genericParams[i];
                     Type? inferredType = null;
-                    
+
                     // Look through method parameters to find one that uses this generic parameter
-                    for (int paramIdx = 0; paramIdx < methodParameters.Length; paramIdx++)
+                    for (int paramIdx = 0; paramIdx < sigParams.Length; paramIdx++)
                     {
-                        var paramType = methodParameters[paramIdx].ParameterType;
-                        
+                        var paramType = sigParams[paramIdx].ParameterType;
+
                         // Check if this parameter type uses the current generic parameter
                         if (IsGenericTypeOrContainsGeneric(paramType, genericParam))
                         {
-                            // Determine which input/output this corresponds to
+                            // Determine which input / output-grad slot this corresponds to. Use
+                            // expectedInputCount (not inputs.Length) as the boundary so an omitted
+                            // trailing optional input doesn't misclassify an output-grad parameter.
                             Variable? var = null;
-                            if (paramIdx < inputs.Length)
-                                var = inputs[paramIdx];
-                            else if (paramIdx < inputs.Length + outputs.Length)
-                                var = outputs[paramIdx - inputs.Length];
-                            
+                            if (paramIdx < expectedInputCount)
+                                var = paramIdx < inputs.Length ? inputs[paramIdx] : null;
+                            else if (paramIdx < expectedInputCount + outputs.Length)
+                                var = outputs[paramIdx - expectedInputCount];
+
                             if (var != null)
                             {
                                 inferredType = var.Type.ToIVarType();
@@ -158,29 +175,14 @@ namespace Shorokoo.Core.Nodes.AutoDiff
 
                     genericTypeArgs[i] = inferredType ?? typeof(int64); // Default to int64 for unresolvable types (e.g., null optional axes)
                 }
-                
+
                 // Make the generic method concrete
                 gradientOp = gradientOp.MakeGenericMethod(genericTypeArgs);
             }
-            
+
             // Step 2: Build the parameter list
             var methodParams = gradientOp.GetParameters();
             var paramValues = new object?[methodParams.Length];
-            
-            // The leading graph-input parameters are everything before the output-grad params and
-            // the trailing attribute (non-Variable) params. The forward op may have omitted trailing
-            // optional inputs (e.g. Trilu's diagonal), so derive the expected input-parameter count
-            // from the method signature and pad the provided inputs with nulls to keep the
-            // input/output-grad/attribute slots aligned.
-            int attrParamCount = 0;
-            for (int p = methodParams.Length - 1; p >= 0; p--)
-            {
-                var pt = Nullable.GetUnderlyingType(methodParams[p].ParameterType) ?? methodParams[p].ParameterType;
-                if (typeof(Variable).IsAssignableFrom(pt) || typeof(IValue).IsAssignableFrom(pt))
-                    break;
-                attrParamCount++;
-            }
-            int expectedInputCount = Math.Max(inputs.Length, methodParams.Length - outputs.Length - attrParamCount);
 
             // Validate parameter counts match expectations
             // Internal contract: every registered gradient method has a parameter count

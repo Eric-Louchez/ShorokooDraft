@@ -148,7 +148,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen(condition);
             var results = OnnxOp.IfClose([.. whenTrue.Select(t => t.ToVariable())], [.. whenFalse.Select(t => t.ToVariable())], ifOpen);
 
-            return (Variable)results[0];
+            return results[0];
         }
 
         public static IValue<T> IfElse<T>(Scalar<bit> condition, IValue<T>[] whenTrue, IValue<T>[] whenFalse)

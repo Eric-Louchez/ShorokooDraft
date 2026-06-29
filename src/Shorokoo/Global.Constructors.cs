@@ -407,7 +407,7 @@ namespace Shorokoo
         public static Variable TensorSequence(DType dtype, params Variable[] tensors)
             => tensors.Length == 0 ?
                     OnnxOp.SequenceEmpty(dtype) :
-                    OnnxOp.SequenceConstruct([.. tensors.Cast<Variable>()]);
+                    OnnxOp.SequenceConstruct(tensors);
         #endregion
 
         #region Optional Tensor constructors

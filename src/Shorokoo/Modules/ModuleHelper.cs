@@ -619,7 +619,15 @@ namespace Shorokoo.Core
                 if (IsValueTuple<T>())
                 {
                     var ctor = tType.GetConstructors().First();
-                    var args = ctor.GetParameters()
+                    var ctorParams = ctor.GetParameters();
+                    // C# represents tuples with more than 7 elements as ValueTuple`8 whose 8th slot
+                    // (TRest) is itself a ValueTuple; nested-tuple slots have no single graph output to
+                    // map onto. Reject with a clear message (deferred, matching the unsupported-type arm)
+                    // rather than emitting a broken NodeToHandle on the nested tuple.
+                    if (ctorParams.Any(p => IsValueTuple(p.ParameterType)))
+                        return _ => throw new UnsupportedDTypeException(ErrorCodes.FW002, tType.Name, "Reformat",
+                            $"ValueTuple return types with a nested ValueTuple slot (e.g. more than 7 elements) are not supported. Received: {tType.Name}");
+                    var args = ctorParams
                         .Select((p, i) => NodeToHandle(E.ArrayIndex(vars, E.Constant(i)), p.ParameterType));
                     return E.Lambda<Func<Variable[], T>>(E.New(ctor, args), vars).Compile();
                 }
