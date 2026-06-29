@@ -91,7 +91,7 @@ namespace Shorokoo.Core.Factory.CSharpFactory
             // Handle TensorStruct types
             if (variable.Structure() == DataStructure.TensorStruct)
             {
-                var def = ((Variable)variable).Definition;
+                var def = variable.Definition;
                 var structTypeName = def?.TypeName;
                 if (structTypeName != null && !structTypeName.Contains('.'))
                 {
