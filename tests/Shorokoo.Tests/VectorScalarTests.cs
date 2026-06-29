@@ -54,12 +54,14 @@ public class VectorScalarCoverageTests
         => Assert.True(AutoTest.AdvancedTestGraph<ScalarImplicitPrimitiveConversionModel>(hyperparamInputs: [], runtimeInputs: []));
 
     // VectorIndexerModel is self-checking like the others, but converting it makes the indexer
-    // Set paths reachable outputs — which surfaces the slice-write / gather faults tracked in #3:
-    // concretizing the now-reachable v[1..3].Set(...) / v[Vector(...)].Set(...) graph throws a
-    // shape-inference error (Where: incompatible dimensions). Marked inconclusive (skipped) until
-    // #3 is fixed; the module is kept self-checking so this test becomes meaningful — and turns
-    // green — the moment the underlying indexer bug is resolved.
-    [Fact(Skip = "Inconclusive: blocked by #3 (Vector indexer slice-write/gather shape faults). See #4.")]
+    // read/Set paths reachable outputs — which surfaces the faults tracked in #3. The first to
+    // execute (at module-build time, in the (Vector<float32>)v[(0..4, 1L)] materialisation) is the
+    // stepped-slice read: it throws CR006 "Step operations in vector indexing are not yet
+    // supported". The gather (GatherND/ScatterND) and contiguous slice-write (Where) paths fault
+    // too. Marked inconclusive (skipped) until #3 is fixed; the module is kept self-checking so
+    // this test becomes meaningful — and turns green — the moment the underlying indexer bug is
+    // resolved.
+    [Fact(Skip = "Inconclusive: blocked by #3 (Vector indexer step-slice/gather/slice-write faults). See #4.")]
     public void TestVectorIndexerCoverage()
         => Assert.True(AutoTest.AdvancedTestGraph<VectorIndexerModel>(hyperparamInputs: [], runtimeInputs: Input));
 
