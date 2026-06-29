@@ -55,7 +55,7 @@ namespace Shorokoo
         public Variable GetField(string name) => Imm.Field(name);
 
         public TField GetField<TField>(string name) where TField : IValue
-            => Imm.Field(name).Cast<TField>();
+            => Imm.Field(name).ToValue<TField>();
 
         public bool TryGetField(string name, out Variable? field)
         {

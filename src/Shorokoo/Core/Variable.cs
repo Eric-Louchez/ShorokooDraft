@@ -37,7 +37,7 @@ namespace Shorokoo.Core
     /// <see cref="IValue"/>: a <c>Variable</c> is unambiguously a graph-side node, whereas an
     /// <see cref="IValue"/> is a user-side value-struct handle (such as <see cref="Tensor{T}"/>).
     /// An <see cref="IValue"/> and a <see cref="Variable"/> convert to each other through the handle's
-    /// implicit operators, with reflective fallbacks — <see cref="Cast{A}()"/> and
+    /// implicit operators, with reflective fallbacks — <see cref="ToValue{A}()"/> and
     /// <see cref="ToValue(System.Type)"/> — for converting between the two when the target type is known
     /// only at runtime rather than statically.
     /// </para>
@@ -137,7 +137,7 @@ namespace Shorokoo.Core
         /// </summary>
         // A is a type parameter, so the compiler can't apply the Variable→IValue operator; ToValue(Type)
         // finds and invokes it at runtime. The result's runtime type is A, so the (A) cast just unboxes it.
-        public A Cast<A>() where A : IValue => (A)ToValue(typeof(A));
+        public A ToValue<A>() where A : IValue => (A)ToValue(typeof(A));
 
         /// <summary>
         /// Convert this <c>Variable</c> to its <em>natural</em> user-facing <see cref="IValue"/> — the
@@ -207,7 +207,7 @@ namespace Shorokoo.Core
 
         // ── Reflective Variable→IValue conversion (relocated from the former VariableHandle) ──
         // Each handle's implicit operator(Variable) is found and invoked by reflection to convert a
-        // Variable to an IValue for the cases the compiler can't resolve statically: a generic Cast<A> or
+        // Variable to an IValue for the cases the compiler can't resolve statically: a generic ToValue<A> or
         // a runtime-built IValue Type (ToValue).
         private static readonly ConcurrentDictionary<Type, MethodInfo[]> implicitCasts = new();
 

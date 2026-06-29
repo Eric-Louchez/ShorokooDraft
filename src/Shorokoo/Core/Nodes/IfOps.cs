@@ -19,7 +19,7 @@ namespace Shorokoo.Core.Nodes
         public static A IfElse<A>(Scalar<bit> condition, A aWhenTrue, A aWhenFalse) where A : IValue
         {
             var ifOpen = OnnxOp.IfOpen(condition);
-            return OnnxOp.IfClose([aWhenTrue.ToVariable()], [aWhenFalse.ToVariable()], ifOpen)[0].Cast<A>();
+            return OnnxOp.IfClose([aWhenTrue.ToVariable()], [aWhenFalse.ToVariable()], ifOpen)[0].ToValue<A>();
         }
 
         // Graph-side overload: internal callers already hold non-generic Variable nodes (not user
@@ -42,7 +42,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen(condition);
             var t = whenTrue();
             var f = whenFalse();
-            return OnnxOp.IfClose([t.ToVariable()], [f.ToVariable()], ifOpen)[0].Cast<A>();
+            return OnnxOp.IfClose([t.ToVariable()], [f.ToVariable()], ifOpen)[0].ToValue<A>();
         }
 
         public static (A, B) IfElse<A, B>(Scalar<bit> condition, (A a, B b) whenTrue, (A a, B b) whenFalse)
@@ -52,7 +52,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen(condition);
             var retval = OnnxOp.IfClose([whenTrue.a.ToVariable(), whenTrue.b.ToVariable()], [whenFalse.a.ToVariable(), whenFalse.b.ToVariable()], ifOpen);
 
-            return (retval[0].Cast<A>(), retval[1].Cast<B>());
+            return (retval[0].ToValue<A>(), retval[1].ToValue<B>());
         }
 
         public static (A, B, C) IfElse<A, B, C>(Scalar<bit> condition, (A a, B b, C c) whenTrue, (A a, B b, C c) whenFalse)
@@ -63,7 +63,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen(condition);
             var retval = OnnxOp.IfClose([whenTrue.a.ToVariable(), whenTrue.b.ToVariable(), whenTrue.c.ToVariable()], [whenFalse.a.ToVariable(), whenFalse.b.ToVariable(), whenFalse.c.ToVariable()], ifOpen);
 
-            return (retval[0].Cast<A>(), retval[1].Cast<B>(), retval[2].Cast<C>());
+            return (retval[0].ToValue<A>(), retval[1].ToValue<B>(), retval[2].ToValue<C>());
         }
 
         public static (A, B, C, D) IfElse<A, B, C, D>(Scalar<bit> condition, (A a, B b, C c, D d) whenTrue, (A a, B b, C c, D d) whenFalse)
@@ -75,7 +75,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen(condition);
             var retval = OnnxOp.IfClose([whenTrue.a.ToVariable(), whenTrue.b.ToVariable(), whenTrue.c.ToVariable(), whenTrue.d.ToVariable()], [whenFalse.a.ToVariable(), whenFalse.b.ToVariable(), whenFalse.c.ToVariable(), whenFalse.d.ToVariable()], ifOpen);
 
-            return (retval[0].Cast<A>(), retval[1].Cast<B>(), retval[2].Cast<C>(), retval[3].Cast<D>());
+            return (retval[0].ToValue<A>(), retval[1].ToValue<B>(), retval[2].ToValue<C>(), retval[3].ToValue<D>());
         }
 
         public static (A, B, C, D, E) IfElse<A, B, C, D, E>(Scalar<bit> condition, (A a, B b, C c, D d, E e) whenTrue, (A a, B b, C c, D d, E e) whenFalse)
@@ -88,7 +88,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen(condition);
             var retval = OnnxOp.IfClose([whenTrue.a.ToVariable(), whenTrue.b.ToVariable(), whenTrue.c.ToVariable(), whenTrue.d.ToVariable(), whenTrue.e.ToVariable()], [whenFalse.a.ToVariable(), whenFalse.b.ToVariable(), whenFalse.c.ToVariable(), whenFalse.d.ToVariable(), whenFalse.e.ToVariable()], ifOpen);
 
-            return (retval[0].Cast<A>(), retval[1].Cast<B>(), retval[2].Cast<C>(), retval[3].Cast<D>(), retval[4].Cast<E>());
+            return (retval[0].ToValue<A>(), retval[1].ToValue<B>(), retval[2].ToValue<C>(), retval[3].ToValue<D>(), retval[4].ToValue<E>());
         }
 
         public static (A, B, C, D, E, F) IfElse<A, B, C, D, E, F>(Scalar<bit> condition, (A a, B b, C c, D d, E e, F f) whenTrue, (A a, B b, C c, D d, E e, F f) whenFalse)
@@ -102,7 +102,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen(condition);
             var retval = OnnxOp.IfClose([whenTrue.a.ToVariable(), whenTrue.b.ToVariable(), whenTrue.c.ToVariable(), whenTrue.d.ToVariable(), whenTrue.e.ToVariable(), whenTrue.f.ToVariable()], [whenFalse.a.ToVariable(), whenFalse.b.ToVariable(), whenFalse.c.ToVariable(), whenFalse.d.ToVariable(), whenFalse.e.ToVariable(), whenFalse.f.ToVariable()], ifOpen);
 
-            return (retval[0].Cast<A>(), retval[1].Cast<B>(), retval[2].Cast<C>(), retval[3].Cast<D>(), retval[4].Cast<E>(), retval[5].Cast<F>());
+            return (retval[0].ToValue<A>(), retval[1].ToValue<B>(), retval[2].ToValue<C>(), retval[3].ToValue<D>(), retval[4].ToValue<E>(), retval[5].ToValue<F>());
         }
 
         public static (A, B, C, D, E, F, G) IfElse<A, B, C, D, E, F, G>(Scalar<bit> condition, (A a, B b, C c, D d, E e, F f, G g) whenTrue, (A a, B b, C c, D d, E e, F f, G g) whenFalse)
@@ -117,7 +117,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen(condition);
             var retval = OnnxOp.IfClose([whenTrue.a.ToVariable(), whenTrue.b.ToVariable(), whenTrue.c.ToVariable(), whenTrue.d.ToVariable(), whenTrue.e.ToVariable(), whenTrue.f.ToVariable(), whenTrue.g.ToVariable()], [whenFalse.a.ToVariable(), whenFalse.b.ToVariable(), whenFalse.c.ToVariable(), whenFalse.d.ToVariable(), whenFalse.e.ToVariable(), whenFalse.f.ToVariable(), whenFalse.g.ToVariable()], ifOpen);
 
-            return (retval[0].Cast<A>(), retval[1].Cast<B>(), retval[2].Cast<C>(), retval[3].Cast<D>(), retval[4].Cast<E>(), retval[5].Cast<F>(), retval[6].Cast<G>());
+            return (retval[0].ToValue<A>(), retval[1].ToValue<B>(), retval[2].ToValue<C>(), retval[3].ToValue<D>(), retval[4].ToValue<E>(), retval[5].ToValue<F>(), retval[6].ToValue<G>());
         }
 
         public static (A, B, C, D, E, F, G, H) IfElse<A, B, C, D, E, F, G, H>(Scalar<bit> condition, (A a, B b, C c, D d, E e, F f, G g, H h) whenTrue, (A a, B b, C c, D d, E e, F f, G g, H h) whenFalse)
@@ -133,7 +133,7 @@ namespace Shorokoo.Core.Nodes
             var ifOpen = OnnxOp.IfOpen(condition);
             var retval = OnnxOp.IfClose([whenTrue.a.ToVariable(), whenTrue.b.ToVariable(), whenTrue.c.ToVariable(), whenTrue.d.ToVariable(), whenTrue.e.ToVariable(), whenTrue.f.ToVariable(), whenTrue.g.ToVariable(), whenTrue.h.ToVariable()], [whenFalse.a.ToVariable(), whenFalse.b.ToVariable(), whenFalse.c.ToVariable(), whenFalse.d.ToVariable(), whenFalse.e.ToVariable(), whenFalse.f.ToVariable(), whenFalse.g.ToVariable(), whenFalse.h.ToVariable()], ifOpen);
 
-            return (retval[0].Cast<A>(), retval[1].Cast<B>(), retval[2].Cast<C>(), retval[3].Cast<D>(), retval[4].Cast<E>(), retval[5].Cast<F>(), retval[6].Cast<G>(), retval[7].Cast<H>());
+            return (retval[0].ToValue<A>(), retval[1].ToValue<B>(), retval[2].ToValue<C>(), retval[3].ToValue<D>(), retval[4].ToValue<E>(), retval[5].ToValue<F>(), retval[6].ToValue<G>(), retval[7].ToValue<H>());
         }
 
         public static Variable[] IfElse(Scalar<bit> condition, IValue[] whenTrue, IValue[] whenFalse)

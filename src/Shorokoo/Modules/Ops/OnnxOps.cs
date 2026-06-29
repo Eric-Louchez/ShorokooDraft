@@ -200,7 +200,7 @@ namespace Shorokoo
         public static T Identity<T>(T x) where T : IValue
         {
             var v = x.ToVariable();
-            return OnnxOp.Identity(v, v.Rank).Cast<T>();
+            return OnnxOp.Identity(v, v.Rank).ToValue<T>();
         }
 
         /// <summary>Integer matrix product with zero points, producing an int32 result (ONNX MatMulInteger).</summary>

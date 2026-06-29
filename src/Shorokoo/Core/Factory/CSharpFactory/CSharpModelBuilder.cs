@@ -940,7 +940,7 @@ public static class " + modelName + @"
             Debug.Assert(node.OpName == InternalOpCodes.CREATE_MODULE);
             // Node outputs are Immutable* graph values; convert to the value-struct handle (an
             // `as Scalar<…>?` would be null since the runtime object is the immutable, not the struct).
-            var moduleVariable = node.Outputs[0].AssertNotNull().Cast<Scalar<IModuleVarType>>();
+            var moduleVariable = node.Outputs[0].AssertNotNull().ToValue<Scalar<IModuleVarType>>();
 
             var targetFunction = moduleVariable.ModuleFn.AssertNotNull();
 
@@ -1046,7 +1046,7 @@ public static class " + modelName + @"
         private string MakeSetHyperparamsNodeCodeTemplate(Node node, ImmutableDictionary<Node, NodeGenerationInfo> nodeCodeGenerators, ImmutableDictionary<Variable, string> currentNames, ImmutableDictionary<Function, string> functionNames)
         {
             Debug.Assert(node.OpName == InternalOpCodes.MODULE_SET_HYPERPARAMS);
-            var moduleVariable = node.Inputs[0].AssertNotNull().Cast<Scalar<IModuleVarType>>();
+            var moduleVariable = node.Inputs[0].AssertNotNull().ToValue<Scalar<IModuleVarType>>();
             var targetFunction = moduleVariable.ModuleFn.AssertNotNull();
             var hyperparamInputs = targetFunction.HyperparamInputs;
 
@@ -1082,7 +1082,7 @@ public static class " + modelName + @"
         private string MakeModelInvokeNodeCodeTemplate(Node node, ImmutableDictionary<Node, NodeGenerationInfo> nodeCodeGenerators, ImmutableDictionary<Variable, string> currentNames, ImmutableDictionary<Function, string> functionNames)
         {
             Debug.Assert(node.OpName == InternalOpCodes.MODEL_INVOKE);
-            var modelVariable = node.Inputs[0].AssertNotNull().Cast<Scalar<IModelVarType>>();
+            var modelVariable = node.Inputs[0].AssertNotNull().ToValue<Scalar<IModelVarType>>();
             var targetFunction = modelVariable.ModuleFn.AssertNotNull();
             var modelInputs = targetFunction.NonHyperparamInputs;
             var paramsList = string.Join("", modelInputs.Select((x, i) => $"{{{i + 2}:param}}"));
