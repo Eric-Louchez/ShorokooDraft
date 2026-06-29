@@ -24,21 +24,20 @@ namespace Shorokoo
     /// (value-copy semantics for the Module DSL). This pass only makes mutation possible — behaviour
     /// is unchanged (de-facto immutable).
     /// <para>
-    /// A defaulted handle (<c>default</c>, <c>inner == null</c>) has no field layout to materialise, so
-    /// accessing it throws — a TensorStruct must be produced by a graph op (e.g. <c>Globals.TensorStruct</c>).
+    /// A defaulted handle (<c>default</c>, <c>inner == null</c>) materialises the established default on
+    /// first use: default-filled fields when <typeparamref name="T"/>'s layout is recoverable, otherwise a
+    /// zero-filled struct (via <c>ModuleHelper.DefaultVariable</c>).
     /// </para>
     /// </summary>
     public struct TensorStruct<T> : ITensorStruct where T : IStruct
     {
         private Variable? inner;
 
-        // Convert to the backing graph node, materialising the established default for a defaulted handle.
-        Variable IValue.ToVariable() => inner ?? Shorokoo.Core.ModuleHelper.DefaultVariable(typeof(TensorStruct<T>));
+        Variable IValue.ToVariable() => Immutable;
 
-        /// <summary>The backing Variable. A defaulted handle has no recoverable field layout, so this throws.</summary>
-        internal readonly Variable Imm
-            => inner ?? throw new InvalidOperationException(
-                "default(TensorStruct<T>) has no field layout; create one via a graph op (e.g. Globals.TensorStruct<T>(...)).");
+        /// <summary>The backing graph node, materialising the established default (default-filled fields, or a
+        /// zero-filled struct when the layout is unknown) for a defaulted handle.</summary>
+        internal readonly Variable Immutable => inner ?? Shorokoo.Core.ModuleHelper.DefaultVariable(typeof(TensorStruct<T>));
 
         public static implicit operator TensorStruct<T>(Variable imm)
         {
@@ -47,15 +46,15 @@ namespace Shorokoo
             return new TensorStruct<T> { inner = imm };
         }
         public static implicit operator Variable(TensorStruct<T> handle)
-            => handle.Imm;
+            => handle.Immutable;
 
         // ── User-facing API (the struct surface lives here, not on the immutable) ──
-        public TensorStructDef Definition => Imm.Def;
+        public TensorStructDef Definition => Immutable.Def;
 
-        public Variable GetField(string name) => Imm.Field(name);
+        public Variable GetField(string name) => Immutable.Field(name);
 
         public TField GetField<TField>(string name) where TField : IValue
-            => Imm.Field(name).ToValue<TField>();
+            => Immutable.Field(name).ToValue<TField>();
 
         public bool TryGetField(string name, out Variable? field)
         {
@@ -67,24 +66,24 @@ namespace Shorokoo
 
         public IEnumerable<KeyValuePair<string, Variable>> AllFields => inner?.Fields ?? [];
 
-        internal TensorStruct<T> WithFields(ImmutableDictionary<string, Variable> newFields) => Imm.WithFields(newFields);
+        internal TensorStruct<T> WithFields(ImmutableDictionary<string, Variable> newFields) => Immutable.WithFields(newFields);
 
-        public override readonly string ToString() => Imm.ToString();
+        public override readonly string ToString() => Immutable.ToString();
 
         // ITensorStruct explicit members.
-        TensorStructDef ITensorStruct.Definition => Imm.Def;
-        Variable ITensorStruct.GetField(string name) => Imm.Field(name);
+        TensorStructDef ITensorStruct.Definition => Immutable.Def;
+        Variable ITensorStruct.GetField(string name) => Immutable.Field(name);
 
         // IValue surface — forward to the backing Variable.
-        public Node OwningNode => Imm.OwningNode;
-        public DType Type => Imm.Type;
-        public Function? ModuleFn => Imm.ModuleFn;
-        public TensorKey Key => Imm.Key;
-        public string UniqueName => Imm.UniqueName;
-        public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
+        public Node OwningNode => Immutable.OwningNode;
+        public DType Type => Immutable.Type;
+        public Function? ModuleFn => Immutable.ModuleFn;
+        public TensorKey Key => Immutable.Key;
+        public string UniqueName => Immutable.UniqueName;
+        public bool IsValid { get => Immutable.IsValid; set => Immutable.IsValid = value; }
 
 #pragma warning disable CS0618 // forwarding the obsolete member is intentional
-        string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;
+        string? IValue.FriendlyName => ((IValue)Immutable).FriendlyName;
 #pragma warning restore CS0618
     }
 }

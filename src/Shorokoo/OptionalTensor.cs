@@ -44,11 +44,11 @@ namespace Shorokoo
     {
         private Variable? inner;
 
-        // Imm materialises an absent optional for a defaulted handle, which is its established default.
-        Variable IValue.ToVariable() => Imm;
+        // Immutable materialises an absent optional for a defaulted handle, which is its established default.
+        Variable IValue.ToVariable() => Immutable;
 
         /// <summary>The backing Variable, materialising an absent optional for a defaulted handle.</summary>
-        internal Variable Imm
+        internal Variable Immutable
             => inner ??= OnnxOp.Optional(null, DataStructure.Tensor, OnnxUtils.GetDType<T>());
 
         // Convert between the handle and its backing Variable.
@@ -60,7 +60,7 @@ namespace Shorokoo
             return new OptionalTensor<T> { inner = imm };
         }
         public static implicit operator Variable(OptionalTensor<T> handle)
-            => handle.Imm;
+            => handle.Immutable;
 
         /// <summary>
         /// Implicitly unwraps an optional to a nullable tensor (<c>Tensor&lt;T&gt;?</c>) by reading
@@ -71,20 +71,20 @@ namespace Shorokoo
             => optional.inner is null ? default(Tensor<T>?) : optional.TensorValue();
 
         // ── User-facing API (the optional surface lives here, not on the immutable) ──
-        public Variable Value() => OnnxOp.OptionalGetElement(Imm);
+        public Variable Value() => OnnxOp.OptionalGetElement(Immutable);
         public Tensor<T> TensorValue() => (Variable)Value();
-        public Scalar<bit> HasValue() => OnnxOp.OptionalHasElement(Imm);
+        public Scalar<bit> HasValue() => OnnxOp.OptionalHasElement(Immutable);
 
         // IValue surface — forward to the backing Variable.
-        public Node OwningNode => Imm.OwningNode;
-        public DType Type => Imm.Type;
-        public Function? ModuleFn => Imm.ModuleFn;
-        public TensorKey Key => Imm.Key;
-        public string UniqueName => Imm.UniqueName;
-        public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
+        public Node OwningNode => Immutable.OwningNode;
+        public DType Type => Immutable.Type;
+        public Function? ModuleFn => Immutable.ModuleFn;
+        public TensorKey Key => Immutable.Key;
+        public string UniqueName => Immutable.UniqueName;
+        public bool IsValid { get => Immutable.IsValid; set => Immutable.IsValid = value; }
 
 #pragma warning disable CS0618 // forwarding the obsolete member is intentional
-        string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;
+        string? IValue.FriendlyName => ((IValue)Immutable).FriendlyName;
 #pragma warning restore CS0618
     }
 }

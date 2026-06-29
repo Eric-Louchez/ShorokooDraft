@@ -61,7 +61,8 @@ namespace Shorokoo
     public partial struct Tensor<T> : ITensor, System.Collections.Generic.IEnumerable<Shorokoo.Core.TensorExpressionHelper<T>> where T : IVarType
     {
         private Variable? inner;
-        internal Variable Imm => inner ?? throw new InvalidOperationException("default(Tensor<T>) is not materialised; build one via a graph op.");
+        // The backing graph node, materialising the established default (per dtype/rank) for a defaulted handle.
+        internal Variable Immutable => inner ?? Shorokoo.Core.ModuleHelper.DefaultVariable(typeof(Tensor<T>));
 
         private static readonly DType? expectedDType = OnnxUtils.GetDType(typeof(T));
         public static implicit operator Tensor<T>(Variable imm)
@@ -70,37 +71,37 @@ namespace Shorokoo
             IValue.RequireDType(imm, expectedDType);
             return new Tensor<T> { inner = imm };
         }
-        public static implicit operator Variable(Tensor<T> h) => h.Imm;
+        public static implicit operator Variable(Tensor<T> h) => h.Immutable;
 
         // Convert to the backing graph node, materialising the established default for a defaulted handle.
-        Variable IValue.ToVariable() => inner ?? Shorokoo.Core.ModuleHelper.DefaultVariable(typeof(Tensor<T>));
+        Variable IValue.ToVariable() => Immutable;
 
 
         // ITensor contract — forward to the backing Variable.
-        public int? Rank => Imm.Rank;
-        public Variable? InfShape => Imm.InfShape;
-        public Vector<int64> DShape => Imm.DShape;
-        public Vector<int64> TShape => Imm.TShape;
-        public Scalar<int64> TRank => Imm.TRank;
-        IVector ITensor.Vec() => (Vector<T>)Imm.Vec();
-        Vector<V> ITensor.Vec<V>() => Imm.Cast<V>().Vec();
-        IScalar ITensor.Scalar() => (Scalar<T>)Imm.Scalar();
-        Scalar<V> ITensor.Scalar<V>() => Imm.Cast<V>().Scalar();
+        public int? Rank => Immutable.Rank;
+        public Variable? InfShape => Immutable.InfShape;
+        public Vector<int64> DShape => Immutable.DShape;
+        public Vector<int64> TShape => Immutable.TShape;
+        public Scalar<int64> TRank => Immutable.TRank;
+        IVector ITensor.Vec() => (Vector<T>)Immutable.Vec();
+        Vector<V> ITensor.Vec<V>() => Immutable.Cast<V>().Vec();
+        IScalar ITensor.Scalar() => (Scalar<T>)Immutable.Scalar();
+        Scalar<V> ITensor.Scalar<V>() => Immutable.Cast<V>().Scalar();
 
         // IValue surface — forward to the backing Variable.
-        public Node OwningNode => Imm.OwningNode;
-        public DType Type => Imm.Type;
-        public Function? ModuleFn => Imm.ModuleFn;
-        public TensorKey Key => Imm.Key;
-        public string UniqueName => Imm.UniqueName;
-        public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
+        public Node OwningNode => Immutable.OwningNode;
+        public DType Type => Immutable.Type;
+        public Function? ModuleFn => Immutable.ModuleFn;
+        public TensorKey Key => Immutable.Key;
+        public string UniqueName => Immutable.UniqueName;
+        public bool IsValid { get => Immutable.IsValid; set => Immutable.IsValid = value; }
 #pragma warning disable CS0618
-        string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;
+        string? IValue.FriendlyName => ((IValue)Immutable).FriendlyName;
 #pragma warning restore CS0618
 
         // user-facing reinterpret casts (forward to the immutable, which handles already-typed nodes)
-        public Vector<T> Vec() => (Variable)Imm.Vec();
-        public Scalar<T> Scalar() => (Variable)Imm.Scalar();
+        public Vector<T> Vec() => (Variable)Immutable.Vec();
+        public Scalar<T> Scalar() => (Variable)Immutable.Scalar();
 
         // == builds an Equal graph node (see operators); Equals/GetHashCode use the wrapped node.
         public override bool Equals(object? obj) => obj is Tensor<T> t && Equals(inner, t.inner);

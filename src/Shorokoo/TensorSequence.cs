@@ -43,11 +43,11 @@ namespace Shorokoo
     {
         private Variable? inner;
 
-        // Imm materialises an empty sequence for a defaulted handle, which is its established default.
-        Variable IValue.ToVariable() => Imm;
+        // Immutable materialises an empty sequence for a defaulted handle, which is its established default.
+        Variable IValue.ToVariable() => Immutable;
 
         /// <summary>The backing Variable, materialising an empty sequence for a defaulted handle.</summary>
-        internal Variable Imm => inner ??= OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>());
+        internal Variable Immutable => inner ??= OnnxOp.SequenceEmpty(OnnxUtils.GetDType<T>());
 
         private static readonly DType? expectedDType = OnnxUtils.GetDType(typeof(T));
         public static implicit operator TensorSequence<T>(Variable imm)
@@ -57,28 +57,28 @@ namespace Shorokoo
             return new TensorSequence<T> { inner = imm };
         }
         public static implicit operator Variable(TensorSequence<T> handle)
-            => handle.Imm;
+            => handle.Immutable;
 
         // ── User-facing typed API (the sequence surface lives here, not on the immutable) ──
-        public Scalar<int64> Count => OnnxOp.SequenceLength(Imm);
+        public Scalar<int64> Count => OnnxOp.SequenceLength(Immutable);
 
         public Tensor<T> Concat(long axis, bool newAxis = false)
-            => OnnxOp.ConcatFromSequence(Imm, axis, newAxis);
+            => OnnxOp.ConcatFromSequence(Immutable, axis, newAxis);
 
         public Tensor<T> this[Scalar<int64> index]
-            => OnnxOp.SequenceAt(Imm, index);
+            => OnnxOp.SequenceAt(Immutable, index);
 
         /// <summary>Removes the element at <paramref name="index"/>, or the LAST element when called
         /// without an index (ONNX SequenceErase's optional-position default).</summary>
         public TensorSequence<T> RemoveAt(Scalar<int64>? index = null)
-            => Imm.OwningNode.TargetFunction is null ?
-                    OnnxOp.SequenceErase(Imm, index) :
-                    OnnxOp.SequenceErase(Imm.OwningNode.TargetFunction, Imm, index);
+            => Immutable.OwningNode.TargetFunction is null ?
+                    OnnxOp.SequenceErase(Immutable, index) :
+                    OnnxOp.SequenceErase(Immutable.OwningNode.TargetFunction, Immutable, index);
 
         public TensorSequence<T> InsertAt(Tensor<T> tensor, Scalar<int64>? index)
-            => Imm.OwningNode.TargetFunction is null ?
-                    OnnxOp.SequenceInsert(Imm, tensor, index) :
-                    OnnxOp.SequenceInsert(Imm.OwningNode.TargetFunction, Imm, tensor, index);
+            => Immutable.OwningNode.TargetFunction is null ?
+                    OnnxOp.SequenceInsert(Immutable, tensor, index) :
+                    OnnxOp.SequenceInsert(Immutable.OwningNode.TargetFunction, Immutable, tensor, index);
 
         public TensorSequence<T> Append(Tensor<T> tensor) => this.InsertAt(tensor, null);
 
@@ -102,15 +102,15 @@ namespace Shorokoo
         ITensorSequence ITensorSequence.InsertAt(ITensor tensor, Scalar<int64> index) => this.InsertAt((Tensor<T>)tensor, index);
 
         // IValue surface — forward to the backing Variable.
-        public Node OwningNode => Imm.OwningNode;
-        public DType Type => Imm.Type;
-        public Function? ModuleFn => Imm.ModuleFn;
-        public TensorKey Key => Imm.Key;
-        public string UniqueName => Imm.UniqueName;
-        public bool IsValid { get => Imm.IsValid; set => Imm.IsValid = value; }
+        public Node OwningNode => Immutable.OwningNode;
+        public DType Type => Immutable.Type;
+        public Function? ModuleFn => Immutable.ModuleFn;
+        public TensorKey Key => Immutable.Key;
+        public string UniqueName => Immutable.UniqueName;
+        public bool IsValid { get => Immutable.IsValid; set => Immutable.IsValid = value; }
 
 #pragma warning disable CS0618 // forwarding the obsolete member is intentional
-        string? IValue.FriendlyName => ((IValue)Imm).FriendlyName;
+        string? IValue.FriendlyName => ((IValue)Immutable).FriendlyName;
 #pragma warning restore CS0618
     }
 }
