@@ -1,6 +1,7 @@
 using Shorokoo;
 using Shorokoo.Core;
 using Shorokoo.Core.Nodes;
+using Shorokoo.Core.Nodes.NodeDefinitions;
 using Shorokoo.Core.Utils;
 using System;
 using System.Collections.Generic;
@@ -121,22 +122,58 @@ namespace Shorokoo
 
         public static Tensor<TT> Write<TT>(Tensor<TT> source, TensorIndexerParam[] slices, Tensor<TT> values) where TT : IVarType
         {
-            var gathers = slices.Where(x => x.Indices is not null).ToArray();
-            if (gathers.Length > 1)
-                throw new InvalidTensorOperationException(ErrorCodes.TIH006, "ScatterND", $"{gathers.Length} index tensors",
+            if (slices.Count(x => x.Indices is not null) > 1)
+                throw new InvalidTensorOperationException(ErrorCodes.TIH006, "ScatterND", "multiple index tensors",
                     "At most one indexer axis may be a gather-index tensor.");
 
-            bool hasSlice = slices.Any(x => x.Indices is null && !x.IsFullRange);
+            // Every write — contiguous, strided, single-index, gather, multi-axis — reduces to:
+            // scatter `values` at the Cartesian product of each axis' selected positions. Build the
+            // per-axis position vectors, broadcast them into coordinate tuples, and ScatterND. The
+            // coordinate tuples cover only the `k` indexed (leading) axes, so ScatterND scatters the
+            // trailing sub-tensors and we never need the source's static rank.
+            int k = slices.Length;
+            var shape = source.TShape;
 
-            // Pure gather-index assignment on axis 0: scatter whole rows.
-            if (gathers.Length == 1 && !hasSlice)
+            var positions = new Tensor<int64>[k];
+            var sizes = new Scalar<int64>[k];
+            var indexAxes = new List<Scalar<int64>>();
+            for (int i = 0; i < k; i++)
             {
-                var idx = ((Tensor<int64>)gathers[0].Indices!.Value).Unsqueeze();   // [n] -> [n, 1]
-                return source.ScatterND(idx, values);
+                var s = slices[i];
+                if (s.Indices is not null)
+                    positions[i] = s.Indices.Value;
+                else if (s.IsFullRange)
+                    positions[i] = OnnxOp.Range(Scalar(0L), shape[i], Scalar(1L));
+                else
+                {
+                    var end = s.ScalarEnd!.Value.Min(shape[i]);
+                    positions[i] = OnnxOp.Range(s.ScalarStart!.Value, end, s.ScalarStep ?? Scalar(1L));
+                    if (s.IsIndex) indexAxes.Add(Scalar((long)i));
+                }
+                sizes[i] = positions[i].TShape[0];
             }
 
-            // Slice/index assignment: place `values` into the selected region and select with Where.
-            return WriteRegion(source, slices, values);
+            Vector<int64> grid = [.. sizes];   // [m_0, ..., m_{k-1}]
+
+            // Broadcast axis i's positions across the grid (size m_i on axis i, 1 elsewhere), then
+            // stack the k axes into a trailing coordinate dimension -> [m_0, ..., m_{k-1}, k].
+            var coordParts = new Tensor<int64>[k];
+            for (int i = 0; i < k; i++)
+            {
+                var rshapeArr = new Scalar<int64>[k];
+                for (int j = 0; j < k; j++) rshapeArr[j] = j == i ? sizes[i] : Scalar(1L);
+                Vector<int64> rshape = [.. rshapeArr];
+                coordParts[i] = positions[i].Reshape(rshape).Expand(grid).Unsqueeze((long)k);
+            }
+            var coords = k == 1 ? coordParts[0] : coordParts[0].Concat((long)k, coordParts[1..]);
+
+            // `values` arrives without the single-index axes (the matching read squeezed them); restore
+            // them as size-1 so its shape is [m_0, ..., m_{k-1}, <trailing source dims>].
+            var updates = values;
+            if (indexAxes.Count > 0)
+                updates = updates.Unsqueeze([.. indexAxes]);
+
+            return source.ScatterND(coords, updates);
         }
 
         /// <summary>Applies the slice/single-index axes (full-range axes untouched), squeezing single-index axes.</summary>
@@ -173,53 +210,6 @@ namespace Shorokoo
                     result = result.Squeeze([.. squeeze]);
             }
             return result;
-        }
-
-        /// <summary>Replaces the (contiguous) slice/index region with <paramref name="values"/> via a mask + Where.</summary>
-        private static Tensor<TT> WriteRegion<TT>(Tensor<TT> source, TensorIndexerParam[] slices, Tensor<TT> values) where TT : IVarType
-        {
-            var shape = source.TShape;
-
-            // Only the constrained (slice/single-index) axes are padded; full-range and unspecified
-            // trailing axes already span the source, so we drive ONNX Pad by `axes` and never need
-            // the source's static rank.
-            var padAxes = new List<Scalar<int64>>();
-            var left = new List<Scalar<int64>>();
-            var right = new List<Scalar<int64>>();
-            var unsqueezeAxes = new List<Scalar<int64>>();
-            for (long i = 0; i < slices.Length; i++)
-            {
-                var s = slices[i];
-                if (s.Indices is not null || s.IsFullRange)
-                    continue;
-                if (s.ScalarStep is not null)
-                    throw new InvalidTensorOperationException(ErrorCodes.TIH003, "Step slice assignment", "strided tensor assignment",
-                        "Strided slice assignment on a multi-axis tensor is not supported.");
-                var dim = shape[i];
-                var start = s.ScalarStart!.Value;
-                var end = s.ScalarEnd!.Value.Min(dim);
-                padAxes.Add(Scalar(i));
-                left.Add(start);
-                right.Add(dim - end);
-                if (s.IsIndex) unsqueezeAxes.Add(Scalar(i));   // values dropped this axis; restore it (size 1)
-            }
-
-            // Restore axes the matching read would have squeezed so `values` matches the region rank.
-            var placed = values;
-            if (unsqueezeAxes.Count > 0)
-                placed = placed.Unsqueeze([.. unsqueezeAxes]);
-
-            if (padAxes.Count == 0)
-                return placed;   // every axis full -> the values replace the whole tensor
-
-            Vector<int64> axesV = [.. padAxes];
-            Vector<int64> leftV = [.. left];
-            Vector<int64> rightV = [.. right];
-
-            var region = placed.Pad(PadMode.Constant, leftV, rightV, null, axesV);
-            var mask = Tensor<bit>.Fill(placed.TShape, Shorokoo.Core.InternalGlobals.OnnxTensorData(1, true))
-                .Pad(PadMode.Constant, leftV, rightV, null, axesV);
-            return mask.Where(region, source);
         }
     }
 }

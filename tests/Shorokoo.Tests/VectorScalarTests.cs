@@ -718,6 +718,21 @@ public partial class TensorIndexerModel
         wGather[Vector(0L, 2L)] = Vector(90f, 91f, 92f, 93f, 94f, 80f, 81f, 82f, 83f, 84f).Reshape(Vector(2L, 5L));
         err = err + L1(wGather, Vector(90f, 91f, 92f, 93f, 94f, 5f, 6f, 7f, 8f, 9f, 80f, 81f, 82f, 83f, 84f, 15f, 16f, 17f, 18f, 19f).Reshape(Vector(4L, 5L)));
 
+        // Strided row write: rows 0, 2.
+        var wStepRows = t;
+        wStepRows[(0..4, 2L)] = Vector(200f, 201f, 202f, 203f, 204f, 220f, 221f, 222f, 223f, 224f).Reshape(Vector(2L, 5L));
+        err = err + L1(wStepRows, Vector(200f, 201f, 202f, 203f, 204f, 5f, 6f, 7f, 8f, 9f, 220f, 221f, 222f, 223f, 224f, 15f, 16f, 17f, 18f, 19f).Reshape(Vector(4L, 5L)));
+
+        // Strided column write: full first axis, cols 0, 2, 4.
+        var wStepCol = t;
+        wStepCol[.., (0..5, 2L)] = Vector(300f, 301f, 302f, 310f, 311f, 312f, 320f, 321f, 322f, 330f, 331f, 332f).Reshape(Vector(4L, 3L));
+        err = err + L1(wStepCol, Vector(300f, 1f, 301f, 3f, 302f, 310f, 6f, 311f, 8f, 312f, 320f, 11f, 321f, 13f, 322f, 330f, 16f, 331f, 18f, 332f).Reshape(Vector(4L, 5L)));
+
+        // Index + slice combo: row 1, cols 0..1.
+        var wMix = t;
+        wMix[1L, 0..2] = Vector(500f, 510f);
+        err = err + L1(wMix, Vector(0f, 1f, 2f, 3f, 4f, 500f, 510f, 7f, 8f, 9f, 10f, 11f, 12f, 13f, 14f, 15f, 16f, 17f, 18f, 19f).Reshape(Vector(4L, 5L)));
+
         // Value semantics: none of the writes above mutated t.
         err = err + L1(t, Vector(0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f, 11f, 12f, 13f, 14f, 15f, 16f, 17f, 18f, 19f).Reshape(Vector(4L, 5L)));
 
