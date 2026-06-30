@@ -91,125 +91,106 @@ namespace Shorokoo
         /// </summary>
         public Tensor<T> this[params TensorIndexerParam[] slices]
         {
-            get => TensorIndexer.Read(this, slices);
-            set => this = TensorIndexer.Write(this, slices, value);
-        }
-    }
-
-    /// <summary>Read/write implementations behind the <see cref="Tensor{T}"/> multi-axis indexer.</summary>
-    internal static class TensorIndexer
-    {
-        public static Tensor<TT> Read<TT>(Tensor<TT> source, TensorIndexerParam[] slices) where TT : IVarType
-        {
-            Debug.Assert(slices.Length > 0);
-
-            var gathers = slices.Where(x => x.Indices is not null).ToArray();
-            if (gathers.Length > 1)
-                throw new InvalidTensorOperationException(ErrorCodes.TIH004, "GatherND", $"{gathers.Length} index tensors",
-                    "At most one indexer axis may be a gather-index tensor.");
-
-            var result = ApplySlices(source, slices, out var leadingGatherAxis);
-
-            // A single gather-index axis: gather along its position (after any leading slices).
-            if (gathers.Length == 1)
+            get
             {
-                var indices = gathers[0].Indices!.Value;
-                result = result.Gather(indices, axis: leadingGatherAxis);
-            }
+                Debug.Assert(slices.Length > 0);
+                if (slices.Count(x => x.Indices is not null) > 1)
+                    throw new InvalidTensorOperationException(ErrorCodes.TIH004, "GatherND", "multiple index tensors",
+                        "At most one indexer axis may be a gather-index tensor.");
 
-            return result;
-        }
-
-        public static Tensor<TT> Write<TT>(Tensor<TT> source, TensorIndexerParam[] slices, Tensor<TT> values) where TT : IVarType
-        {
-            if (slices.Count(x => x.Indices is not null) > 1)
-                throw new InvalidTensorOperationException(ErrorCodes.TIH006, "ScatterND", "multiple index tensors",
-                    "At most one indexer axis may be a gather-index tensor.");
-
-            // Every write — contiguous, strided, single-index, gather, multi-axis — reduces to:
-            // scatter `values` at the Cartesian product of each axis' selected positions. Build the
-            // per-axis position vectors, broadcast them into coordinate tuples, and ScatterND. The
-            // coordinate tuples cover only the `k` indexed (leading) axes, so ScatterND scatters the
-            // trailing sub-tensors and we never need the source's static rank.
-            int k = slices.Length;
-            var shape = source.TShape;
-
-            var positions = new Tensor<int64>[k];
-            var sizes = new Scalar<int64>[k];
-            var indexAxes = new List<Scalar<int64>>();
-            for (int i = 0; i < k; i++)
-            {
-                var s = slices[i];
-                if (s.Indices is not null)
-                    positions[i] = s.Indices.Value;
-                else if (s.IsFullRange)
-                    positions[i] = OnnxOp.Range(Scalar(0L), shape[i], Scalar(1L));
-                else
+                // Apply the slice/single-index axes (full-range axes untouched), then squeeze the
+                // single-index axes, then gather a single gather-index axis (after the leading slices).
+                var axes = new List<Scalar<int64>>();
+                var starts = new List<Scalar<int64>>();
+                var ends = new List<Scalar<int64>>();
+                var steps = new List<Scalar<int64>>();
+                var squeeze = new List<Scalar<int64>>();
+                Tensor<int64>? gatherIndices = null;
+                long gatherAxis = 0;
+                for (long i = 0; i < slices.Length; i++)
                 {
-                    var end = s.ScalarEnd!.Value.Min(shape[i]);
-                    positions[i] = OnnxOp.Range(s.ScalarStart!.Value, end, s.ScalarStep ?? Scalar(1L));
-                    if (s.IsIndex) indexAxes.Add(Scalar((long)i));
+                    var s = slices[i];
+                    if (s.Indices is not null) { gatherIndices = s.Indices.Value; gatherAxis = i; continue; }
+                    if (s.IsFullRange) continue;
+                    axes.Add(Globals.Scalar(i));
+                    starts.Add(s.ScalarStart!.Value);
+                    ends.Add(s.ScalarEnd!.Value);
+                    steps.Add(s.ScalarStep ?? Globals.Scalar(1L));
+                    if (s.IsIndex) squeeze.Add(Globals.Scalar(i));
                 }
-                sizes[i] = positions[i].TShape[0];
+
+                var result = this;
+                if (axes.Count > 0)
+                {
+                    Vector<int64> startsV = [.. starts];
+                    Vector<int64> endsV = [.. ends];
+                    Vector<int64> axesV = [.. axes];
+                    Vector<int64> stepsV = [.. steps];
+                    result = result.Slice(startsV, endsV, axesV, stepsV);
+                    if (squeeze.Count > 0)
+                        result = result.Squeeze([.. squeeze]);
+                }
+
+                if (gatherIndices is not null)
+                    result = result.Gather(gatherIndices.Value, axis: gatherAxis);
+
+                return result;
             }
-
-            Vector<int64> grid = [.. sizes];   // [m_0, ..., m_{k-1}]
-
-            // Broadcast axis i's positions across the grid (size m_i on axis i, 1 elsewhere), then
-            // stack the k axes into a trailing coordinate dimension -> [m_0, ..., m_{k-1}, k].
-            var coordParts = new Tensor<int64>[k];
-            for (int i = 0; i < k; i++)
+            set
             {
-                var rshapeArr = new Scalar<int64>[k];
-                for (int j = 0; j < k; j++) rshapeArr[j] = j == i ? sizes[i] : Scalar(1L);
-                Vector<int64> rshape = [.. rshapeArr];
-                coordParts[i] = positions[i].Reshape(rshape).Expand(grid).Unsqueeze((long)k);
+                if (slices.Count(x => x.Indices is not null) > 1)
+                    throw new InvalidTensorOperationException(ErrorCodes.TIH006, "ScatterND", "multiple index tensors",
+                        "At most one indexer axis may be a gather-index tensor.");
+
+                // Every write — contiguous, strided, single-index, gather, multi-axis — reduces to
+                // scattering `value` at the Cartesian product of each axis' selected positions. Build
+                // the per-axis position vectors, broadcast them into coordinate tuples, and ScatterND.
+                // The tuples cover only the k indexed (leading) axes, so ScatterND scatters the trailing
+                // sub-tensors and we never need the source's static rank.
+                int k = slices.Length;
+                var shape = this.TShape;
+
+                var positions = new Tensor<int64>[k];
+                var sizes = new Scalar<int64>[k];
+                var indexAxes = new List<Scalar<int64>>();
+                for (int i = 0; i < k; i++)
+                {
+                    var s = slices[i];
+                    if (s.Indices is not null)
+                        positions[i] = s.Indices.Value;
+                    else if (s.IsFullRange)
+                        positions[i] = OnnxOp.Range(Globals.Scalar(0L), shape[i], Globals.Scalar(1L));
+                    else
+                    {
+                        var end = s.ScalarEnd!.Value.Min(shape[i]);
+                        positions[i] = OnnxOp.Range(s.ScalarStart!.Value, end, s.ScalarStep ?? Globals.Scalar(1L));
+                        if (s.IsIndex) indexAxes.Add(Globals.Scalar((long)i));
+                    }
+                    sizes[i] = positions[i].TShape[0];
+                }
+
+                Vector<int64> grid = [.. sizes];   // [m_0, ..., m_{k-1}]
+
+                // Broadcast axis i's positions across the grid (size m_i on axis i, 1 elsewhere), then
+                // stack the k axes into a trailing coordinate dimension -> [m_0, ..., m_{k-1}, k].
+                var coordParts = new Tensor<int64>[k];
+                for (int i = 0; i < k; i++)
+                {
+                    var rshapeArr = new Scalar<int64>[k];
+                    for (int j = 0; j < k; j++) rshapeArr[j] = j == i ? sizes[i] : Globals.Scalar(1L);
+                    Vector<int64> rshape = [.. rshapeArr];
+                    coordParts[i] = positions[i].Reshape(rshape).Expand(grid).Unsqueeze((long)k);
+                }
+                var coords = k == 1 ? coordParts[0] : coordParts[0].Concat((long)k, coordParts[1..]);
+
+                // `value` arrives without the single-index axes (the matching read squeezed them);
+                // restore them as size-1 so its shape is [m_0, ..., m_{k-1}, <trailing source dims>].
+                var updates = value;
+                if (indexAxes.Count > 0)
+                    updates = updates.Unsqueeze([.. indexAxes]);
+
+                this = this.ScatterND(coords, updates);
             }
-            var coords = k == 1 ? coordParts[0] : coordParts[0].Concat((long)k, coordParts[1..]);
-
-            // `values` arrives without the single-index axes (the matching read squeezed them); restore
-            // them as size-1 so its shape is [m_0, ..., m_{k-1}, <trailing source dims>].
-            var updates = values;
-            if (indexAxes.Count > 0)
-                updates = updates.Unsqueeze([.. indexAxes]);
-
-            return source.ScatterND(coords, updates);
-        }
-
-        /// <summary>Applies the slice/single-index axes (full-range axes untouched), squeezing single-index axes.</summary>
-        private static Tensor<TT> ApplySlices<TT>(Tensor<TT> source, TensorIndexerParam[] slices, out long leadingGatherAxis) where TT : IVarType
-        {
-            var axes = new List<Scalar<int64>>();
-            var starts = new List<Scalar<int64>>();
-            var ends = new List<Scalar<int64>>();
-            var steps = new List<Scalar<int64>>();
-            var squeeze = new List<Scalar<int64>>();
-            leadingGatherAxis = 0;
-
-            for (long i = 0; i < slices.Length; i++)
-            {
-                var s = slices[i];
-                if (s.Indices is not null) { leadingGatherAxis = i; continue; }
-                if (s.IsFullRange) continue;
-                axes.Add(Scalar(i));
-                starts.Add(s.ScalarStart!.Value);
-                ends.Add(s.ScalarEnd!.Value);
-                steps.Add(s.ScalarStep ?? Scalar(1L));
-                if (s.IsIndex) squeeze.Add(Scalar(i));
-            }
-
-            var result = source;
-            if (axes.Count > 0)
-            {
-                Vector<int64> startsV = [.. starts];
-                Vector<int64> endsV = [.. ends];
-                Vector<int64> axesV = [.. axes];
-                Vector<int64> stepsV = [.. steps];
-                result = result.Slice(startsV, endsV, axesV, stepsV);
-                if (squeeze.Count > 0)
-                    result = result.Squeeze([.. squeeze]);
-            }
-            return result;
         }
     }
 }

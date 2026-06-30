@@ -85,8 +85,40 @@ namespace Shorokoo
         /// </summary>
         public Vector<T> this[VectorIndexerParam index]
         {
-            get => VectorIndexer.ReadSlice(this, index);
-            set => this = VectorIndexer.WriteSlice(this, index, value);
+            get
+            {
+                // Full range is the identity.
+                if (index.IsFullRange)
+                    return this;
+
+                // Gather a list of positions (ONNX Gather along axis 0 keeps rank 1).
+                if (index.Indices is not null)
+                    return this.Gather(index.Indices.Value, 0).Vec();
+
+                // Contiguous or strided slice (ORT clamps an open-ended bound; steps drive the stride).
+                return this.Slice(index.ScalarStart!.Value, index.ScalarEnd!.Value, index.ScalarStep);
+            }
+            set
+            {
+                // Full range replaces the whole vector.
+                if (index.IsFullRange)
+                {
+                    this = value;
+                    return;
+                }
+
+                // Both the gather-by-index and the (possibly strided) slice cases reduce to
+                // "scatter `value` at these row indices"; ScatterND wants the index list shaped [n, 1].
+                Vector<int64> positions;
+                if (index.Indices is not null)
+                    positions = index.Indices.Value;
+                else
+                {
+                    var end = index.ScalarEnd!.Value.Min(this.TShape[0]);   // clamp open-ended bound
+                    positions = OnnxOp.Range(index.ScalarStart!.Value, end, index.ScalarStep ?? Globals.Scalar(1L));
+                }
+                this = this.ScatterND(((Tensor<int64>)positions).Unsqueeze(), value);
+            }
         }
 
         /// <summary>Reads or writes a single element at a runtime index.</summary>
@@ -115,58 +147,6 @@ namespace Shorokoo
         {
             get => this[OnnxUtils.FromIndex(index)];
             set => this[OnnxUtils.FromIndex(index)] = value;
-        }
-    }
-
-    /// <summary>
-    /// Read/write implementations behind the <see cref="Vector{T}"/> slicing indexer. Reads
-    /// materialise the sliced/gathered vector; writes return a copy of the source with the
-    /// indexed positions replaced (the indexer setter rebinds the handle to it).
-    /// </summary>
-    internal static class VectorIndexer
-    {
-        public static Vector<TT> ReadSlice<TT>(Vector<TT> source, VectorIndexerParam slice) where TT : IVarType
-        {
-            // Full range is the identity.
-            if (slice.IsFullRange)
-                return source;
-
-            // Gather a list of positions (ONNX Gather along axis 0 keeps rank 1).
-            if (slice.Indices is not null)
-                return source.Gather(slice.Indices.Value, 0).Vec();
-
-            Debug.Assert(slice.ScalarStart is not null);
-            Debug.Assert(slice.ScalarEnd is not null);
-
-            // Contiguous or strided slice (ORT clamps an open-ended bound; steps drive the stride).
-            return source.Slice(slice.ScalarStart!.Value, slice.ScalarEnd!.Value, slice.ScalarStep);
-        }
-
-        public static Vector<TT> WriteSlice<TT>(Vector<TT> source, VectorIndexerParam slice, Vector<TT> values) where TT : IVarType
-        {
-            // Full range replaces the whole vector.
-            if (slice.IsFullRange)
-                return values;
-
-            // Scatter the values onto the targeted positions. Both the gather-by-index and the
-            // (possibly strided) slice cases reduce to "scatter `values` at these row indices":
-            // ScatterND wants the index list shaped [n, 1].
-            Vector<int64> positions = slice.Indices ?? SlicePositions(source, slice);
-            Tensor<int64> indices = ((Tensor<int64>)positions).Unsqueeze();
-            return source.ScatterND(indices, values);
-        }
-
-        /// <summary>The concrete row indices a (possibly strided, possibly open-ended) slice selects.</summary>
-        private static Vector<int64> SlicePositions<TT>(Vector<TT> source, VectorIndexerParam slice) where TT : IVarType
-        {
-            Debug.Assert(slice.ScalarStart is not null);
-            Debug.Assert(slice.ScalarEnd is not null);
-
-            var length = source.TShape[0];
-            var start = slice.ScalarStart!.Value;
-            var end = slice.ScalarEnd!.Value.Min(length);   // clamp an open-ended (long.MaxValue) bound
-            var step = slice.ScalarStep ?? Scalar(1L);
-            return OnnxOp.Range(start, end, step);
         }
     }
 }
